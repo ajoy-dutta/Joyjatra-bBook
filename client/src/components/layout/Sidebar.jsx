@@ -64,6 +64,21 @@ const menuConfig = [
     icon: "📑",
     items: [{ label: "Reports Home", path: "/reports" }],
   },
+
+  {
+  title: "Master",
+  icon: "",
+  items: [
+    { label: "Cost Category", path: "/master/cost-category" },
+    { label: "Income Sources", path: "/master/income-sources" },
+    { label: "Product Category", path: "/master/product-category" },
+    { label: "Payment Mode", path: "/master/payment-mode" },  // ← add this
+    { label: "Bank Cayegory", path: "/master/bank-category" },
+    { label: "Bank", path: "/master/bank" },
+    { label: "Divisions", path: "/master/divisions" },
+    { label: "Districts", path: "/master/districts" },
+  ],
+},
 ];
 
 export default function Sidebar() {

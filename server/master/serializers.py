@@ -1,0 +1,75 @@
+from rest_framework import serializers
+from .models import*
+
+
+
+
+class CostCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CostCategory
+        fields = '__all__'
+
+
+class SourceCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SourceCategory
+        fields = '__all__'
+
+
+class PaymentModeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PaymentMode
+        fields = '__all__'
+
+
+
+class DivisionMasterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DivisionMaster
+        fields = '__all__'
+
+
+class DistrictMasterSerializer(serializers.ModelSerializer):
+    division_name = serializers.CharField(source='division.name', read_only=True)
+    class Meta:
+        model = DistrictMaster
+        fields = '__all__'
+
+
+class CountryMasterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CountryMaster
+        fields = '__all__'
+
+
+class SupplierTypeMasterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SupplierTypeMaster
+        fields = '__all__'
+
+
+class BankCategoryMasterSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = BankCategoryMaster
+        fields = '__all__'
+        
+
+class BankMasterSerializer(serializers.ModelSerializer):
+    bank_category_detail = BankCategoryMasterSerializer(source='bank_category', read_only=True)
+
+    class Meta:
+        model = BankMaster
+        fields = '__all__'
+
+
+class AccountCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AccountCategory
+        fields = '__all__'
+
+
+class BankAccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BankAccount
+        fields = '__all__'
