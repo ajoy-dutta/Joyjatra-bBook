@@ -54,6 +54,13 @@ const menuConfig = [
     { label: "Damaged Products", path: "/stock/damaged-products" },
   ],
 },
+{
+  title: "Expenses",
+  icon: "🧾",
+  items: [
+    { label: "Expenses", path: "/expenses" },
+  ],
+},
   {
     title: "Assets",
     icon: "🏢",

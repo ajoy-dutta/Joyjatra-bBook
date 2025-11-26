@@ -6,6 +6,7 @@ export default function Navbar() {
   const getTitle = () => {
     if (location.pathname.startsWith("/sales")) return "Sales";
     if (location.pathname.startsWith("/purchases")) return "Purchases";
+    if (location.pathname.startsWith("/expenses")) return "Expenses";
     if (location.pathname.startsWith("/accounting")) return "Accounting";
     if (location.pathname.startsWith("/stock")) return "Stock";
     if (location.pathname.startsWith("/assets")) return "Assets";

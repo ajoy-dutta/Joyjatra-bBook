@@ -27,8 +27,7 @@ SECRET_KEY = 'django-insecure-18qy7apf)*79leak+1o8)ru^xd6=ru0*!2z5d_o)v8t*c@4!&^
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition
@@ -49,6 +48,7 @@ INSTALLED_APPS = [
     # Installed apps
     'product',
     'master',
+    'purchase',
 ]
 
 
@@ -62,9 +62,8 @@ CORS_ALLOWED_ORIGINS = [
     "https://www.social.utshabtech.com.bd",
 ]
 
+
 CORS_ALLOW_CREDENTIALS = True
-
-
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173", 
     "http://127.0.0.1",
@@ -121,14 +120,12 @@ DATABASES = {
 
 # REST Framework configuration
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+    # 'DEFAULT_AUTHENTICATION_CLASSES': (
+    #     'rest_framework_simplejwt.authentication.JWTAuthentication',
+    # ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 20
 }
 
 

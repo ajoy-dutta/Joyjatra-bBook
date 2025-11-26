@@ -2,8 +2,6 @@ from rest_framework import serializers
 from .models import*
 
 
-
-
 class CostCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = CostCategory

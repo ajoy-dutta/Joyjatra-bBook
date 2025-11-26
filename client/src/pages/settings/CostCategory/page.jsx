@@ -109,7 +109,7 @@ export default function CostCategory() {
             </tr>
           </thead>
           <tbody>
-            {costCategories.map((item, index) => (
+            {costCategories?.map((item, index) => (
               <tr key={item.id} className="text-center">
                 <td className="border border-gray-400 px-2 py-1">{index + 1}</td>
                 <td className="border border-gray-400 px-2 py-1">{item.category_name}</td>
