@@ -1,6 +1,12 @@
 // src/router/AppRouter.jsx
 import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "../components/layout/Layout";
+import Root from "../components/Root/Root";
+
+// Home
+import Home from "../pages/Home/Home";
+import Login from "../pages/Auth/Login";
+
 
 // Core
 import Dashboard from "../pages/Dashboard";
@@ -56,10 +62,19 @@ import District from "../pages/settings/district/page";
 export default function AppRouter() {
   return (
     <Routes>
-      <Route element={<Layout />}>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<Dashboard />} />
 
+      {/* For Home Routing */}
+      <Route element={<Root />}>
+        {/* Root path now serves the Home page */}
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+      </Route>
+
+      {/* For Dashboard Routing */}
+      <Route element={<Layout />} >
+
+        <Route path="/dashboard" element={<Dashboard />} />
+        
         {/* Sales */}
         <Route path="/sales/estimates" element={<Estimates />} />
         <Route path="/sales/invoices" element={<Invoices />} />
@@ -95,7 +110,7 @@ export default function AppRouter() {
         {/* Reports */}
         <Route path="/reports" element={<ReportsHome />} />
 
-        {/* Accounting */}
+        {/* Master / Settings */}
         <Route path="/master/cost-category" element={<CostCategory />} />
         <Route path="/master/income-sources" element={<SourceCategory />} />
         <Route path="/master/product-category" element={<ProductCategory />} />
@@ -104,7 +119,6 @@ export default function AppRouter() {
         <Route path="/master/bank" element={<BankMaster />} />
         <Route path="/master/divisions" element={<Division />} />
         <Route path="/master/districts" element={<District />} />
-
       </Route>
     </Routes>
   );
