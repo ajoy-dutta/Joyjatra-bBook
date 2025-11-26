@@ -1,7 +1,6 @@
 import { createContext, useState, useContext, useEffect } from "react";
 import AxiosInstance from "../components/AxiosInstance";
 
-
 const UserContext = createContext();
 
 
@@ -11,9 +10,11 @@ export const useUser = () => {
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem("user");
-    return storedUser ? JSON.parse(storedUser) : null; // Retrieve user data from localStorage
-  });  const [loading, setLoading] = useState(false);
+    // const storedUser = localStorage.getItem("user") ;
+    // return storedUser ? JSON.parse(storedUser) : null; // Retrieve user data from localStorage
+  });  
+  
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
 
@@ -21,6 +22,7 @@ export const UserProvider = ({ children }) => {
 
   const fetchUserData = async () => {
     if (!token) {
+      console.log("jsbhdfkjbdhs")
       setError("No token found. Please log in.");
       setUser(null);
       setLoading(false)

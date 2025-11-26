@@ -28,12 +28,8 @@ const Login = () => {
 
     try {
       const response = await AxiosInstance.post("login/", credentials);
-
-      const { user, access } = response.data;
-
-      // Save token and user to localStorage so UserProvider can pick it up
+      const { access } = response.data;
       localStorage.setItem("access_token", access);
-      localStorage.setItem("user", JSON.stringify(user));
 
       // Optional: immediately refresh context user
       if (refreshUser) {

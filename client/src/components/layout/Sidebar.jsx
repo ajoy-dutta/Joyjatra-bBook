@@ -89,6 +89,16 @@ const menuConfig = [
     { label: "Districts", path: "/master/districts" },
   ],
 },
+
+
+  {
+    title: "Staffs",
+    icon: "",
+    items: [
+      { label: "Staffs", path: "/dashboard/staff-list" },
+      { label: "Add Staff", path: "/dashboard/add-staff" },
+    ],
+  },
 ];
 
 export default function Sidebar() {
