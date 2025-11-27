@@ -274,28 +274,28 @@ export default function Customers() {
   // -------- render --------
 
   return (
-    <div className="p-6">
-      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+    <div className="p-4 md:p-6">
+      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-5 space-y-4">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-800">
+            <h1 className="text-xl md:text-2xl font-semibold text-slate-800">
               Sales – Customers
             </h1>
-            <p className="text-sm text-slate-500">
-              Add new customers and manage your customer list in one place.
+            <p className="text-xs md:text-sm text-slate-500">
+              Add and manage your customers in a single view.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-            <div className="relative w-full sm:w-72">
+          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+            <div className="relative w-full sm:w-64 md:w-72">
               <FaSearch className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
                 value={search}
                 onChange={handleSearchChange}
                 placeholder="Search by name, phone, shop..."
-                className="w-full pl-9 pr-3 py-2 rounded-full border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30"
+                className="w-full pl-9 pr-3 py-1.5 rounded-full border border-slate-200 text-xs md:text-sm focus:outline-none focus:ring focus:ring-blue-500/30"
               />
             </div>
             <button
@@ -304,398 +304,434 @@ export default function Customers() {
                 if (!showForm) resetFormState();
                 setShowForm((prev) => !prev);
               }}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition"
+              className="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-full bg-blue-600 text-white text-xs md:text-sm font-medium hover:bg-blue-700 transition"
             >
               <FaPlus className="w-3 h-3" />
-              {showForm ? "Close Form" : "Add New Customer"}
+              {showForm ? "Close Form" : "Add Customer"}
             </button>
           </div>
         </div>
 
         {/* Error banner */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2 rounded-xl">
+          <div className="bg-red-50 border border-red-200 text-red-700 text-xs md:text-sm px-3 py-2 rounded-xl">
             {error}
           </div>
         )}
 
-        {/* Add / Edit form */}
-        {showForm && (
-          <form
-            onSubmit={handleSubmit}
-            className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-200 pt-4"
-          >
-            <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Customer Name *
-              </label>
-              <input
-                name="customer_name"
-                value={form.customer_name}
-                onChange={handleFormChange}
-                required
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30 bg-slate-50"
-              />
+        {/* Main content: list + compact side form */}
+        <div
+          className={`flex flex-col gap-4 ${
+            showForm ? "lg:flex-row lg:items-start" : ""
+          }`}
+        >
+          {/* Customer List */}
+          <div className={`flex-1 ${showForm ? "lg:pr-2" : ""}`}>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-base md:text-lg font-semibold text-slate-800">
+                Customer List
+              </h2>
+              <span className="text-[11px] md:text-xs text-slate-500">
+                {customers.length} customer{customers.length !== 1 ? "s" : ""}
+              </span>
             </div>
 
-            {/* Photo upload */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Photo (optional)
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoChange}
-                className="block w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:border-0 file:text-xs file:font-medium file:bg-blue-50 file:text-blue-700 file:rounded-full hover:file:bg-blue-100"
-              />
-              {photoPreview && (
-                <div className="mt-2">
-                  <img
-                    src={photoPreview}
-                    alt="Preview"
-                    className="w-16 h-16 rounded-full object-cover border border-slate-200"
-                  />
-                </div>
-              )}
-              {editingId && !photoPreview && (
-                <p className="mt-1 text-[11px] text-slate-400">
-                  Existing photo will stay if you don&apos;t choose a new one.
-                </p>
-              )}
-            </div>
+            {loading ? (
+              <p className="text-xs md:text-sm text-slate-500">
+                Loading customers...
+              </p>
+            ) : customers.length === 0 ? (
+              <p className="text-xs md:text-sm text-slate-500">
+                No customers found.
+              </p>
+            ) : (
+              <div className="border border-slate-100 rounded-xl overflow-hidden">
+                <div className="overflow-x-auto max-h-[460px] md:max-h-[520px] scrollbar-thin">
+                  <table className="min-w-full text-xs md:text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-500 text-[11px] md:text-xs">
+                        <th className="px-3 py-2 text-left">Customer</th>
+                        <th className="px-3 py-2 text-left">Contact</th>
+                        <th className="px-3 py-2 text-left">Shop</th>
+                        <th className="px-3 py-2 text-left">Location</th>
+                        <th className="px-3 py-2 text-right">Prev. Due</th>
+                        <th className="px-3 py-2 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {customers.map((c) => {
+                        const rawUrl = c.photo_url || c.photo || "";
+                        const photoUrl = rawUrl
+                          ? rawUrl.startsWith("http")
+                            ? rawUrl
+                            : `${BACKEND_URL}${rawUrl}`
+                          : null;
 
-            <div />
-
-            {/* Division / District */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Division
-              </label>
-              <select
-                value={selectedDivisionId}
-                onChange={handleDivisionSelect}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring focus:ring-blue-500/30"
-              >
-                <option value="">Select division</option>
-                {divisions.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                District
-              </label>
-              <select
-                value={selectedDistrictId}
-                onChange={handleDistrictSelect}
-                disabled={!selectedDivisionId}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring focus:ring-blue-500/30 disabled:bg-slate-50"
-              >
-                <option value="">
-                  {selectedDivisionId
-                    ? "Select district"
-                    : "Select division first"}
-                </option>
-                {filteredDistricts.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Other fields */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Customer Type
-              </label>
-              <input
-                name="customer_type"
-                value={form.customer_type}
-                onChange={handleFormChange}
-                placeholder="Retail / Wholesale / Corporate"
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Shop Name
-              </label>
-              <input
-                name="shop_name"
-                value={form.shop_name}
-                onChange={handleFormChange}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Phone 1 *
-              </label>
-              <input
-                name="phone1"
-                value={form.phone1}
-                onChange={handleFormChange}
-                required
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30 bg-slate-50"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Phone 2
-              </label>
-              <input
-                name="phone2"
-                value={form.phone2}
-                onChange={handleFormChange}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleFormChange}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Date of Birth
-              </label>
-              <input
-                type="date"
-                name="date_of_birth"
-                value={form.date_of_birth}
-                onChange={handleFormChange}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                NID No
-              </label>
-              <input
-                name="nid_no"
-                value={form.nid_no}
-                onChange={handleFormChange}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Courier Name
-              </label>
-              <input
-                name="courier_name"
-                value={form.courier_name}
-                onChange={handleFormChange}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Previous Due (৳)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                name="previous_due_amount"
-                value={form.previous_due_amount}
-                onChange={handleFormChange}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Address
-              </label>
-              <textarea
-                name="address"
-                value={form.address}
-                onChange={handleFormChange}
-                rows={2}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Remarks
-              </label>
-              <textarea
-                name="remarks"
-                value={form.remarks}
-                onChange={handleFormChange}
-                rows={2}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30"
-              />
-            </div>
-
-            <div className="md:col-span-2 flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={resetFormState}
-                className="px-4 py-2 rounded-full border border-slate-300 text-sm text-slate-700 hover:bg-slate-50"
-              >
-                Reset
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="px-5 py-2 rounded-full bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-60"
-              >
-                {saving
-                  ? editingId
-                    ? "Updating..."
-                    : "Saving..."
-                  : editingId
-                  ? "Update Customer"
-                  : "Save Customer"}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* Customer List */}
-        <div className="border-t border-slate-200 pt-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-slate-800">
-              Customer List
-            </h2>
-            <span className="text-xs text-slate-500">
-              {customers.length} customer{customers.length !== 1 ? "s" : ""}
-            </span>
-          </div>
-
-          {loading ? (
-            <p className="text-sm text-slate-500">Loading customers...</p>
-          ) : customers.length === 0 ? (
-            <p className="text-sm text-slate-500">No customers found.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50 text-slate-500">
-                    <th className="px-3 py-2 text-left">Customer</th>
-                    <th className="px-3 py-2 text-left">Contact</th>
-                    <th className="px-3 py-2 text-left">Shop</th>
-                    <th className="px-3 py-2 text-left">Location</th>
-                    <th className="px-3 py-2 text-right">Prev. Due</th>
-                    <th className="px-3 py-2 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {customers.map((c) => {
-                    // choose best photo URL
-                    const rawUrl =
-                      c.photo_url || c.photo || ""; // from backend
-                    const photoUrl = rawUrl
-                      ? rawUrl.startsWith("http")
-                        ? rawUrl
-                        : `${BACKEND_URL}${rawUrl}`
-                      : null;
-
-                    return (
-                      <tr key={c.id} className="border-t">
-                        <td className="px-3 py-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center text-blue-700 text-xs overflow-hidden">
-                              {photoUrl ? (
-                                <img
-                                  src={photoUrl}
-                                  alt={c.customer_name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <FaUser />
-                              )}
-                            </div>
-                            <div>
-                              <div className="font-medium text-slate-800">
-                                {c.customer_name}
+                        return (
+                          <tr key={c.id} className="border-t">
+                            <td className="px-3 py-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center text-blue-700 text-xs overflow-hidden">
+                                  {photoUrl ? (
+                                    <img
+                                      src={photoUrl}
+                                      alt={c.customer_name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <FaUser />
+                                  )}
+                                </div>
+                                <div>
+                                  <div className="font-medium text-slate-800 text-xs md:text-sm">
+                                    {c.customer_name}
+                                  </div>
+                                  {c.email && (
+                                    <div className="text-[10px] text-slate-500">
+                                      {c.email}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              {c.email && (
-                                <div className="text-[11px] text-slate-500">
-                                  {c.email}
+                            </td>
+                            <td className="px-3 py-2">
+                              <div className="flex items-center gap-2 text-[11px] text-slate-700">
+                                <FaPhoneAlt className="w-3 h-3" />
+                                <span>{c.phone1}</span>
+                              </div>
+                              {c.phone2 && (
+                                <div className="pl-5 text-[10px] text-slate-500">
+                                  Alt: {c.phone2}
                                 </div>
                               )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-3 py-2">
-                          <div className="flex items-center gap-2 text-xs text-slate-700">
-                            <FaPhoneAlt className="w-3 h-3" />
-                            <span>{c.phone1}</span>
-                          </div>
-                          {c.phone2 && (
-                            <div className="pl-5 text-[11px] text-slate-500">
-                              Alt: {c.phone2}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-3 py-2">
-                          {c.shop_name || (
-                            <span className="text-slate-400">—</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2 text-xs">
-                          {c.district || c.division ? (
-                            <>
-                              {c.district && <span>{c.district}</span>}
-                              {c.district && c.division && ", "}
-                              {c.division && <span>{c.division}</span>}
-                            </>
-                          ) : (
-                            <span className="text-slate-400">—</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          {c.previous_due_amount
-                            ? `৳ ${Number(
-                                c.previous_due_amount
-                              ).toLocaleString()}`
-                            : "৳ 0.00"}
-                        </td>
-                        <td className="px-3 py-2 text-right space-x-2">
-                          <button
-                            onClick={() => handleEdit(c)}
-                            className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-blue-600 text-blue-600 text-xs hover:bg-blue-50"
-                          >
-                            <FaEdit className="w-3 h-3" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(c.id)}
-                            className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-red-600 text-red-600 text-xs hover:bg-red-50"
-                          >
-                            <FaTrash className="w-3 h-3" />
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                            </td>
+                            <td className="px-3 py-2">
+                              {c.shop_name || (
+                                <span className="text-slate-400">—</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-[11px]">
+                              {c.district || c.division ? (
+                                <>
+                                  {c.district && <span>{c.district}</span>}
+                                  {c.district && c.division && ", "}
+                                  {c.division && <span>{c.division}</span>}
+                                </>
+                              ) : (
+                                <span className="text-slate-400">—</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-right text-[11px] md:text-sm">
+                              {c.previous_due_amount
+                                ? `৳ ${Number(
+                                    c.previous_due_amount
+                                  ).toLocaleString()}`
+                                : "৳ 0.00"}
+                            </td>
+                            <td className="px-3 py-2 text-right space-x-1 md:space-x-2">
+                              <button
+                                onClick={() => handleEdit(c)}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-blue-600 text-blue-600 text-[10px] md:text-xs hover:bg-blue-50"
+                              >
+                                <FaEdit className="w-3 h-3" />
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(c.id)}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-red-600 text-red-600 text-[10px] md:text-xs hover:bg-red-50"
+                              >
+                                <FaTrash className="w-3 h-3" />
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Compact side form */}
+          {showForm && (
+            <div className="lg:w-80 xl:w-96 lg:border-l lg:border-slate-200 lg:pl-4">
+              <div className="bg-slate-50/60 lg:bg-transparent rounded-xl lg:rounded-none lg:shadow-none shadow-sm p-3 lg:p-0 sticky lg:top-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-800">
+                    {editingId ? "Edit Customer" : "Add Customer"}
+                  </h3>
+                  {editingId && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
+                      ID: {editingId}
+                    </span>
+                  )}
+                </div>
+
+                <form
+                  onSubmit={handleSubmit}
+                  className="grid grid-cols-1 gap-2 text-xs"
+                >
+                  {/* Name */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+                      Customer Name *
+                    </label>
+                    <input
+                      name="customer_name"
+                      value={form.customer_name}
+                      onChange={handleFormChange}
+                      required
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring focus:ring-blue-500/30 bg-slate-50"
+                    />
+                  </div>
+
+                  {/* Photo */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+                      Photo (optional)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="block w-full text-[11px] text-slate-600 file:mr-2 file:py-1 file:px-2.5 file:border-0 file:text-[11px] file:font-medium file:bg-blue-50 file:text-blue-700 file:rounded-full hover:file:bg-blue-100"
+                    />
+                    {photoPreview && (
+                      <div className="mt-1">
+                        <img
+                          src={photoPreview}
+                          alt="Preview"
+                          className="w-12 h-12 rounded-full object-cover border border-slate-200"
+                        />
+                      </div>
+                    )}
+                    {editingId && !photoPreview && (
+                      <p className="mt-0.5 text-[10px] text-slate-400">
+                        Existing photo will stay if you don&apos;t choose a new one.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Division / District */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+                        Division
+                      </label>
+                      <select
+                        value={selectedDivisionId}
+                        onChange={handleDivisionSelect}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] bg-white focus:outline-none focus:ring focus:ring-blue-500/30"
+                      >
+                        <option value="">Select</option>
+                        {divisions.map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {d.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+                        District
+                      </label>
+                      <select
+                        value={selectedDistrictId}
+                        onChange={handleDistrictSelect}
+                        disabled={!selectedDivisionId}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] bg-white focus:outline-none focus:ring focus:ring-blue-500/30 disabled:bg-slate-100"
+                      >
+                        <option value="">
+                          {selectedDivisionId ? "Select" : "Division first"}
+                        </option>
+                        {filteredDistricts.map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {d.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Type / Shop */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+                        Customer Type
+                      </label>
+                      <input
+                        name="customer_type"
+                        value={form.customer_type}
+                        onChange={handleFormChange}
+                        placeholder="Retail / Wholesale"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:ring focus:ring-blue-500/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+                        Shop Name
+                      </label>
+                      <input
+                        name="shop_name"
+                        value={form.shop_name}
+                        onChange={handleFormChange}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:ring focus:ring-blue-500/30"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Phone */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+                        Phone 1 *
+                      </label>
+                      <input
+                        name="phone1"
+                        value={form.phone1}
+                        onChange={handleFormChange}
+                        required
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:ring focus:ring-blue-500/30 bg-slate-50"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+                        Phone 2
+                      </label>
+                      <input
+                        name="phone2"
+                        value={form.phone2}
+                        onChange={handleFormChange}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:ring focus:ring-blue-500/30"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email / DOB */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={form.email}
+                        onChange={handleFormChange}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:ring focus:ring-blue-500/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+                        Date of Birth
+                      </label>
+                      <input
+                        type="date"
+                        name="date_of_birth"
+                        value={form.date_of_birth}
+                        onChange={handleFormChange}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:ring focus:ring-blue-500/30"
+                      />
+                    </div>
+                  </div>
+
+                  {/* NID / Courier */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+                        NID No
+                      </label>
+                      <input
+                        name="nid_no"
+                        value={form.nid_no}
+                        onChange={handleFormChange}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:ring focus:ring-blue-500/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+                        Courier
+                      </label>
+                      <input
+                        name="courier_name"
+                        value={form.courier_name}
+                        onChange={handleFormChange}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:ring focus:ring-blue-500/30"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Due */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+                      Previous Due (৳)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      name="previous_due_amount"
+                      value={form.previous_due_amount}
+                      onChange={handleFormChange}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:ring focus:ring-blue-500/30"
+                    />
+                  </div>
+
+                  {/* Address */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+                      Address
+                    </label>
+                    <textarea
+                      name="address"
+                      value={form.address}
+                      onChange={handleFormChange}
+                      rows={2}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:ring focus:ring-blue-500/30"
+                    />
+                  </div>
+
+                  {/* Remarks */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+                      Remarks
+                    </label>
+                    <textarea
+                      name="remarks"
+                      value={form.remarks}
+                      onChange={handleFormChange}
+                      rows={2}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:ring focus:ring-blue-500/30"
+                    />
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={resetFormState}
+                      className="px-3 py-1.5 rounded-full border border-slate-300 text-[11px] text-slate-700 hover:bg-slate-50"
+                    >
+                      Reset
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="px-4 py-1.5 rounded-full bg-green-600 text-white text-[11px] font-medium hover:bg-green-700 disabled:opacity-60"
+                    >
+                      {saving
+                        ? editingId
+                          ? "Updating..."
+                          : "Saving..."
+                        : editingId
+                        ? "Update"
+                        : "Save"}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
         </div>
