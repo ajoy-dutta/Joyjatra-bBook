@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'purchase',
     'stocks',
     'authentication',
+    'people',
 ]
 
 
