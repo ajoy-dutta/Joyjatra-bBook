@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'corsheaders',
 
     # Installed apps
-    'product',
+    'stocks',
     'master',
     'purchase',
     'authentication',

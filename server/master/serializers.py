@@ -2,6 +2,13 @@ from rest_framework import serializers
 from .models import*
 
 
+
+class BusinessCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BusinessCategory
+        fields = '__all__'
+
+
 class CostCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = CostCategory

@@ -1,9 +1,16 @@
 from rest_framework import viewsets
 from .models import *
 from .serializers import *
-from rest_framework.permissions import AllowAny  # no need for IsAuthenticated here
+from rest_framework.permissions import AllowAny , IsAuthenticated # no need for IsAuthenticated here
 
 
+
+class BusinessCategoryViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    queryset = BusinessCategory.objects.all()
+    serializer_class = BusinessCategorySerializer
+
+    
 class CostCategoryViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     queryset = CostCategory.objects.all()

@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import*
 
 router = DefaultRouter()
+router.register('business-categories', BusinessCategoryViewSet)
 router.register('cost-categories', CostCategoryViewSet)
 router.register('source-categories', SourceCategoryViewSet)
 router.register('payment-mode', PaymentModeViewSet)

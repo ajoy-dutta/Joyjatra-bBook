@@ -2,6 +2,11 @@ from django.db import models
 from django.utils import timezone
 
 
+
+class BusinessCategory(models.Model):
+    name = models.CharField(max_length=100)
+
+
 class CostCategory(models.Model):
     category_name = models.CharField(max_length=255, unique=True)
 
