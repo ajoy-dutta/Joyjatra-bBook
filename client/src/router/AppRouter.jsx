@@ -62,6 +62,7 @@ import BankCategory from "../pages/settings/bankcategory/page";
 import BankMaster from "../pages/settings/bank/page";
 import Division from "../pages/settings/division/page";
 import District from "../pages/settings/district/page";
+import SupplierType from "../pages/settings/suppliertype/page";
 
 
 // Profile
@@ -148,6 +149,7 @@ export default function AppRouter() {
         <Route path="/master/bank" element={<BankMaster />} />
         <Route path="/master/divisions" element={<Division />} />
         <Route path="/master/districts" element={<District />} />
+        <Route path="/master/supplier-type" element={<SupplierType />} />
       </Route>
     </Routes>
   );

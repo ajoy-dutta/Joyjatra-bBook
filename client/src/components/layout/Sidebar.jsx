@@ -86,6 +86,7 @@ const menuConfig = [
     { label: "Bank", path: "/master/bank" },
     { label: "Divisions", path: "/master/divisions" },
     { label: "Districts", path: "/master/districts" },
+    { label: "Supplier Type", path: "/master/supplier-type" },  // ← add this
   ],
 },
 
