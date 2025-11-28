@@ -13,13 +13,14 @@ import Dashboard from "../pages/Dashboard";
 
 // Sales
 import Estimates from "../pages/sales/Estimates";
-import Invoices from "../pages/sales/Invoices";
+import SalesList from "../pages/sales/Invoices";
 import RecurringInvoices from "../pages/sales/RecurringInvoices";
 import Checkouts from "../pages/sales/Checkouts";
 import Payments from "../pages/sales/Payments";
 import CustomerStatements from "../pages/sales/CustomerStatements";
 import Customers from "../pages/sales/Customers";
-import ProductsServicesSales from "../pages/sales/ProductsServicesSales";
+import CustomerProductSale from "../pages/sales/ProductSales";
+
 
 // Purchases
 import Bills from "../pages/purchases/Bills";
@@ -102,13 +103,13 @@ export default function AppRouter() {
       
         {/* Sales */}
         <Route path="/sales/estimates" element={<Estimates />} />
-        <Route path="/sales/invoices" element={<Invoices />} />
+        <Route path="/sales/invoices" element={<SalesList />} />
         <Route path="/sales/recurring-invoices" element={<RecurringInvoices />} />
         <Route path="/sales/checkouts" element={<Checkouts />} />
         <Route path="/sales/payments" element={<Payments />} />
         <Route path="/sales/customer-statements" element={<CustomerStatements />} />
         <Route path="/sales/customers" element={<Customers />} />
-        <Route path="/sales/products-services" element={<ProductsServicesSales />} />
+        <Route path="/sales/products-services" element={<CustomerProductSale />} />
 
         {/* Purchases */}
         <Route path="/purchases/bills" element={<Bills />} />
