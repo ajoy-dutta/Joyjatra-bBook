@@ -69,14 +69,15 @@ export default function ProductPurchase() {
     }),
   };
 
-  // ---------- Supplier ----------
-  const [suppliers, setSuppliers] = useState([]);
-  const [selectedSupplier, setSelectedSupplier] = useState(null);
-  const [supplierData, setSupplierData] = useState({
-    supplierName: "",
+  // ---------- Vendor ----------
+  const [vendors, setVendors] = useState([]);
+  const [selectedVendor, setSelectedVendor] = useState(null);
+  const [vendorData, setVendorData] = useState({
+    vendorName: "",
+    division: "",
     district: "",
     country: "",
-    supplierType: "",
+    vendorType: "",
     shopName: "",
     phone1: "",
     phone2: "",
@@ -86,85 +87,95 @@ export default function ProductPurchase() {
     nidNo: "",
   });
 
-  // ---------- Products (company removed) ----------
+  // ---------- Products & Stocks ----------
   const [productList, setProductList] = useState([]);
   const [stockList, setStockList] = useState([]);
   const [selectedProductName, setSelectedProductName] = useState(null);
-  
+
   const productNameOptions = productList.map((p) => ({
     label: p.product_name,
     value: p.id,
   }));
 
- 
-
-  // ---------- Product Stock ----------
   const [currentStock, setCurrentStock] = useState(0);
   const [purchaseQuantity, setPurchaseQuantity] = useState("");
   const [purchasePrice, setPurchasePrice] = useState("");
-  const [percentage, setPercentage] = useState("");
-  const [purchasePriceWithPercentage, setPurchasePriceWithPercentage] =
-    useState("0.00");
   const [totalPrice, setTotalPrice] = useState("0.00");
 
-  const [purchaseDate] = useState(new Date().toISOString().split("T")[0]);
+  const [purchaseDate, setPurchaseDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [addedProducts, setAddedProducts] = useState([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [discountAmount, setDiscountAmount] = useState("");
   const [totalPayableAmount, setTotalPayableAmount] = useState(0);
 
-  // ---------- Load Data ----------
+  // ---------- Payments ----------
+  const [paymentModes, setPaymentModes] = useState([]);
+  const [banks, setBanks] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [paymentData, setPaymentData] = useState({
+    paymentMode: "", // label string, e.g. "Cash"
+    bankName: "",
+    accountNo: "",
+    chequeNo: "",
+    paidAmount: "",
+  });
+
+  // ---------- Load base data ----------
   useEffect(() => {
-    const loadSuppliers = async () => {
+    const loadBaseData = async () => {
       try {
-        const res = await AxiosInstance.get("/suppliers/");
-        setSuppliers(res.data);
-      } catch {
-        toast.error("Failed to load suppliers");
+        const [vendorsRes, stocksRes, productsRes, pmRes, bankRes] =
+          await Promise.all([
+            AxiosInstance.get("/vendors/"),
+            AxiosInstance.get("/stocks/"),
+            AxiosInstance.get("/products/"),
+            AxiosInstance.get("/payment-mode/"),
+            AxiosInstance.get("/banks/"),
+          ]);
+
+        setVendors(vendorsRes.data);
+        setStockList(stocksRes.data);
+        setProductList(productsRes.data);
+
+        setPaymentModes(
+          pmRes.data.map((pm) => ({
+            value: pm.id,
+            label: pm.name,
+          }))
+        );
+        setBanks(
+          bankRes.data.map((b) => ({
+            value: b.id,
+            label: b.name,
+          }))
+        );
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load initial data");
       }
     };
 
-    const loadProducts = async () => {
-      try {
-        const res = await AxiosInstance.get("/products/");
-        setProductList(res.data);
-      } catch {
-        toast.error("Failed to load products");
-      }
-    };
-
-    loadSuppliers();
-    loadProducts();
+    loadBaseData();
   }, []);
 
-  useEffect(() => {
-    const loadStocks = async () => {
-      try {
-        const res = await AxiosInstance.get("/stocks/");
-        setStockList(res.data);
-      } catch {
-        toast.error("Failed to load stock data");
-      }
-    };
-
-    loadStocks();
-  }, []);
-
-  // ---------- Supplier Select ----------
-  const supplierOptions = suppliers.map((sup) => ({
-    label: sup.supplier_name,
-    value: sup.id,
+  // ---------- Vendor Select ----------
+  const vendorOptions = vendors.map((v) => ({
+    label: v.vendor_name,
+    value: v.id,
   }));
 
-  const handleSupplierSelect = (selected) => {
-    setSelectedSupplier(selected);
+  const handleVendorSelect = (selected) => {
+    setSelectedVendor(selected);
 
     if (!selected) {
-      setSupplierData({
-        supplierName: "",
+      setVendorData({
+        vendorName: "",
+        division: "",
         district: "",
         country: "",
-        supplierType: "",
+        vendorType: "",
         shopName: "",
         phone1: "",
         phone2: "",
@@ -173,62 +184,94 @@ export default function ProductPurchase() {
         dob: "",
         nidNo: "",
       });
+      setSelectedProductName(null);
+      setCurrentStock(0);
       return;
     }
 
-    const sup = suppliers.find((s) => s.id === selected.value);
+    const v = vendors.find((x) => x.id === selected.value);
+    if (!v) return;
 
-    setSupplierData({
-      supplierName: sup.supplier_name,
-      district: sup.district_detail?.name || "",
-      country: sup.country || "",
-      supplierType: sup.supplier_type_detail?.name || "",
-      shopName: sup.shop_name || "",
-      phone1: sup.phone1 || "",
-      phone2: sup.phone2 || "",
-      email: sup.email || "",
-      address: sup.address || "",
-      dob: sup.date_of_birth || "",
-      nidNo: sup.nid_no || "",
+    setVendorData({
+      vendorName: v.vendor_name || "",
+      division: v.division || "",
+      district: v.district || "",
+      country: v.country || "",
+      vendorType: v.vendor_type || "",
+      shopName: v.shop_name || "",
+      phone1: v.phone1 || "",
+      phone2: v.phone2 || "",
+      email: v.email || "",
+      address: v.address || "",
+      dob: v.date_of_birth || "",
+      nidNo: v.nid_no || "",
     });
   };
 
-  // Supplier input change handler
-  const handleSupplierChange = (e) => {
+  const handleVendorChange = (e) => {
     const { name, value } = e.target;
-    setSupplierData((prev) => ({ ...prev, [name]: value }));
+    setVendorData((prev) => ({ ...prev, [name]: value }));
   };
-
 
   // ---------- Product Name Change ----------
   const handleProductNameChange = (item) => {
     setSelectedProductName(item);
 
     if (!item) {
-      setSelectedPartNumber(null);
       setCurrentStock(0);
       return;
     }
 
     const prod = productList.find((p) => p.id === item.value);
-    const stock = stockList.find((s) => s.product?.id === prod.id);
+    const stock = stockList.find((s) => s.product?.id === prod?.id);
     setCurrentStock(stock ? stock.current_stock_quantity : 0);
   };
-
-  
 
   // ---------- Calculations ----------
   useEffect(() => {
     const base = parseFloat(purchasePrice) || 0;
     const qty = parseInt(purchaseQuantity) || 0;
+    const total = base * qty;
+    setTotalPrice(total ? total.toFixed(2) : "0.00");
+  }, [purchasePrice, purchaseQuantity]);
 
-    setTotalPrice((base * qty).toFixed(2));
-  }, [purchasePrice, percentage, purchaseQuantity]);
+  useEffect(() => {
+    const total = addedProducts.reduce(
+      (sum, p) => sum + parseFloat(p.totalPrice || 0),
+      0
+    );
+    setTotalAmount(total);
+
+    const discount = parseFloat(discountAmount) || 0;
+    const payable = total - discount;
+    setTotalPayableAmount(payable > 0 ? payable : 0);
+  }, [addedProducts, discountAmount]);
+
+  const totalPaidAmount = payments.reduce(
+    (sum, p) => sum + parseFloat(p.paidAmount || 0),
+    0
+  );
 
   // ---------- Add Product ----------
   const addProduct = () => {
-    if (!selectedProductName || !purchaseQuantity || !purchasePrice) {
-      toast.error("Missing product info");
+    if (!selectedProductName) {
+      toast.error("Select a product");
+      return;
+    }
+    if (!purchaseQuantity || parseInt(purchaseQuantity) <= 0) {
+      toast.error("Enter a valid purchase quantity");
+      return;
+    }
+    if (!purchasePrice || parseFloat(purchasePrice) <= 0) {
+      toast.error("Enter a valid purchase price");
+      return;
+    }
+
+    const existing = addedProducts.find(
+      (p) => p.id === selectedProductName.value
+    );
+    if (existing) {
+      toast.error("This product is already added");
       return;
     }
 
@@ -251,64 +294,18 @@ export default function ProductPurchase() {
     setCurrentStock(0);
   };
 
-  // ---------- Remove Product ----------
   const removeProduct = (index) => {
     setAddedProducts((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // ---------- Totals ----------
-  useEffect(() => {
-    const total = addedProducts.reduce(
-      (sum, p) => sum + parseFloat(p.totalPrice),
-      0
-    );
-    setTotalAmount(total);
-
-    const discount = parseFloat(discountAmount) || 0;
-    setTotalPayableAmount(total - discount);
-  }, [addedProducts, discountAmount]);
-
   // ---------- Payments ----------
-  const [paymentModes, setPaymentModes] = useState([]);
-  const [banks, setBanks] = useState([]);
-  const [payments, setPayments] = useState([]);
-
-  const [paymentData, setPaymentData] = useState({
-    paymentMode: "",
-    bankName: "",
-    accountNo: "",
-    chequeNo: "",
-    paidAmount: "",
-  });
-
-  useEffect(() => {
-    const loadPaymentData = async () => {
-      try {
-        const [pmRes, bankRes] = await Promise.all([
-          AxiosInstance.get("/payment-mode/"),
-          AxiosInstance.get("/banks/"),
-        ]);
-
-        setPaymentModes(
-          pmRes.data.map((pm) => ({ value: pm.id, label: pm.name }))
-        );
-
-        setBanks(
-          bankRes.data.map((b) => ({ value: b.id, label: b.name }))
-        );
-      } catch {
-        toast.error("Failed to load payment data");
-      }
-    };
-
-    loadPaymentData();
-  }, []);
-
-
   const handlePaymentChange = (name, value) => {
     setPaymentData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const selectedPaymentModeLabel = paymentData.paymentMode;
+  const isCheque = selectedPaymentModeLabel === "Cheque";
+  const isBank = selectedPaymentModeLabel === "Bank";
 
   const handleAddPayment = () => {
     if (!paymentData.paymentMode || !paymentData.paidAmount) {
@@ -318,7 +315,6 @@ export default function ProductPurchase() {
 
     setPayments((prev) => [...prev, paymentData]);
 
-    // reset paymentData
     setPaymentData({
       paymentMode: "",
       bankName: "",
@@ -328,46 +324,76 @@ export default function ProductPurchase() {
     });
   };
 
-  const selectedPaymentModeLabel = paymentModes.find(
-    (pm) => pm.value === paymentData.paymentMode
-  )?.label;
-
-  const isCheque = selectedPaymentModeLabel === "Cheque";
-  const isBank = selectedPaymentModeLabel === "Bank";
-
-  const removePayment = (index) => {
+  const handleRemovePayment = (index) => {
     setPayments((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const totalPaidAmount = payments.reduce(
-    (sum, p) => sum + parseFloat(p.paidAmount || 0),
-    0
-  );
-
   // ---------- Submit ----------
+  const resetForm = () => {
+    setSelectedVendor(null);
+    setVendorData({
+      vendorName: "",
+      division: "",
+      district: "",
+      country: "",
+      vendorType: "",
+      shopName: "",
+      phone1: "",
+      phone2: "",
+      email: "",
+      address: "",
+      dob: "",
+      nidNo: "",
+    });
+    setSelectedProductName(null);
+    setCurrentStock(0);
+    setPurchaseQuantity("");
+    setPurchasePrice("");
+    setTotalPrice("0.00");
+    setAddedProducts([]);
+    setTotalAmount(0);
+    setDiscountAmount("");
+    setTotalPayableAmount(0);
+    setPayments([]);
+    setPaymentData({
+      paymentMode: "",
+      bankName: "",
+      accountNo: "",
+      chequeNo: "",
+      paidAmount: "",
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!selectedSupplier) return toast.error("Select supplier");
-    if (!addedProducts.length) return toast.error("Add products");
-    if (!payments.length) return toast.error("Add payments");
+    if (!selectedVendor) {
+      toast.error("Select vendor");
+      return;
+    }
+    if (!addedProducts.length) {
+      toast.error("Add products");
+      return;
+    }
+    if (!payments.length) {
+      toast.error("Add payments");
+      return;
+    }
 
     const payload = {
-      invoice_no: "",
-      supplier_id: selectedSupplier.value,
+      vendor_id: selectedVendor.value, // matches PurchaseSerializer
       purchase_date: purchaseDate,
-      total_amount: totalAmount,
+      total_amount: parseFloat(totalAmount) || 0,
       discount_amount: parseFloat(discountAmount) || 0,
-      total_payable_amount: totalPayableAmount,
-      total_paid_amount: totalPaidAmount,
+      total_payable_amount: parseFloat(totalPayableAmount) || 0,
       products: addedProducts.map((p) => ({
         product_id: p.id,
-        purchase_quantity: parseInt(p.purchaseQuantity),
+        purchase_quantity: parseInt(p.purchaseQuantity, 10),
         purchase_price: parseFloat(p.purchasePrice),
         total_price: parseFloat(p.totalPrice),
       })),
       payments: payments.map((p) => ({
-        payment_mode: p.paymentMode,
+        payment_mode: p.paymentMode, // label: "Cash", "Bank", "Cheque"
         bank_name: p.bankName || null,
         account_no: p.accountNo || null,
         cheque_no: p.chequeNo || null,
@@ -376,37 +402,37 @@ export default function ProductPurchase() {
     };
 
     try {
-      await AxiosInstance.post("/supplier-purchases/", payload);
+      await AxiosInstance.post("/purchases/", payload);
       toast.success("Purchase saved successfully!");
-    } catch {
-      toast.error("Failed to submit");
+      resetForm();
+    } catch (err) {
+      console.error(err.response?.data || err);
+      toast.error("Failed to submit purchase");
     }
   };
 
-
- const handleKeyDown = (e) => {
+  // ---------- Enter key navigation ----------
+  const handleKeyDown = (e) => {
     if (e.key !== "Enter") return;
 
-    // Skip if react-select menu is open
     const selectMenuOpen = document.querySelector(".react-select__menu");
     if (selectMenuOpen) return;
 
     e.preventDefault();
 
-    // Select all focusable elements
     const allFocusable = Array.from(
       document.querySelectorAll(
         `input:not([type="hidden"]),
-       select,
-       textarea,
-       button,
-       [tabindex]:not([tabindex="-1"])`
+         select,
+         textarea,
+         button,
+         [tabindex]:not([tabindex="-1"])`
       )
     ).filter(
       (el) =>
-        el.offsetParent !== null && // visible
-        !el.disabled && // not disabled
-        !(el.readOnly === true || el.getAttribute("readonly") !== null) // not readonly
+        el.offsetParent !== null &&
+        !el.disabled &&
+        !(el.readOnly === true || el.getAttribute("readonly") !== null)
     );
 
     const currentIndex = allFocusable.indexOf(e.target);
@@ -420,20 +446,21 @@ export default function ProductPurchase() {
     }
   };
 
+  // ---------- RENDER ----------
   return (
     <div className="max-w-7xl mx-auto p-4 ">
-      {/* Supplier Section */}
+      {/* Vendor Section */}
       <section>
-        <h2 className="font-semibold text-lg my-2">Supplier Details</h2>
+        <h2 className="font-semibold text-lg my-2">Vendor Details</h2>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
           <div>
             <label className="block mb-1 font-medium text-sm">
-              Select Supplier
+              Select Vendor
             </label>
             <Select
-              options={supplierOptions}
-              value={selectedSupplier}
-              onChange={handleSupplierSelect}
+              options={vendorOptions}
+              value={selectedVendor}
+              onChange={handleVendorSelect}
               isClearable
               placeholder="Select..."
               className="text-sm"
@@ -443,12 +470,25 @@ export default function ProductPurchase() {
           </div>
 
           <div>
+            <label className="block mb-1 font-medium text-sm">Division</label>
+            <input
+              type="text"
+              name="division"
+              value={vendorData.division}
+              onChange={handleVendorChange}
+              className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
+              placeholder="Division..."
+              readOnly
+            />
+          </div>
+
+          <div>
             <label className="block mb-1 font-medium text-sm">District</label>
             <input
               type="text"
               name="district"
-              value={supplierData.district}
-              onChange={handleSupplierChange}
+              value={vendorData.district}
+              onChange={handleVendorChange}
               className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
               placeholder="District..."
               readOnly
@@ -460,37 +500,23 @@ export default function ProductPurchase() {
             <input
               type="text"
               name="country"
-              value={supplierData.country}
-              onChange={handleSupplierChange}
+              value={vendorData.country}
+              onChange={handleVendorChange}
               className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
               placeholder="Country..."
               readOnly
             />
           </div>
 
-
-          <div>
-            <label className="block mb-1 font-medium text-sm">Address</label>
-            <input
-              type="text"
-              name="address"
-              value={supplierData.address}
-              onChange={handleSupplierChange}
-              className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
-              placeholder="Address..."
-              readOnly
-            />
-          </div>
-
           <div>
             <label className="block mb-1 font-medium text-sm">
-              Supplier Type
+              Vendor Type
             </label>
             <input
               type="text"
-              name="supplierType"
-              value={supplierData.supplierType}
-              onChange={handleSupplierChange}
+              name="vendorType"
+              value={vendorData.vendorType}
+              onChange={handleVendorChange}
               className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
               placeholder="Type..."
               readOnly
@@ -502,8 +528,8 @@ export default function ProductPurchase() {
             <input
               type="text"
               name="shopName"
-              value={supplierData.shopName}
-              onChange={handleSupplierChange}
+              value={vendorData.shopName}
+              onChange={handleVendorChange}
               className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
               placeholder="Shop..."
               readOnly
@@ -515,8 +541,8 @@ export default function ProductPurchase() {
             <input
               type="text"
               name="phone1"
-              value={supplierData.phone1}
-              onChange={handleSupplierChange}
+              value={vendorData.phone1}
+              onChange={handleVendorChange}
               className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
               placeholder="Phone..."
               readOnly
@@ -528,8 +554,8 @@ export default function ProductPurchase() {
             <input
               type="text"
               name="phone2"
-              value={supplierData.phone2}
-              onChange={handleSupplierChange}
+              value={vendorData.phone2}
+              onChange={handleVendorChange}
               className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
               placeholder="Alt phone..."
               readOnly
@@ -541,15 +567,13 @@ export default function ProductPurchase() {
             <input
               type="email"
               name="email"
-              value={supplierData.email}
-              onChange={handleSupplierChange}
+              value={vendorData.email}
+              onChange={handleVendorChange}
               className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
               placeholder="Email..."
               readOnly
             />
           </div>
-
-          
 
           <div>
             <label className="block mb-1 font-medium text-sm">
@@ -558,8 +582,8 @@ export default function ProductPurchase() {
             <input
               type="date"
               name="dob"
-              value={supplierData.dob}
-              onChange={handleSupplierChange}
+              value={vendorData.dob}
+              onChange={handleVendorChange}
               className="w-full border rounded px-2 py-1 text-sm"
               readOnly
             />
@@ -570,8 +594,8 @@ export default function ProductPurchase() {
             <input
               type="text"
               name="nidNo"
-              value={supplierData.nidNo}
-              onChange={handleSupplierChange}
+              value={vendorData.nidNo}
+              onChange={handleVendorChange}
               className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
               placeholder="NID number..."
               readOnly
@@ -600,7 +624,6 @@ export default function ProductPurchase() {
             />
           </div>
 
-         
           <div>
             <label className="block mb-1 font-medium text-sm">
               Product Name *
@@ -781,6 +804,7 @@ export default function ProductPurchase() {
         </div>
       </section>
 
+      {/* Payment Section */}
       <div className="">
         <h3 className="font-semibold text-lg my-2">Payment</h3>
         <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
@@ -792,14 +816,16 @@ export default function ProductPurchase() {
             <Select
               options={paymentModes}
               value={
-                paymentModes.find(
-                  (opt) => opt.value === paymentData.paymentMode
-                ) || null
+                paymentData.paymentMode
+                  ? paymentModes.find(
+                      (opt) => opt.label === paymentData.paymentMode
+                    ) || null
+                  : null
               }
               onChange={(selected) =>
                 handlePaymentChange(
                   "paymentMode",
-                  selected ? selected.value : ""
+                  selected ? selected.label : ""
                 )
               }
               placeholder="Select"
@@ -835,7 +861,9 @@ export default function ProductPurchase() {
             <input
               type="text"
               value={paymentData.accountNo}
-              onChange={(e) => handlePaymentChange("accountNo", e.target.value)}
+              onChange={(e) =>
+                handlePaymentChange("accountNo", e.target.value)
+              }
               disabled={!isBank}
               className={`w-full border text-sm px-2 py-1 rounded ${
                 !isBank ? "bg-gray-100 text-gray-500" : ""
@@ -851,7 +879,9 @@ export default function ProductPurchase() {
             <input
               type="text"
               value={paymentData.chequeNo}
-              onChange={(e) => handlePaymentChange("chequeNo", e.target.value)}
+              onChange={(e) =>
+                handlePaymentChange("chequeNo", e.target.value)
+              }
               disabled={!isCheque}
               className={`w-full border px-2 py-1 rounded ${
                 !isCheque ? "bg-gray-100 text-sm text-gray-400" : ""
@@ -892,6 +922,7 @@ export default function ProductPurchase() {
         </div>
       </div>
 
+      {/* Payments Table */}
       {payments.length > 0 && (
         <div className="mt-2 overflow-x-auto">
           <table className="min-w-full border text-center text-sm">
@@ -910,10 +941,7 @@ export default function ProductPurchase() {
               {payments.map((pay, idx) => (
                 <tr key={idx}>
                   <td className="border px-2 py-1">{idx + 1}</td>
-                  <td className="border px-2 py-1">
-                    {paymentModes.find((mode) => mode.value === pay.paymentMode)
-                      ?.label || "N/A"}
-                  </td>
+                  <td className="border px-2 py-1">{pay.paymentMode}</td>
                   <td className="border px-2 py-1">
                     {banks.find((bank) => bank.value === pay.bankName)?.label ||
                       "N/A"}
@@ -921,7 +949,7 @@ export default function ProductPurchase() {
                   <td className="border px-2 py-1">{pay.accountNo}</td>
                   <td className="border px-2 py-1">{pay.chequeNo}</td>
                   <td className="border px-2 py-1">
-                    {parseFloat(pay.paidAmount).toFixed(2)}
+                    {parseFloat(pay.paidAmount || 0).toFixed(2)}
                   </td>
                   <td className="border px-2 py-1">
                     <button
@@ -939,6 +967,7 @@ export default function ProductPurchase() {
         </div>
       )}
 
+      {/* Total Paid */}
       <div className="flex items-center gap-2 mt-4">
         <label className="block text-sm mb-1 font-medium">
           Total Paid Amount:
@@ -955,7 +984,8 @@ export default function ProductPurchase() {
         />
       </div>
 
-      <div className=" flex justify-center">
+      {/* Submit */}
+      <div className="flex justify-center mt-4">
         <button
           onClick={handleSubmit}
           className="px-6 py-2 text-sm bg-sky-800 text-white rounded hover:bg-sky-700"
