@@ -42,22 +42,6 @@ class SaleProduct(models.Model):
     total_price = models.DecimalField(max_digits=12, decimal_places=2)
     returned_quantity = models.PositiveIntegerField(default=0)
 
-    def save(self, *args, **kwargs):
-        is_new = self._state.adding
-        super().save(*args, **kwargs)
-
-        if is_new:
-            stock = StockProduct.objects.filter(
-                product=self.product          # ✅ no product_code here
-            ).first()
-
-            if stock:
-                stock.sale_quantity += self.sale_quantity
-                stock.current_stock_quantity = max(
-                    stock.current_stock_quantity - self.sale_quantity, 0
-                )
-                stock.save()
-
     def __str__(self):
         # Assuming Product has product_code
         return f"{self.product.product_code} ({self.sale.invoice_no})"
