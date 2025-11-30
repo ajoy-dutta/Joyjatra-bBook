@@ -578,7 +578,7 @@ export default function CustomerProductSale() {
         }),
       };
 
-      console.log("Submitting payload:", JSON.stringify(payload, null, 2));
+      // console.log("Submitting payload:", JSON.stringify(payload, null, 2));
 
       await AxiosInstance.post("sales/", payload);
       toast.success("Sale created successfully!");
