@@ -11,10 +11,10 @@ const menuConfig = [
     title: "Sales",
     icon: "💰",
     items: [
-      { label: "Estimates", path: "/sales/estimates" },
+      // { label: "Estimates", path: "/sales/estimates" },
       { label: "Invoices", path: "/sales/invoices" },
-      { label: "Recurring Invoices", path: "/sales/recurring-invoices" },
-      { label: "Checkouts", path: "/sales/checkouts" },
+      // { label: "Recurring Invoices", path: "/sales/recurring-invoices" },
+      // { label: "Checkouts", path: "/sales/checkouts" },
       { label: "Payments", path: "/sales/payments" },
       { label: "Customer Statements", path: "/sales/customer-statements" },
       { label: "Customers", path: "/sales/customers" },
