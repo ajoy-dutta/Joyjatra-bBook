@@ -2,6 +2,9 @@ from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly
 from .models import *
 from .serializers import *
+from django.db.models import Q
+
+
 
 class ExpenseViewSet(viewsets.ModelViewSet):
     queryset = Expense.objects.select_related("cost_category").order_by("-id")
@@ -29,8 +32,11 @@ class SupplierPurchaseViewSet(viewsets.ModelViewSet):
     serializer_class = PurchaseSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-
-
+# ✅ NEW
+class PurchasePaymentViewSet(viewsets.ModelViewSet):
+    queryset = PurchasePayment.objects.all().order_by('-payment_date')
+    serializer_class = PurchasePaymentSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
 # ----------------------------
 # Supplier Purchase Return
 # ----------------------------

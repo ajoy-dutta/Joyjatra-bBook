@@ -3,7 +3,7 @@ from .models import *
 from stocks.serializers import ProductSerializer
 from people.serializers import VendorSerializer
 from people.models import Vendor
-
+from master.serializers import *
 
 
 class ExpenseSerializer(serializers.ModelSerializer):
@@ -60,17 +60,26 @@ class PurchaseProductSerializer(serializers.ModelSerializer):
 # Purchase Payment Serializer
 # ----------------------------
 class PurchasePaymentSerializer(serializers.ModelSerializer):
+    # write-only helper so frontend can send `purchase_id`
+    purchase_id = serializers.PrimaryKeyRelatedField(
+        queryset=Purchase.objects.all(),
+        source="purchase",      # maps to the FK field on the model
+        write_only=True,
+    )
+
     class Meta:
         model = PurchasePayment
         fields = [
-            'id',
-            'payment_mode',
-            'bank_name',
-            'account_no',
-            'cheque_no',
-            'paid_amount',
+            "id",
+            "purchase_id",   # use this in the frontend payload
+            "payment_mode",
+            "bank_name",
+            "account_no",
+            "cheque_no",
+            "paid_amount",
+            "payment_date",
         ]
-
+        read_only_fields = ["payment_date"]
 
 # ----------------------------
 # Supplier Purchase Serializer

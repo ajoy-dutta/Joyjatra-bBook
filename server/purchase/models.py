@@ -97,7 +97,7 @@ class PurchasePayment(models.Model):
     account_no = models.CharField(max_length=100, blank=True, null=True)
     cheque_no = models.CharField(max_length=100, blank=True, null=True)
     paid_amount = models.DecimalField(max_digits=12, decimal_places=2)
-
+    payment_date = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     def __str__(self):
         return f"Payment for {self.purchase.invoice_no}"
     
