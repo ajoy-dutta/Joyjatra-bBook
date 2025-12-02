@@ -8,13 +8,12 @@ export default function ProductPurchase() {
   const customSelectStyles = {
     control: (base, state) => ({
       ...base,
-      minHeight: "30px",
-      height: "30px",
+      minHeight: "32px",
+      height: "32px",
       fontSize: "0.875rem",
-      border: "1px solid #000000",
-      borderRadius: "0.275rem",
-      borderColor: state.isFocused ? "#000000" : "#d1d5db",
-      boxShadow: state.isFocused ? "0 0 0 1px #000000" : "none",
+      borderRadius: "0.475rem",
+      borderColor: state.isFocused ? "#0f172a" : "#e5e7eb",
+      boxShadow: state.isFocused ? "0 0 0 1px #0f172a" : "none",
       display: "flex",
       alignItems: "center",
       paddingTop: "0px",
@@ -22,8 +21,8 @@ export default function ProductPurchase() {
     }),
     valueContainer: (base) => ({
       ...base,
-      height: "30px",
-      padding: "0 6px",
+      height: "32px",
+      padding: "0 8px",
       display: "flex",
       alignItems: "center",
       flexWrap: "nowrap",
@@ -32,28 +31,19 @@ export default function ProductPurchase() {
       ...base,
       fontSize: "0.875rem",
       color: "#9ca3af",
-      top: "50%",
-      position: "absolute",
-      transform: "translateY(-50%)",
     }),
     singleValue: (base) => ({
       ...base,
       fontSize: "0.875rem",
-      top: "50%",
-      position: "absolute",
-      transform: "translateY(-50%)",
     }),
     input: (base) => ({
       ...base,
       fontSize: "0.875rem",
-      padding: "0",
-      top: "50%",
-      position: "absolute",
-      transform: "translateY(-50%)",
+      padding: 0,
     }),
     indicatorsContainer: (base) => ({
       ...base,
-      height: "30px",
+      height: "32px",
       display: "flex",
       alignItems: "center",
     }),
@@ -61,11 +51,11 @@ export default function ProductPurchase() {
       ...base,
       fontSize: "0.875rem",
       backgroundColor: state.isSelected
-        ? "#000"
+        ? "#0f172a"
         : state.isFocused
         ? "#f3f4f6"
         : "white",
-      color: state.isSelected ? "white" : "#000",
+      color: state.isSelected ? "white" : "#020617",
     }),
   };
 
@@ -101,6 +91,10 @@ export default function ProductPurchase() {
   const [purchaseQuantity, setPurchaseQuantity] = useState("");
   const [purchasePrice, setPurchasePrice] = useState("");
   const [totalPrice, setTotalPrice] = useState("0.00");
+
+  // NEW: manufacture & expiry for the current line
+  const [manufactureDate, setManufactureDate] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
 
   const [purchaseDate, setPurchaseDate] = useState(
     new Date().toISOString().split("T")[0]
@@ -266,6 +260,18 @@ export default function ProductPurchase() {
       toast.error("Enter a valid purchase price");
       return;
     }
+    if (!manufactureDate) {
+      toast.error("Enter manufacture date");
+      return;
+    }
+    if (!expiryDate) {
+      toast.error("Enter expiry date");
+      return;
+    }
+    if (expiryDate < manufactureDate) {
+      toast.error("Expiry cannot be before manufacture date");
+      return;
+    }
 
     const existing = addedProducts.find(
       (p) => p.id === selectedProductName.value
@@ -284,6 +290,8 @@ export default function ProductPurchase() {
         purchaseQuantity,
         purchasePrice,
         totalPrice,
+        manufactureDate,
+        expiryDate,
       },
     ]);
 
@@ -292,6 +300,8 @@ export default function ProductPurchase() {
     setPurchasePrice("");
     setTotalPrice("0.00");
     setCurrentStock(0);
+    setManufactureDate("");
+    setExpiryDate("");
   };
 
   const removeProduct = (index) => {
@@ -350,6 +360,8 @@ export default function ProductPurchase() {
     setPurchaseQuantity("");
     setPurchasePrice("");
     setTotalPrice("0.00");
+    setManufactureDate("");
+    setExpiryDate("");
     setAddedProducts([]);
     setTotalAmount(0);
     setDiscountAmount("");
@@ -381,7 +393,7 @@ export default function ProductPurchase() {
     }
 
     const payload = {
-      vendor_id: selectedVendor.value, // matches PurchaseSerializer
+      vendor_id: selectedVendor.value,
       purchase_date: purchaseDate,
       total_amount: parseFloat(totalAmount) || 0,
       discount_amount: parseFloat(discountAmount) || 0,
@@ -391,6 +403,9 @@ export default function ProductPurchase() {
         purchase_quantity: parseInt(p.purchaseQuantity, 10),
         purchase_price: parseFloat(p.purchasePrice),
         total_price: parseFloat(p.totalPrice),
+        // NEW – make sure your PurchaseProduct serializer accepts these:
+        manufacture_date: p.manufactureDate,
+        expiry_date: p.expiryDate,
       })),
       payments: payments.map((p) => ({
         payment_mode: p.paymentMode, // label: "Cash", "Bank", "Cheque"
@@ -448,13 +463,22 @@ export default function ProductPurchase() {
 
   // ---------- RENDER ----------
   return (
-    <div className="max-w-7xl mx-auto p-4 ">
+    <div className="max-w-7xl mx-auto p-4 space-y-6">
       {/* Vendor Section */}
-      <section>
-        <h2 className="font-semibold text-lg my-2">Vendor Details</h2>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+      <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-5">
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <label className="block mb-1 font-medium text-sm">
+            <h2 className="font-semibold text-lg">Vendor Details</h2>
+            <p className="text-xs text-slate-500">
+              Select a vendor to auto-fill their profile and contact
+              information.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <div>
+            <label className="block mb-1 font-medium text-xs uppercase tracking-wide text-slate-500">
               Select Vendor
             </label>
             <Select
@@ -462,155 +486,92 @@ export default function ProductPurchase() {
               value={selectedVendor}
               onChange={handleVendorSelect}
               isClearable
-              placeholder="Select..."
+              placeholder="Search vendor..."
               className="text-sm"
               styles={customSelectStyles}
               onKeyDown={handleKeyDown}
             />
           </div>
 
-          <div>
-            <label className="block mb-1 font-medium text-sm">Division</label>
-            <input
-              type="text"
-              name="division"
-              value={vendorData.division}
-              onChange={handleVendorChange}
-              className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
-              placeholder="Division..."
-              readOnly
-            />
-          </div>
-
-          <div>
-            <label className="block mb-1 font-medium text-sm">District</label>
-            <input
-              type="text"
-              name="district"
-              value={vendorData.district}
-              onChange={handleVendorChange}
-              className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
-              placeholder="District..."
-              readOnly
-            />
-          </div>
-
-          <div>
-            <label className="block mb-1 font-medium text-sm">Country</label>
-            <input
-              type="text"
-              name="country"
-              value={vendorData.country}
-              onChange={handleVendorChange}
-              className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
-              placeholder="Country..."
-              readOnly
-            />
-          </div>
-
-          <div>
-            <label className="block mb-1 font-medium text-sm">
-              Vendor Type
-            </label>
-            <input
-              type="text"
-              name="vendorType"
-              value={vendorData.vendorType}
-              onChange={handleVendorChange}
-              className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
-              placeholder="Type..."
-              readOnly
-            />
-          </div>
-
-          <div>
-            <label className="block mb-1 font-medium text-sm">Shop Name</label>
-            <input
-              type="text"
-              name="shopName"
-              value={vendorData.shopName}
-              onChange={handleVendorChange}
-              className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
-              placeholder="Shop..."
-              readOnly
-            />
-          </div>
-
-          <div>
-            <label className="block mb-1 font-medium text-sm">Phone 1</label>
-            <input
-              type="text"
-              name="phone1"
-              value={vendorData.phone1}
-              onChange={handleVendorChange}
-              className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
-              placeholder="Phone..."
-              readOnly
-            />
-          </div>
-
-          <div>
-            <label className="block mb-1 font-medium text-sm">Phone 2</label>
-            <input
-              type="text"
-              name="phone2"
-              value={vendorData.phone2}
-              onChange={handleVendorChange}
-              className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
-              placeholder="Alt phone..."
-              readOnly
-            />
-          </div>
-
-          <div>
-            <label className="block mb-1 font-medium text-sm">E-mail</label>
-            <input
-              type="email"
-              name="email"
-              value={vendorData.email}
-              onChange={handleVendorChange}
-              className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
-              placeholder="Email..."
-              readOnly
-            />
-          </div>
-
-          <div>
-            <label className="block mb-1 font-medium text-sm">
-              Date of Birth
-            </label>
-            <input
-              type="date"
-              name="dob"
-              value={vendorData.dob}
-              onChange={handleVendorChange}
-              className="w-full border rounded px-2 py-1 text-sm"
-              readOnly
-            />
-          </div>
-
-          <div>
-            <label className="block mb-1 font-medium text-sm">NID No.</label>
-            <input
-              type="text"
-              name="nidNo"
-              value={vendorData.nidNo}
-              onChange={handleVendorChange}
-              className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
-              placeholder="NID number..."
-              readOnly
-            />
-          </div>
+          <ReadonlyInput
+            label="Division"
+            name="division"
+            value={vendorData.division}
+            onChange={handleVendorChange}
+          />
+          <ReadonlyInput
+            label="District"
+            name="district"
+            value={vendorData.district}
+            onChange={handleVendorChange}
+          />
+          <ReadonlyInput
+            label="Country"
+            name="country"
+            value={vendorData.country}
+            onChange={handleVendorChange}
+          />
+          <ReadonlyInput
+            label="Vendor Type"
+            name="vendorType"
+            value={vendorData.vendorType}
+            onChange={handleVendorChange}
+          />
+          <ReadonlyInput
+            label="Shop Name"
+            name="shopName"
+            value={vendorData.shopName}
+            onChange={handleVendorChange}
+          />
+          <ReadonlyInput
+            label="Phone 1"
+            name="phone1"
+            value={vendorData.phone1}
+            onChange={handleVendorChange}
+          />
+          <ReadonlyInput
+            label="Phone 2"
+            name="phone2"
+            value={vendorData.phone2}
+            onChange={handleVendorChange}
+          />
+          <ReadonlyInput
+            label="E-mail"
+            name="email"
+            value={vendorData.email}
+            onChange={handleVendorChange}
+          />
+          <ReadonlyInput
+            label="Date of Birth"
+            name="dob"
+            type="date"
+            value={vendorData.dob}
+            onChange={handleVendorChange}
+          />
+          <ReadonlyInput
+            label="NID No."
+            name="nidNo"
+            value={vendorData.nidNo}
+            onChange={handleVendorChange}
+          />
         </div>
       </section>
 
       {/* Product Purchase Section */}
-      <section>
-        <h2 className="font-semibold text-lg my-2">Product Purchase</h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2">
+      <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-5 space-y-4">
+        <div className="flex items-center justify-between mb-2">
           <div>
-            <label className="block text-sm mb-1 font-medium">
+            <h2 className="font-semibold text-lg">Product Purchase</h2>
+            <p className="text-xs text-slate-500">
+              Add purchased food items with manufacture &amp; expiry dates for
+              safe inventory tracking.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+          <div>
+            <label className="block mb-1 font-medium text-xs uppercase tracking-wide text-slate-500">
               Purchase Date *
             </label>
             <input
@@ -618,14 +579,14 @@ export default function ProductPurchase() {
               name="purchaseDate"
               value={purchaseDate}
               onChange={(e) => setPurchaseDate(e.target.value)}
-              className="w-full text-sm border px-2 py-1 rounded"
+              className="w-full text-sm border border-slate-200 px-2 py-1.5 rounded-lg focus:outline-none focus:ring focus:ring-slate-900/10"
               required
               onKeyDown={handleKeyDown}
             />
           </div>
 
-          <div>
-            <label className="block mb-1 font-medium text-sm">
+          <div className="md:col-span-2">
+            <label className="block mb-1 font-medium text-xs uppercase tracking-wide text-slate-500">
               Product Name *
             </label>
             <Select
@@ -633,7 +594,7 @@ export default function ProductPurchase() {
               value={selectedProductName}
               onChange={handleProductNameChange}
               isClearable
-              placeholder="Select product name"
+              placeholder="Select product..."
               className="text-sm"
               styles={customSelectStyles}
               onKeyDown={handleKeyDown}
@@ -641,99 +602,141 @@ export default function ProductPurchase() {
           </div>
 
           <div>
-            <label className="block mb-1 font-medium text-sm">
-              Current Stock Quantity
+            <label className="block mb-1 font-medium text-xs uppercase tracking-wide text-slate-500">
+              Current Stock
             </label>
             <input
               type="number"
               value={currentStock}
               disabled
-              placeholder="Current stock will appear here"
-              className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
+              placeholder="0"
+              className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-slate-50 text-slate-500"
             />
           </div>
 
           <div>
-            <label className="block mb-1 font-medium text-sm">
-              Purchase Quantity *
+            <label className="block mb-1 font-medium text-xs uppercase tracking-wide text-slate-500">
+              Purchase Qty *
             </label>
             <input
               type="number"
               value={purchaseQuantity}
               onChange={(e) => setPurchaseQuantity(e.target.value)}
-              className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
-              placeholder="Enter purchase quantity"
+              className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm placeholder-gray-400 focus:outline-none focus:ring focus:ring-slate-900/10"
+              placeholder="Qty"
               onKeyDown={handleKeyDown}
             />
           </div>
 
           <div>
-            <label className="block mb-1 font-medium text-sm">
+            <label className="block mb-1 font-medium text-xs uppercase tracking-wide text-slate-500">
               Purchase Price *
             </label>
             <input
               type="number"
               value={purchasePrice}
               onChange={(e) => setPurchasePrice(e.target.value)}
-              className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
-              placeholder="Enter purchase price"
+              className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm placeholder-gray-400 focus:outline-none focus:ring focus:ring-slate-900/10"
+              placeholder="Per unit"
               onKeyDown={handleKeyDown}
             />
           </div>
 
           <div>
-            <label className="block mb-1 font-medium text-sm">
-              Total Price
+            <label className="block mb-1 font-medium text-xs uppercase tracking-wide text-slate-500">
+              Manufacture Date *
+            </label>
+            <input
+              type="date"
+              value={manufactureDate}
+              onChange={(e) => setManufactureDate(e.target.value)}
+              className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring focus:ring-slate-900/10"
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+
+          <div>
+            <label className="block mb-1 font-medium text-xs uppercase tracking-wide text-slate-500">
+              Expiry Date *
+            </label>
+            <input
+              type="date"
+              value={expiryDate}
+              onChange={(e) => setExpiryDate(e.target.value)}
+              className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring focus:ring-slate-900/10"
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+
+          <div>
+            <label className="block mb-1 font-medium text-xs uppercase tracking-wide text-slate-500">
+              Line Total
             </label>
             <input
               type="text"
               value={totalPrice}
               readOnly
-              className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
+              className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-slate-50 text-slate-700"
             />
           </div>
 
-          <div className="flex items-center mt-5">
+          <div className="flex items-end">
             <button
-              className="px-4 py-1 bg-sky-800 text-sm text-white rounded hover:bg-sky-700"
+              className="w-full md:w-auto px-4 py-2 bg-slate-900 text-sm text-white rounded-lg hover:bg-slate-800 shadow-sm"
               onClick={(e) => {
                 e.preventDefault();
                 addProduct();
               }}
               onKeyDown={handleKeyDown}
             >
-              Add Product
+              + Add Product
             </button>
           </div>
         </div>
 
         {addedProducts.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border border-gray-300">
-              <thead className="bg-gray-200">
+          <div className="mt-4 overflow-x-auto border border-slate-200 rounded-xl">
+            <table className="min-w-full text-xs md:text-sm">
+              <thead className="bg-slate-50 text-slate-600">
                 <tr>
-                  <th className="border px-2 py-1">Product Name</th>
-                  <th className="border px-2 py-1">Current Stock</th>
-                  <th className="border px-2 py-1">Purchase Qty</th>
-                  <th className="border px-2 py-1">Purchase Price</th>
-                  <th className="border px-2 py-1">Total Price</th>
-                  <th className="border px-2 py-1">Remove</th>
+                  <th className="px-2 py-2 text-left">Product</th>
+                  <th className="px-2 py-2 text-right">Current</th>
+                  <th className="px-2 py-2 text-right">Qty</th>
+                  <th className="px-2 py-2 text-right">Price</th>
+                  <th className="px-2 py-2 text-right">Total</th>
+                  <th className="px-2 py-2 text-center">Mfg</th>
+                  <th className="px-2 py-2 text-center">Expiry</th>
+                  <th className="px-2 py-2 text-center">Remove</th>
                 </tr>
               </thead>
               <tbody>
                 {addedProducts.map((prod, idx) => (
-                  <tr key={idx}>
-                    <td className="border px-2 py-1">{prod.productName}</td>
-                    <td className="border px-2 py-1">{prod.currentStock}</td>
-                    <td className="border px-2 py-1">
+                  <tr key={idx} className="border-t border-slate-100">
+                    <td className="px-2 py-2 font-medium">
+                      {prod.productName}
+                    </td>
+                    <td className="px-2 py-2 text-right">
+                      {prod.currentStock}
+                    </td>
+                    <td className="px-2 py-2 text-right">
                       {prod.purchaseQuantity}
                     </td>
-                    <td className="border px-2 py-1">{prod.purchasePrice}</td>
-                    <td className="border px-2 py-1">{prod.totalPrice}</td>
-                    <td className="border px-2 py-1 text-center">
+                    <td className="px-2 py-2 text-right">
+                      {prod.purchasePrice}
+                    </td>
+                    <td className="px-2 py-2 text-right">
+                      {prod.totalPrice}
+                    </td>
+                    <td className="px-2 py-2 text-center">
+                      {prod.manufactureDate}
+                    </td>
+                    <td className="px-2 py-2 text-center">
+                      {prod.expiryDate}
+                    </td>
+                    <td className="px-2 py-2 text-center">
                       <button
                         onClick={() => removeProduct(idx)}
-                        className="px-2 py-1 text-white bg-red-600 hover:bg-red-700 rounded text-xs"
+                        className="px-2 py-1 text-[11px] text-white bg-red-600 hover:bg-red-700 rounded"
                       >
                         Remove
                       </button>
@@ -745,73 +748,77 @@ export default function ProductPurchase() {
           </div>
         )}
 
-        <div className="mt-2 max-w-7xl mx-auto">
-          <div className="grid grid-cols-3 gap-2">
-            {/* Total Amount */}
-            <div className="flex items-center flex-1">
-              <label className="block mb-1 font-medium text-sm">
-                Total Amount:
-              </label>
-              <input
-                type="text"
-                value={
-                  isNaN(Number(totalAmount))
-                    ? "0.00"
-                    : Number(totalAmount).toFixed(2)
-                }
-                readOnly
-                className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
-              />
-            </div>
+        {/* Totals */}
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label className="block mb-1 font-medium text-xs uppercase tracking-wide text-slate-500">
+              Total Amount
+            </label>
+            <input
+              type="text"
+              value={
+                isNaN(Number(totalAmount))
+                  ? "0.00"
+                  : Number(totalAmount).toFixed(2)
+              }
+              readOnly
+              className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-slate-50"
+            />
+          </div>
 
-            {/* Discount Amount */}
-            <div className="flex items-center flex-1">
-              <label
-                htmlFor="discount"
-                className="block mb-1 font-medium text-sm"
-              >
-                Discount Amount:
-              </label>
-              <input
-                id="discount"
-                type="number"
-                min={0}
-                value={discountAmount}
-                onChange={(e) => setDiscountAmount(e.target.value)}
-                className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
-                placeholder="0.00"
-                onKeyDown={handleKeyDown}
-              />
-            </div>
+          <div>
+            <label
+              htmlFor="discount"
+              className="block mb-1 font-medium text-xs uppercase tracking-wide text-slate-500"
+            >
+              Discount Amount
+            </label>
+            <input
+              id="discount"
+              type="number"
+              min={0}
+              value={discountAmount}
+              onChange={(e) => setDiscountAmount(e.target.value)}
+              className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm placeholder-gray-400 focus:outline-none focus:ring focus:ring-slate-900/10"
+              placeholder="0.00"
+              onKeyDown={handleKeyDown}
+            />
+          </div>
 
-            {/* Total Payable Amount */}
-            <div className="flex items-center flex-1">
-              <label className="block mb-1 font-medium text-sm">
-                Total Payable Amount:
-              </label>
-              <input
-                type="text"
-                value={
-                  isNaN(Number(totalPayableAmount))
-                    ? "0.00"
-                    : Number(totalPayableAmount).toFixed(2)
-                }
-                readOnly
-                className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
-              />
-            </div>
+          <div>
+            <label className="block mb-1 font-medium text-xs uppercase tracking-wide text-slate-500">
+              Total Payable
+            </label>
+            <input
+              type="text"
+              value={
+                isNaN(Number(totalPayableAmount))
+                  ? "0.00"
+                  : Number(totalPayableAmount).toFixed(2)
+              }
+              readOnly
+              className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-slate-50"
+            />
           </div>
         </div>
       </section>
 
       {/* Payment Section */}
-      <div className="">
-        <h3 className="font-semibold text-lg my-2">Payment</h3>
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
+      <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-5 space-y-3">
+        <div className="flex items-center justify-between mb-1">
+          <div>
+            <h3 className="font-semibold text-lg">Payment</h3>
+            <p className="text-xs text-slate-500">
+              Record how this purchase was paid for (cash, bank, or cheque).
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
           {/* Payment Mode */}
           <div>
-            <label className="block text-sm mb-1 font-medium">
-              Payment Mode*
+            <label className="block text-xs mb-1 font-medium uppercase tracking-wide text-slate-500">
+              Payment Mode *
             </label>
             <Select
               options={paymentModes}
@@ -828,7 +835,7 @@ export default function ProductPurchase() {
                   selected ? selected.label : ""
                 )
               }
-              placeholder="Select"
+              placeholder="Select..."
               className="text-sm"
               styles={customSelectStyles}
               onKeyDown={handleKeyDown}
@@ -837,7 +844,9 @@ export default function ProductPurchase() {
 
           {/* Bank Name */}
           <div>
-            <label className="block text-sm mb-1 font-medium">Bank Name</label>
+            <label className="block text-xs mb-1 font-medium uppercase tracking-wide text-slate-500">
+              Bank Name
+            </label>
             <Select
               options={banks}
               value={
@@ -857,7 +866,9 @@ export default function ProductPurchase() {
 
           {/* Account No */}
           <div>
-            <label className="block text-sm mb-1 font-medium">Account No</label>
+            <label className="block text-xs mb-1 font-medium uppercase tracking-wide text-slate-500">
+              Account No
+            </label>
             <input
               type="text"
               value={paymentData.accountNo}
@@ -865,7 +876,7 @@ export default function ProductPurchase() {
                 handlePaymentChange("accountNo", e.target.value)
               }
               disabled={!isBank}
-              className={`w-full border text-sm px-2 py-1 rounded ${
+              className={`w-full border text-sm px-2 py-1.5 rounded-lg ${
                 !isBank ? "bg-gray-100 text-gray-500" : ""
               }`}
               onKeyDown={handleKeyDown}
@@ -875,7 +886,9 @@ export default function ProductPurchase() {
 
           {/* Cheque No */}
           <div>
-            <label className="block text-sm mb-1 font-medium">Cheque No</label>
+            <label className="block text-xs mb-1 font-medium uppercase tracking-wide text-slate-500">
+              Cheque No
+            </label>
             <input
               type="text"
               value={paymentData.chequeNo}
@@ -883,7 +896,7 @@ export default function ProductPurchase() {
                 handlePaymentChange("chequeNo", e.target.value)
               }
               disabled={!isCheque}
-              className={`w-full border px-2 py-1 rounded ${
+              className={`w-full border px-2 py-1.5 rounded-lg ${
                 !isCheque ? "bg-gray-100 text-sm text-gray-400" : ""
               }`}
               placeholder="Cheque No"
@@ -893,8 +906,8 @@ export default function ProductPurchase() {
 
           {/* Paid Amount */}
           <div>
-            <label className="block text-sm mb-1 font-medium">
-              Paid Amount*
+            <label className="block text-xs mb-1 font-medium uppercase tracking-wide text-slate-500">
+              Paid Amount *
             </label>
             <input
               type="number"
@@ -902,98 +915,137 @@ export default function ProductPurchase() {
               onChange={(e) =>
                 handlePaymentChange("paidAmount", e.target.value)
               }
-              className="w-full border rounded px-2 py-1 text-sm placeholder-gray-400"
+              className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm placeholder-gray-400 focus:outline-none focus:ring focus:ring-slate-900/10"
               placeholder="0.00"
               onKeyDown={handleKeyDown}
             />
           </div>
 
           {/* Add Button */}
-          <div className="flex items-end justify-end">
+          <div className="flex items-end">
             <button
               type="button"
               onClick={handleAddPayment}
-              className="px-4 py-2 bg-sky-800 text-sm text-white rounded hover:bg-sky-700"
+              className="w-full md:w-auto px-4 py-2 bg-slate-900 text-sm text-white rounded-lg hover:bg-slate-800 shadow-sm"
               onKeyDown={handleKeyDown}
             >
-              Add
+              Add Payment
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Payments Table */}
-      {payments.length > 0 && (
-        <div className="mt-2 overflow-x-auto">
-          <table className="min-w-full border text-center text-sm">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border px-2 py-1">#</th>
-                <th className="border px-2 py-1">Payment Mode</th>
-                <th className="border px-2 py-1">Bank Name</th>
-                <th className="border px-2 py-1">Account No</th>
-                <th className="border px-2 py-1">Cheque No</th>
-                <th className="border px-2 py-1">Paid Amount</th>
-                <th className="border px-2 py-1">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map((pay, idx) => (
-                <tr key={idx}>
-                  <td className="border px-2 py-1">{idx + 1}</td>
-                  <td className="border px-2 py-1">{pay.paymentMode}</td>
-                  <td className="border px-2 py-1">
-                    {banks.find((bank) => bank.value === pay.bankName)?.label ||
-                      "N/A"}
-                  </td>
-                  <td className="border px-2 py-1">{pay.accountNo}</td>
-                  <td className="border px-2 py-1">{pay.chequeNo}</td>
-                  <td className="border px-2 py-1">
-                    {parseFloat(pay.paidAmount || 0).toFixed(2)}
-                  </td>
-                  <td className="border px-2 py-1">
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePayment(idx)}
-                      className="px-2 py-1 text-white bg-red-600 hover:bg-red-700 rounded text-xs"
-                    >
-                      Remove
-                    </button>
-                  </td>
+        {/* Payments Table */}
+        {payments.length > 0 && (
+          <div className="mt-3 overflow-x-auto border border-slate-200 rounded-xl">
+            <table className="min-w-full border-collapse text-xs md:text-sm text-center">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="border border-slate-100 px-2 py-1">#</th>
+                  <th className="border border-slate-100 px-2 py-1">
+                    Mode
+                  </th>
+                  <th className="border border-slate-100 px-2 py-1">
+                    Bank
+                  </th>
+                  <th className="border border-slate-100 px-2 py-1">
+                    Account No
+                  </th>
+                  <th className="border border-slate-100 px-2 py-1">
+                    Cheque No
+                  </th>
+                  <th className="border border-slate-100 px-2 py-1">
+                    Paid Amount
+                  </th>
+                  <th className="border border-slate-100 px-2 py-1">
+                    Action
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {payments.map((pay, idx) => (
+                  <tr key={idx}>
+                    <td className="border border-slate-100 px-2 py-1">
+                      {idx + 1}
+                    </td>
+                    <td className="border border-slate-100 px-2 py-1">
+                      {pay.paymentMode}
+                    </td>
+                    <td className="border border-slate-100 px-2 py-1">
+                      {banks.find((bank) => bank.value === pay.bankName)
+                        ?.label || "N/A"}
+                    </td>
+                    <td className="border border-slate-100 px-2 py-1">
+                      {pay.accountNo}
+                    </td>
+                    <td className="border border-slate-100 px-2 py-1">
+                      {pay.chequeNo}
+                    </td>
+                    <td className="border border-slate-100 px-2 py-1">
+                      {parseFloat(pay.paidAmount || 0).toFixed(2)}
+                    </td>
+                    <td className="border border-slate-100 px-2 py-1">
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePayment(idx)}
+                        className="px-2 py-1 text-white bg-red-600 hover:bg-red-700 rounded text-[11px]"
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-      {/* Total Paid */}
-      <div className="flex items-center gap-2 mt-4">
-        <label className="block text-sm mb-1 font-medium">
-          Total Paid Amount:
-        </label>
-        <input
-          type="number"
-          value={
-            isNaN(Number(totalPaidAmount))
-              ? "0.00"
-              : Number(totalPaidAmount).toFixed(2)
-          }
-          readOnly
-          className="border rounded px-2 py-1 text-sm placeholder-gray-400"
-        />
-      </div>
+        {/* Total Paid */}
+        <div className="flex items-center gap-2 mt-4">
+          <label className="block text-xs mb-1 font-medium uppercase tracking-wide text-slate-500">
+            Total Paid Amount
+          </label>
+          <input
+            type="text"
+            value={
+              isNaN(Number(totalPaidAmount))
+                ? "0.00"
+                : Number(totalPaidAmount).toFixed(2)
+            }
+            readOnly
+            className="border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-slate-50"
+          />
+        </div>
+      </section>
 
       {/* Submit */}
-      <div className="flex justify-center mt-4">
+      <div className="flex justify-center pb-6">
         <button
           onClick={handleSubmit}
-          className="px-6 py-2 text-sm bg-sky-800 text-white rounded hover:bg-sky-700"
+          className="px-8 py-2.5 text-sm font-medium bg-slate-900 text-white rounded-full shadow hover:bg-slate-800"
           onKeyDown={handleKeyDown}
         >
-          Submit
+          Save Purchase
         </button>
       </div>
+    </div>
+  );
+}
+
+// --- Small helper for readonly vendor inputs ---
+function ReadonlyInput({ label, name, value, onChange, type = "text" }) {
+  return (
+    <div>
+      <label className="block mb-1 font-medium text-xs uppercase tracking-wide text-slate-500">
+        {label}
+      </label>
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm placeholder-gray-400 bg-slate-50 text-slate-500"
+        readOnly
+      />
     </div>
   );
 }
