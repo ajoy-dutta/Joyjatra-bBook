@@ -79,7 +79,6 @@ class StockSerializer(serializers.ModelSerializer):
         required=True
     )
 
-    
     class Meta:
         model = StockProduct
         fields = [
@@ -88,77 +87,139 @@ class StockSerializer(serializers.ModelSerializer):
             'product',
             'product_id',
             'purchase_quantity',
-            'sale_quantity', 
+            'sale_quantity',
             'damage_quantity',
             'current_stock_quantity',
             'purchase_price',
             'sale_price',
             'current_stock_value',
             'net_weight',
+            'manufacture_date',   # ✅ new
+            'expiry_date',        # ✅ new
             'created_at',
         ]
-        
+
     def validate(self, data):
-        """Validate stock data consistency"""
-        # Validate that sale price is not less than purchase price
+        """
+        Validate stock data consistency.
+        NOTE: For Joyjatra (justice/care), we ALLOW sale_price < purchase_price.
+        We only validate that prices are non-negative and dates are consistent.
+        """
+        # ---- price validation ----
         purchase_price = data.get('purchase_price')
         sale_price = data.get('sale_price')
-        
-        if purchase_price and sale_price and sale_price < purchase_price:
+
+        # Prices must be non-negative
+        if purchase_price is not None and purchase_price < 0:
             raise serializers.ValidationError({
-                'sale_price': 'Sale price cannot be less than purchase price.'
+                'purchase_price': 'Purchase price cannot be negative.'
             })
-        
-        # Validate quantities are non-negative
+
+        if sale_price is not None and sale_price < 0:
+            raise serializers.ValidationError({
+                'sale_price': 'Sale price cannot be negative.'
+            })
+
+        # ❌ OLD RULE REMOVED:
+        # We no longer force sale_price >= purchase_price,
+        # because sometimes you will sell at a loss or give free meals.
+        #
+        # if purchase_price and sale_price and sale_price < purchase_price:
+        #     raise serializers.ValidationError({
+        #         'sale_price': 'Sale price cannot be less than purchase price.'
+        #     })
+
+        # ---- quantity validation ----
         quantities = ['purchase_quantity', 'sale_quantity', 'damage_quantity']
         for quantity_field in quantities:
             if quantity_field in data and data[quantity_field] < 0:
                 raise serializers.ValidationError({
                     quantity_field: 'Quantity cannot be negative.'
                 })
-        
-        # Validate net_weight if provided
+
+        # ---- net weight validation ----
         net_weight = data.get('net_weight')
-        if net_weight and net_weight <= 0:
+        if net_weight is not None and net_weight <= 0:
             raise serializers.ValidationError({
                 'net_weight': 'Net weight must be positive.'
             })
-        
+
+        # ---- manufacture / expiry validation ----
+        manufacture_date = data.get('manufacture_date')
+        expiry_date = data.get('expiry_date')
+
+        # If both provided in this request, check logical order
+        if manufacture_date is not None and expiry_date is not None:
+            if expiry_date < manufacture_date:
+                raise serializers.ValidationError({
+                    'expiry_date': 'Expiry date cannot be earlier than manufacture date.'
+                })
+
         return data
-    
+
     def create(self, validated_data):
         """Override create to handle stock calculations"""
         # Calculate current stock quantity
         validated_data['current_stock_quantity'] = (
-            validated_data['purchase_quantity'] - 
-            validated_data['sale_quantity'] - 
-            validated_data['damage_quantity']
+            validated_data.get('purchase_quantity', 0) -
+            validated_data.get('sale_quantity', 0) -
+            validated_data.get('damage_quantity', 0)
         )
-        
+
         # Calculate current stock value
+        # Protect against missing purchase_price on create
+        purchase_price = validated_data.get('purchase_price') or 0
         validated_data['current_stock_value'] = (
-            validated_data['current_stock_quantity'] * validated_data['purchase_price']
+            validated_data['current_stock_quantity'] * purchase_price
         )
-        
+
         return super().create(validated_data)
-    
+
     def update(self, instance, validated_data):
         """Override update to handle stock calculations"""
         # Update basic fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        
+
         # Recalculate current stock quantity
         instance.current_stock_quantity = (
-            instance.purchase_quantity - 
-            instance.sale_quantity - 
-            instance.damage_quantity
+            (instance.purchase_quantity or 0) -
+            (instance.sale_quantity or 0) -
+            (instance.damage_quantity or 0)
         )
-        
+
         # Recalculate current stock value
+        purchase_price = instance.purchase_price or 0
         instance.current_stock_value = (
-            instance.current_stock_quantity * instance.purchase_price
+            instance.current_stock_quantity * purchase_price
         )
-        
+
         instance.save()
         return instance
+
+
+
+# ----------------------------
+# Stock Batch Serializer
+# ----------------------------
+class StockBatchSerializer(serializers.ModelSerializer):
+    remaining_quantity = serializers.IntegerField(read_only=True)
+    is_expired = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = StockBatch
+        fields = [
+            "id",
+            "batch_no",
+            "manufacture_date",
+            "expiry_date",
+            "purchase_quantity",
+            "sold_quantity",
+            "damaged_quantity",
+            "remaining_quantity",
+            "is_expired",
+            "created_at",
+        ]
+
+    def get_is_expired(self, obj):
+        return obj.is_expired

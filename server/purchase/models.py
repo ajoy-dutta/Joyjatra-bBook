@@ -89,12 +89,21 @@ class Purchase(models.Model):
 
 
 class PurchaseProduct(models.Model):
-    purchase = models.ForeignKey(Purchase, related_name='products', on_delete=models.CASCADE)
+    purchase = models.ForeignKey(
+        Purchase,
+        related_name='products',
+        on_delete=models.CASCADE
+    )
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+
     purchase_quantity = models.PositiveIntegerField()
     purchase_price = models.DecimalField(max_digits=12, decimal_places=2)
     total_price = models.DecimalField(max_digits=12, decimal_places=2)
     returned_quantity = models.PositiveIntegerField(default=0)
+
+    # 🔹 NEW: manufacture & expiry dates for this batch of product
+    manufacture_date = models.DateField(blank=True, null=True)
+    expiry_date = models.DateField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.product.product_code} ({self.purchase.invoice_no})"

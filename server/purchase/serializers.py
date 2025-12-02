@@ -63,7 +63,25 @@ class PurchaseProductSerializer(serializers.ModelSerializer):
             'purchase_price',
             'total_price',
             'returned_quantity',
+            # 🔹 NEW fields
+            'manufacture_date',
+            'expiry_date',
         ]
+
+    def validate(self, attrs):
+        """
+        Make sure expiry is not before manufacture.
+        Works for both create & update.
+        """
+        mfg = attrs.get('manufacture_date')
+        exp = attrs.get('expiry_date')
+
+        if mfg and exp and exp < mfg:
+            raise serializers.ValidationError({
+                'expiry_date': 'Expiry date cannot be earlier than manufacture date.'
+            })
+
+        return attrs
 
 # ----------------------------
 # Purchase Payment Serializer
@@ -74,6 +92,8 @@ class PurchasePaymentSerializer(serializers.ModelSerializer):
         queryset=Purchase.objects.all(),
         source="purchase",      # maps to the FK field on the model
         write_only=True,
+        required=False,      
+        allow_null=True,     
     )
 
     class Meta:
@@ -140,7 +160,7 @@ class PurchaseSerializer(serializers.ModelSerializer):
         # creates Purchase with vendor, purchase_date, totals, etc.
         purchase = Purchase.objects.create(**validated_data)
 
-        # create line items
+        # create line items (now also with mfg/expiry if provided)
         for product in products_data:
             PurchaseProduct.objects.create(purchase=purchase, **product)
 
@@ -157,6 +177,9 @@ class PurchaseSerializer(serializers.ModelSerializer):
         instance.invoice_no = validated_data.get('invoice_no', instance.invoice_no)
         instance.total_amount = validated_data.get('total_amount', instance.total_amount)
         instance.discount_amount = validated_data.get('discount_amount', instance.discount_amount)
-        instance.total_payable_amount = validated_data.get('total_payable_amount', instance.total_payable_amount)
+        instance.total_payable_amount = validated_data.get(
+            'total_payable_amount',
+            instance.total_payable_amount
+        )
         instance.save()
         return instance

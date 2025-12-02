@@ -36,8 +36,39 @@ class StockProduct(models.Model):
     current_stock_value = models.DecimalField(max_digits=14, decimal_places=2)
 
     net_weight = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+
     
+    manufacture_date = models.DateField(blank=True, null=True)
+    expiry_date = models.DateField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.product.product_name} - {self.current_stock_quantity}"
+
+
+
+
+#product batch model
+
+class StockBatch(models.Model):
+    stock = models.ForeignKey(StockProduct, related_name="batches", on_delete=models.CASCADE)
+    batch_no = models.CharField(max_length=50, blank=True, null=True)
+
+    manufacture_date = models.DateField(blank=True, null=True)
+    expiry_date = models.DateField(blank=True, null=True)
+
+    purchase_quantity = models.PositiveIntegerField(default=0)
+    sold_quantity = models.PositiveIntegerField(default=0)
+    damaged_quantity = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def remaining_quantity(self):
+        return max(self.purchase_quantity - self.sold_quantity - self.damaged_quantity, 0)
+
+    @property
+    def is_expired(self):
+        from django.utils import timezone
+        return bool(self.expiry_date and self.expiry_date < timezone.now().date())
