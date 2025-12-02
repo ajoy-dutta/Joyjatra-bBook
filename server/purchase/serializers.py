@@ -16,6 +16,12 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
 class SalaryExpenseSerializer(serializers.ModelSerializer):
     staff_name = serializers.CharField(source="staff.name", read_only=True)
+    # uses the @property on the model
+    total_salary = serializers.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        read_only=True,
+    )
 
     class Meta:
         model = SalaryExpense
@@ -24,11 +30,14 @@ class SalaryExpenseSerializer(serializers.ModelSerializer):
             "staff",
             "staff_name",
             "salary_month",
-            "amount",
+            "base_amount",
+            "allowance",
+            "bonus",
+            "total_salary",
             "note",
             "created_at",
         ]
-
+        read_only_fields = ["total_salary", "created_at"]
 class PurchaseProductSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
 

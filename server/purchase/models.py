@@ -26,15 +26,27 @@ class SalaryExpense(models.Model):
         Staffs,
         on_delete=models.PROTECT,
         related_name="salary_expenses",
-    )
-    # '2025-01' etc. – simple and easy to filter
-    salary_month = models.CharField(max_length=7)
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    ) 
+    salary_month = models.CharField(max_length=7)  # e.g. "2025-01"
+
+    # renamed 'amount' → 'base_amount'
+    base_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    allowance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    bonus = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
     note = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    @property
+    def total_salary(self):
+        """
+        Computed salary: base + allowance + bonus
+        Not stored in DB, just calculated when needed.
+        """
+        return (self.base_amount or 0) + (self.allowance or 0) + (self.bonus or 0)
+
     def __str__(self):
-        return f"{self.staff} - {self.salary_month} - {self.amount}"
+        return f"{self.staff} - {self.salary_month}"
 
 
 class Purchase(models.Model):
