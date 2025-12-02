@@ -47,6 +47,9 @@ import Products from "../pages/stock/Products/Products";
 import ExpensePage from "../pages/expenses/Expense";
 import SalaryExpense from "../pages/expenses/SalaryExpense";
 import PurchaseExpense from "../pages/expenses/PurchaseExpense";
+import ExpenseReport from "../pages/expenses/ExpenseReport";
+
+
 // Assets
 import AssetsPage from "../pages/assets/Assets";
 // import CurrentAssets from "../pages/assets/CurrentAssets";
@@ -139,7 +142,7 @@ export default function AppRouter() {
         <Route path="/expenses" element={<ExpensePage />} />
         <Route path="/expenses/salary" element={<SalaryExpense />} />
         <Route path="/expenses/purchase" element={<PurchaseExpense />} />
-
+        <Route path="/expenses/report" element={<ExpenseReport />} />
 
         {/* Assets */}
        <Route path="/assets" element={<AssetsPage />} />

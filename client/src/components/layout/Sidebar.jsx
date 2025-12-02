@@ -68,6 +68,7 @@ const menuConfig = [
       { label: "General Expense", path: "/expenses" },
       { label: "Salary Expense", path: "/expenses/salary" },
       { label: "Purchase Expense", path: "/expenses/purchase" },
+      { label: "Expense Report", path: "/expenses/report" },
     ],
   },
   {
