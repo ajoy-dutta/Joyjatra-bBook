@@ -1,11 +1,13 @@
 from django.db import models
 from master.models import CostCategory
-from django.utils import timezone
 from people.models import Vendor
 from stocks.models import Product
 from django.utils.timezone import now
 from django.utils.text import slugify
 from authentication.models import Staffs
+
+
+
 
 class Expense(models.Model):
     cost_category = models.ForeignKey(
@@ -21,6 +23,8 @@ class Expense(models.Model):
     def __str__(self):
         return f"{self.cost_category} - {self.amount}"
     
+
+
 class SalaryExpense(models.Model):
     staff = models.ForeignKey(
         Staffs,
@@ -47,6 +51,8 @@ class SalaryExpense(models.Model):
 
     def __str__(self):
         return f"{self.staff} - {self.salary_month}"
+
+
 
 
 class Purchase(models.Model):
@@ -80,8 +86,6 @@ class Purchase(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        # adjust this based on your Vendor model’s field name
-        # e.g. vendor_name / name / company_name
         return f"Invoice {self.invoice_no} - {self.vendor.vendor_name}"
 
 
@@ -123,6 +127,3 @@ class PurchasePayment(models.Model):
         return f"Payment for {self.purchase.invoice_no}"
     
     
-
-
-

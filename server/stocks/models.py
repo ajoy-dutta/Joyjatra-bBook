@@ -23,7 +23,7 @@ class Product(models.Model):
 
 
 class StockProduct(models.Model):
-    business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE)
+    # business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
     purchase_quantity = models.PositiveIntegerField(default=0)
@@ -40,6 +40,8 @@ class StockProduct(models.Model):
     
     manufacture_date = models.DateField(blank=True, null=True)
     expiry_date = models.DateField(blank=True, null=True)
+
+    remarks = models.TextField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 

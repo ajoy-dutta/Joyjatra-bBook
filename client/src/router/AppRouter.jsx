@@ -28,6 +28,9 @@ import Vendors from "../pages/purchases/Vendors";
 import ProductsServicesPurchases from "../pages/purchases/ProductsPurchases";
 import PurchaseInvoices from "../pages/purchases/Invoices";
 import PurchasePayments from "../pages/purchases/PurchasePayments";
+import PurchaseEntry from "../pages/purchases/purchaseEntry";
+
+
 // Accounting
 import ManualJournals from "../pages/accounting/ManualJournals";
 import BulkUpdates from "../pages/accounting/BulkUpdates";
@@ -121,6 +124,7 @@ export default function AppRouter() {
         <Route path="/purchases/products-services" element={<ProductsServicesPurchases />} />
         <Route path="/purchases/invoices" element={<PurchaseInvoices />} />
         <Route path="/purchases/payments" element={<PurchasePayments />} />
+        <Route path="/purchases/purchase-entry" element={<PurchaseEntry />} />
 
 
         {/* Accounting */}

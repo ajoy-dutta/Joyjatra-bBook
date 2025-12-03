@@ -10,6 +10,8 @@ router.register(r'purchases', SupplierPurchaseViewSet, basename='purchases')
 router.register(r'purchase-payments', PurchasePaymentViewSet, basename='purchase-payment')
 # router.register(r'supplier-purchase-returns', SupplierPurchaseReturnViewSet)
 
+
 urlpatterns = [
     path('', include(router.urls)),
+    path('upload-order-excel/', UploadStockExcelView.as_view(), name='upload-stock-excel'),
 ]

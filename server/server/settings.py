@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "sales.apps.SalesConfig",
     "purchase.apps.PurchaseConfig",
     "stocks.apps.StocksConfig",
+    'reports',
 ]
 
 

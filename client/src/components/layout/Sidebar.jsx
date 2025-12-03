@@ -22,6 +22,7 @@ const menuConfig = [
       { label: "Customer Statements", path: "/sales/customer-statements" },
     ],
   },
+  
   {
     title: "Purchases",
     icon: "🧾",
@@ -31,8 +32,10 @@ const menuConfig = [
       { label: "Invoice", path: "/purchases/invoices" },
       { label: "Payments", path: "/purchases/payments" },
       { label: "Bills", path: "/purchases/bills" },
+      { label: "Purchase Entry", path: "/purchases/purchase-entry" },
     ],
   },
+
   {
     title: "Accounting",
     icon: "📚",

@@ -74,16 +74,16 @@ class StockSerializer(serializers.ModelSerializer):
         write_only=True,
         required=True
     )
-    business_category = serializers.PrimaryKeyRelatedField(
-        queryset=BusinessCategory.objects.all(),
-        required=True
-    )
+    # business_category = serializers.PrimaryKeyRelatedField(
+    #     queryset=BusinessCategory.objects.all(),
+    #     required=True
+    # )
 
     class Meta:
         model = StockProduct
         fields = [
             'id',
-            'business_category',
+            # 'business_category',
             'product',
             'product_id',
             'purchase_quantity',
@@ -94,8 +94,9 @@ class StockSerializer(serializers.ModelSerializer):
             'sale_price',
             'current_stock_value',
             'net_weight',
-            'manufacture_date',   # ✅ new
-            'expiry_date',        # ✅ new
+            'manufacture_date',  
+            'expiry_date',  
+            'remarks',     
             'created_at',
         ]
 
@@ -119,15 +120,6 @@ class StockSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 'sale_price': 'Sale price cannot be negative.'
             })
-
-        # ❌ OLD RULE REMOVED:
-        # We no longer force sale_price >= purchase_price,
-        # because sometimes you will sell at a loss or give free meals.
-        #
-        # if purchase_price and sale_price and sale_price < purchase_price:
-        #     raise serializers.ValidationError({
-        #         'sale_price': 'Sale price cannot be less than purchase price.'
-        #     })
 
         # ---- quantity validation ----
         quantities = ['purchase_quantity', 'sale_quantity', 'damage_quantity']
