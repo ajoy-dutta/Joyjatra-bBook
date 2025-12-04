@@ -35,9 +35,7 @@ class StockProduct(models.Model):
     sale_price = models.DecimalField(max_digits=12, decimal_places=2)
     current_stock_value = models.DecimalField(max_digits=14, decimal_places=2)
 
-    net_weight = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True)
-
-    
+    net_weight = models.CharField(max_length=250, blank=True, null=True)
     manufacture_date = models.DateField(blank=True, null=True)
     expiry_date = models.DateField(blank=True, null=True)
 
@@ -52,7 +50,6 @@ class StockProduct(models.Model):
 
 
 #product batch model
-
 class StockBatch(models.Model):
     stock = models.ForeignKey(StockProduct, related_name="batches", on_delete=models.CASCADE)
     batch_no = models.CharField(max_length=50, blank=True, null=True)

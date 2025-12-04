@@ -4,12 +4,11 @@ from .models import *
 from .serializers import *
 from django.db.models import Q
 from stocks.models import StockProduct
-from decimal import Decimal
 from rest_framework.views import APIView
 import pandas as pd
 from django.db import transaction
 from rest_framework.response import Response
-
+from decimal import Decimal, InvalidOperation
 
 
 
@@ -88,8 +87,8 @@ class PurchasePaymentViewSet(viewsets.ModelViewSet):
 
 
 
-
 def create_purchase_entry(data):
+    # 1. Get Product
     try:
         product = Product.objects.get(product_name=data["product"].product_name)
     except Product.DoesNotExist:
@@ -97,24 +96,45 @@ def create_purchase_entry(data):
     except Exception as e:
         raise ValueError(f"Unexpected error finding product: {str(e)}")
 
+    # 2. Create or Get Purchase
     try:
         purchase, created = Purchase.objects.get_or_create(
             invoice_no=data["invoice_no"],
             purchase_date=data["purchase_date"],
+            defaults={
+                "total_amount": Decimal("0"),
+                "total_payable_amount": Decimal("0"),
+            }
         )
     except Exception as e:
         raise ValueError(f"Error creating Purchase: {str(e)}")
 
+    # 3. Create PurchaseProduct
     try:
         purchase_item = PurchaseProduct.objects.create(
             purchase=purchase,
             product=product,
-            quantity=data["quantity"],
+            purchase_quantity=data["quantity"],
             purchase_price=data["purchase_price"],
             total_price=data["total_price"],
         )
     except Exception as e:
         raise ValueError(f"Error creating PurchaseProduct: {str(e)}")
+
+    # 4. Recalculate totals for this purchase
+    try:
+        items = PurchaseProduct.objects.filter(purchase=purchase)
+
+        total_amount = sum((item.total_price or Decimal("0")) for item in items)
+        discount = purchase.discount_amount or Decimal("0")
+       
+
+        purchase.total_amount = total_amount
+        purchase.total_payable_amount = total_amount - discount
+        purchase.save()
+
+    except Exception as e:
+        raise ValueError(f"Error updating Purchase totals: {str(e)}")
 
     return purchase_item
 
@@ -134,6 +154,8 @@ def update_stock(product, weight, quantity, price, total_price, sale_quantity, c
                 "purchase_price": price,
                 "sale_price": price,
                 "current_stock_value": total_price,
+                "manufacture_date" : None,
+                "expiry_date": None,
                 "remarks": remarks,
             }
         )
@@ -165,15 +187,16 @@ def to_int(value):
 
 
 
-
-def to_float(value):
+def to_decimal(value):
     try:
-        if pd.isna(value):
-            return 0.0
-        return float(value)
-    except:
-        return 0.0
+        if pd.isna(value) or value == "":
+            return Decimal("0")
 
+        # Convert float to string first to prevent floating errors
+        return Decimal(str(value))
+
+    except (InvalidOperation, ValueError, TypeError):
+        return Decimal("0")
 
 
 
@@ -200,17 +223,21 @@ class UploadStockExcelView(APIView):
                     # Parse fields safely
                     product_code = str(row.get("CODE", "")).strip()
                     product_name = str(row.get("Product Name", "")).strip()
-                    remarks = str(row.get("Remarks", "")).strip()
+                    remarks_raw = row.get("Remarks", "")
+                    remarks = "" if pd.isna(remarks_raw) else str(remarks_raw).strip()
 
                     purchase_quantity = to_int(row.get("Prev QTY"))
-                    purchase_price = to_float(row.get("Prev Rate"))
-                    total_price = to_float(row.get("Total Cost"))
+                    purchase_price = to_decimal(row.get("Prev Rate"))
+                    total_price = to_decimal(row.get("Total Cost"))
                     sale_quantity = to_int(row.get("Sales"))
                     current_stock = to_int(row.get("Present Stock"))
-                    weight = to_float(row.get("Weight"))
+                    weight = to_decimal(row.get("Weight"))
 
                     print(f"✔ Row {index} parsed successfully")
-
+                    print(row)
+                    print("Weight", weight)
+                    print("Purchase Quantity",purchase_quantity)
+            
                 except Exception as e:
                     print("❌ ERROR parsing row:", index)
                     print("Row data:", row)

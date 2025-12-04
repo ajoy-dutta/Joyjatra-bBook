@@ -32,6 +32,7 @@ import PurchaseEntry from "../pages/purchases/purchaseEntry";
 
 
 // Accounting
+import Account from "../pages/accounting/Account";
 import ManualJournals from "../pages/accounting/ManualJournals";
 import BulkUpdates from "../pages/accounting/BulkUpdates";
 import CurrencyAdjustments from "../pages/accounting/CurrencyAdjustments";
@@ -129,7 +130,7 @@ export default function AppRouter() {
 
 
         {/* Accounting */}
-        <Route path="/accounting/manual-journals" element={<ManualJournals />} />
+        <Route path="/accounting/accounts" element={<Account />} />
         <Route path="/accounting/bulk-updates" element={<BulkUpdates />} />
         <Route path="/accounting/currency-adjustments" element={<CurrencyAdjustments />} />
         <Route path="/accounting/chart-of-accounts" element={<ChartOfAccounts />} />

@@ -14,6 +14,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
         fields = ["id", "cost_category", "cost_category_name", "amount", "note", "expense_date", "recorded_by"]
 
 
+
 class SalaryExpenseSerializer(serializers.ModelSerializer):
     staff_name = serializers.CharField(source="staff.name", read_only=True)
     # uses the @property on the model
@@ -38,6 +39,9 @@ class SalaryExpenseSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["total_salary", "created_at"]
+
+
+
 class PurchaseProductSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
 
@@ -63,7 +67,6 @@ class PurchaseProductSerializer(serializers.ModelSerializer):
             'purchase_price',
             'total_price',
             'returned_quantity',
-            # 🔹 NEW fields
             'manufacture_date',
             'expiry_date',
         ]

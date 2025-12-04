@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import AxiosInstance from "../../../components/AxiosInstance";
 import toast from "react-hot-toast";
 import DamageModal from "./DamageModal";
+import EditModal from "./EditModal";
 
 // Recharts imports for expired-products chart
 import {
@@ -18,7 +19,7 @@ export default function Stocks() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStock, setSelectedStock] = useState(null);
-
+  const [selectedEditStock, setSelectedEditStock] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
@@ -126,14 +127,8 @@ export default function Stocks() {
 
     let matchesFilter = true;
     switch (statusFilter) {
-      case "Fast-moving":
-        matchesFilter = item.moving_speed === "Fast-moving";
-        break;
       case "Low stock":
-        matchesFilter = item.current_stock_quantity <= item.reorder_level;
-        break;
-      case "Slow moving":
-        matchesFilter = item.moving_speed === "Slow-moving";
+        matchesFilter = item.current_stock_quantity <= 10;
         break;
       case "Expired":
         matchesFilter = isExpired(item);
@@ -244,9 +239,7 @@ export default function Stocks() {
               onChange={(e) => setStatusFilter(e.target.value)}
             >
               <option value="All">Filter: All</option>
-              <option value="Fast-moving">Fast-moving</option>
               <option value="Low stock">Low stock</option>
-              <option value="Slow moving">Slow moving</option>
               <option value="Expired">Expired</option>
               <option value="Expiring soon">Expiring soon</option> {/* NEW */}
             </select>
@@ -256,19 +249,20 @@ export default function Stocks() {
         <table className="w-full text-sm">
           <thead className="border-b bg-slate-50">
             <tr className="text-left text-slate-500">
-              <th className="py-2 px-2">Product</th>
+              <th className="py-2 px-2">Prod</th>
               <th className="py-2 px-2">Code</th>
-              <th className="py-2 px-2 text-right">Purchase Qty</th>
-              <th className="py-2 px-2 text-right">Sale Qty</th>
-              <th className="py-2 px-2 text-right">On Hand</th>
-              <th className="py-2 px-2 text-right">Damage Qty</th>
-              <th className="py-2 px-2">Mfg Date</th>
-              <th className="py-2 px-2">Expiry Date</th>
-              <th className="py-2 px-2">Status</th>
-              <th className="py-2 px-2">Add Damage</th>
-              <th className="py-2 px-2 text-right">Actions</th>
+              <th className="py-2 px-2 text-right">PurchaseQty</th>
+              <th className="py-2 px-2 text-right">SaleQty</th>
+              <th className="py-2 px-2 text-right">OH</th>
+              <th className="py-2 px-2 text-right">Damage</th>
+              <th className="py-2 px-2">Mfg</th>
+              <th className="py-2 px-2">Exp</th>
+              <th className="py-2 px-2">Stat</th>
+              <th className="py-2 px-2">Add Dmg</th>
+              <th className="py-2 px-2 text-right">Act</th>
             </tr>
           </thead>
+
           <tbody>
             {filteredItems.length === 0 && (
               <tr>
@@ -323,7 +317,10 @@ export default function Stocks() {
                   +
                 </td>
                 <td className="py-2 px-2 text-right text-xs space-x-2">
-                  <button className="px-2 py-1 rounded border border-slate-200 hover:border-blue-500">
+                  <button 
+                    className="px-2 py-1 rounded border border-slate-200 hover:border-blue-500"
+                    onClick={() => setSelectedEditStock(item)}
+                  >
                     Adjust
                   </button>
                 </td>
@@ -338,6 +335,14 @@ export default function Stocks() {
         <DamageModal
           stock={selectedStock}
           onClose={() => setSelectedStock(null)}
+          onUpdated={updateItem}
+        />
+      )}
+
+      {selectedEditStock && (
+        <EditModal
+          stock={selectedEditStock}
+          onClose={() => setSelectedEditStock(null)}
           onUpdated={updateItem}
         />
       )}

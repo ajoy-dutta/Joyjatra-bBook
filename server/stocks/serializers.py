@@ -72,7 +72,7 @@ class StockSerializer(serializers.ModelSerializer):
         queryset=Product.objects.all(),
         source='product',
         write_only=True,
-        required=True
+        required=False
     )
     # business_category = serializers.PrimaryKeyRelatedField(
     #     queryset=BusinessCategory.objects.all(),
@@ -88,8 +88,8 @@ class StockSerializer(serializers.ModelSerializer):
             'product_id',
             'purchase_quantity',
             'sale_quantity',
+            "current_stock_quantity",
             'damage_quantity',
-            'current_stock_quantity',
             'purchase_price',
             'sale_price',
             'current_stock_value',
@@ -100,12 +100,12 @@ class StockSerializer(serializers.ModelSerializer):
             'created_at',
         ]
 
+        read_only_fields = (
+            "current_stock_value",
+            "current_stock_quantity",
+        )
+
     def validate(self, data):
-        """
-        Validate stock data consistency.
-        NOTE: For Joyjatra (justice/care), we ALLOW sale_price < purchase_price.
-        We only validate that prices are non-negative and dates are consistent.
-        """
         # ---- price validation ----
         purchase_price = data.get('purchase_price')
         sale_price = data.get('sale_price')
@@ -129,28 +129,9 @@ class StockSerializer(serializers.ModelSerializer):
                     quantity_field: 'Quantity cannot be negative.'
                 })
 
-        # ---- net weight validation ----
-        net_weight = data.get('net_weight')
-        if net_weight is not None and net_weight <= 0:
-            raise serializers.ValidationError({
-                'net_weight': 'Net weight must be positive.'
-            })
-
-        # ---- manufacture / expiry validation ----
-        manufacture_date = data.get('manufacture_date')
-        expiry_date = data.get('expiry_date')
-
-        # If both provided in this request, check logical order
-        if manufacture_date is not None and expiry_date is not None:
-            if expiry_date < manufacture_date:
-                raise serializers.ValidationError({
-                    'expiry_date': 'Expiry date cannot be earlier than manufacture date.'
-                })
-
         return data
 
     def create(self, validated_data):
-        """Override create to handle stock calculations"""
         # Calculate current stock quantity
         validated_data['current_stock_quantity'] = (
             validated_data.get('purchase_quantity', 0) -
@@ -158,7 +139,6 @@ class StockSerializer(serializers.ModelSerializer):
             validated_data.get('damage_quantity', 0)
         )
 
-        # Calculate current stock value
         # Protect against missing purchase_price on create
         purchase_price = validated_data.get('purchase_price') or 0
         validated_data['current_stock_value'] = (
@@ -168,8 +148,6 @@ class StockSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        """Override update to handle stock calculations"""
-        # Update basic fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 

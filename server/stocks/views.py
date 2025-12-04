@@ -60,7 +60,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 # Stock ViewSet
 # ----------------------------
 class StockViewSet(viewsets.ModelViewSet):
-    queryset = StockProduct.objects.select_related('business_category', 'product').all()
+    queryset = StockProduct.objects.select_related('product').all()
     serializer_class = StockSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -69,15 +69,16 @@ class StockViewSet(viewsets.ModelViewSet):
         'product__product_code',
     ]
 
-    filterset_fields = ['business_category', 'product']
+    filterset_fields = ['product']
+
 
     def get_queryset(self):
         qs = super().get_queryset()
 
         # Filter by business_category
-        business_category = self.request.query_params.get('business_category')
-        if business_category:
-            qs = qs.filter(business_category_id=business_category)
+        # business_category = self.request.query_params.get('business_category')
+        # if business_category:
+        #     qs = qs.filter(business_category_id=business_category)
 
         # Filter by product
         product = self.request.query_params.get('product')
@@ -106,13 +107,28 @@ class StockViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
-        """Handle stock update with proper data mapping"""
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data)
+        try:
+            partial = kwargs.pop('partial', False)
+            instance = self.get_object()
+            serializer = self.get_serializer(
+                instance,
+                data=request.data,
+                partial=partial
+            )
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            return Response(serializer.data)
+
+        except Exception as e:
+            import traceback
+            print("🔥 ERROR OCCURRED 🔥")
+            traceback.print_exc()
+            return Response(
+                {"error": str(e)},
+                status=500
+            )
+
+
 
     @action(detail=True, methods=['patch'], url_path="set-damage-quantity")
     def set_damage_quantity(self, request, pk=None):

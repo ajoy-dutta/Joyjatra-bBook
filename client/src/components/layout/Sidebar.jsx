@@ -40,6 +40,7 @@ const menuConfig = [
     title: "Accounting",
     icon: "📚",
     items: [
+      { label: "Accounts", path: "/accounting/accounts" },
       { label: "Manual Journals", path: "/accounting/manual-journals" },
       { label: "Bulk Updates", path: "/accounting/bulk-updates" },
       { label: "Currency Adjustments", path: "/accounting/currency-adjustments" },

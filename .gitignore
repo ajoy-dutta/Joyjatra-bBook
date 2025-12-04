@@ -3,7 +3,9 @@ venv/
 
 # Python bytecode
 *.pyc
-__pycache__/
+server/__pycache__/
+# Ignore all __pycache__ folders
+**/__pycache__/
 
 # Django migrations
 server/**/migrations/
