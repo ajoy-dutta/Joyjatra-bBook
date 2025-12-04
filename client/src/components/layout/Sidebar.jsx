@@ -49,6 +49,8 @@ const menuConfig = [
       { label: "Petty Cash", path: "/accounting/petty-cash" },
       { label: "Cash Reconciliation", path: "/accounting/cash-reconciliation" },
       { label: "Bank Reconciliation", path: "/accounting/bank-reconciliation" },
+      { label: "Bank Transaction", path: "/accounting/bank-transactions" },  
+
     ],
   },
   {
@@ -92,7 +94,9 @@ const menuConfig = [
       { label: "Income Sources", path: "/master/income-sources" },
       { label: "Product Category", path: "/master/product-category" },
       { label: "Payment Mode", path: "/master/payment-mode" },
-      { label: "Bank Cayegory", path: "/master/bank-category" },
+      { label: "Bank Account", path: "/master/bank-account" },
+      { label: "Account Category", path: "/master/account-category" },
+      { label: "Bank Category", path: "/master/bank-category" },
       { label: "Bank", path: "/master/bank" },
       { label: "Divisions", path: "/master/divisions" },
       { label: "Districts", path: "/master/districts" },

@@ -41,6 +41,7 @@ import TransactionLocking from "../pages/accounting/TransactionLocking";
 import PettyCash from "../pages/accounting/PettyCash";
 import CashReconciliation from "../pages/accounting/CashReconciliation";
 import BankReconciliation from "../pages/accounting/BankReconciliation";
+import BankTransactions from "../pages/accounting/BankTransactions";
 
 // Stock
 import Stocks from "../pages/stock/Stocks/Stocks";
@@ -71,8 +72,8 @@ import BankMaster from "../pages/settings/bank/page";
 import Division from "../pages/settings/division/page";
 import District from "../pages/settings/district/page";
 import SupplierType from "../pages/settings/suppliertype/page";
-
-
+import BankAccount from "../pages/settings/bankaccount/page";
+import AccountCategory from "../pages/settings/accountcategory/page";
 // Profile
 import UserProfile from "../pages/Profile/UserProfile";
 
@@ -137,7 +138,8 @@ export default function AppRouter() {
         <Route path="/accounting/petty-cash" element={<PettyCash />} />
         <Route path="/accounting/cash-reconciliation" element={<CashReconciliation />} />
         <Route path="/accounting/bank-reconciliation" element={<BankReconciliation/>} />
-
+        <Route path="/accounting/bank-transactions"element={<BankTransactions />}
+/>
         {/* Stock */}
         <Route path="/dashboard/stocks" element={<Stocks />} />
         <Route path="/dashboard/products" element={<Products />} />
@@ -166,6 +168,8 @@ export default function AppRouter() {
         <Route path="/master/divisions" element={<Division />} />
         <Route path="/master/districts" element={<District />} />
         <Route path="/master/supplier-type" element={<SupplierType />} />
+        <Route path="/master/bank-account" element={<BankAccount />} />
+        <Route path="/master/account-category" element={<AccountCategory />}/>
       </Route>
     </Routes>
   );
