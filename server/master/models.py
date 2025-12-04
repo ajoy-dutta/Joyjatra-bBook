@@ -81,14 +81,23 @@ class AccountCategory(models.Model):
     
 
 class BankAccount(models.Model):
-    accountCategory = models.CharField(max_length=100)
+    # link to existing masters
+    accountCategory = models.ForeignKey(
+        AccountCategory, on_delete=models.PROTECT, related_name="bank_accounts"
+    )
+    bankName = models.ForeignKey(
+        BankMaster, on_delete=models.PROTECT, related_name="bank_accounts"
+    )
+
     accountName = models.CharField(max_length=255)
-    bankName = models.CharField(max_length=255)
     accountNo = models.CharField(max_length=50)
     bankAddress = models.TextField()
     bankContact = models.CharField(max_length=20)
     bankMail = models.EmailField()
-    previousBalance = models.DecimalField(max_digits=15, decimal_places=2)
+
+    # 👉 opening & current balance
+    opening_balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    current_balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
 
     def __str__(self):
         return f"{self.bankName} - {self.accountName}"
@@ -98,48 +107,43 @@ class BankAccount(models.Model):
 #Bank Transaction Model
 
 class BankTransaction(models.Model):
-    """
-    Stores all bank movements:
-    - manual deposits/withdrawals
-    - payments for purchases/sales/expenses (we'll link later)
-    """
-
     TRANSACTION_TYPES = [
         ("DEPOSIT", "Deposit"),
         ("WITHDRAW", "Withdraw"),
         ("TRANSFER_IN", "Transfer In"),
         ("TRANSFER_OUT", "Transfer Out"),
+        ("INTEREST", "Interest"),
         ("CHARGE", "Bank Charge"),
-        ("INTEREST", "Bank Interest"),
     ]
 
     bank_account = models.ForeignKey(
-        "BankAccount",
-        on_delete=models.PROTECT,
+        BankAccount,
         related_name="transactions",
+        on_delete=models.CASCADE,
     )
     date = models.DateField()
+    description = models.CharField(max_length=255, blank=True, null=True)
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
-
-    # ALWAYS positive number, sign is decided from transaction_type
     amount = models.DecimalField(max_digits=15, decimal_places=2)
-
-    narration = models.CharField(max_length=255, blank=True)
-    reference_no = models.CharField(max_length=100, blank=True)
-
-    # Optional: show running balance after this transaction
     running_balance = models.DecimalField(
-        max_digits=15, decimal_places=2, blank=True, null=True
+        max_digits=15, decimal_places=2, default=0
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-date", "-id"]
-
     def __str__(self):
-        return f"{self.bank_account.accountName} - {self.transaction_type} {self.amount}"
+        return f"{self.bank_account} - {self.transaction_type} - {self.amount}"
 
     def is_inflow(self):
-        """Helper: inflow vs outflow"""
         return self.transaction_type in ["DEPOSIT", "TRANSFER_IN", "INTEREST"]
+
+    def _rebuild_account_balances(self):
+        """helper to ask the account to rebuild its balances"""
+        self.bank_account.recalculate_balances()
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self._rebuild_account_balances()
+
+    def delete(self, *args, **kwargs):
+        account = self.bank_account
+        super().delete(*args, **kwargs)
+        account.recalculate_balances()

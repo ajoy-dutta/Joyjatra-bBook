@@ -5,33 +5,49 @@ import { FaEdit, FaTrash } from "react-icons/fa";
 export default function BankAccount() {
   const [bankAccounts, setBankAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [banks, setBanks] = useState([]); 
+  const [banks, setBanks] = useState([]);
 
   const [formData, setFormData] = useState({
-    accountCategory: "",
+    accountCategory: "", // will hold category ID
     accountName: "",
-    bankName: "",
+    bankName: "",        // will hold bank ID
     accountNo: "",
     bankAddress: "",
     bankContact: "",
     bankMail: "",
-    previousBalance: "",
+    opening_balance: "",
   });
 
   const [editingId, setEditingId] = useState(null);
+
+  // Fetch account categories
   const fetchCategories = async () => {
-    const res = await AxiosInstance.get("account-categories/");
-    setCategories(res.data);
+    try {
+      const res = await AxiosInstance.get("account-categories/");
+      setCategories(res.data || []);
+    } catch (err) {
+      console.error("Error loading categories:", err);
+    }
   };
+
+  // Fetch banks
   const fetchBanks = async () => {
-    const res = await AxiosInstance.get("banks/");
-    setBanks(res.data);
+    try {
+      const res = await AxiosInstance.get("banks/");
+      setBanks(res.data || []);
+    } catch (err) {
+      console.error("Error loading banks:", err);
+    }
   };
 
   // Fetch bank accounts
   const fetchBankAccounts = async () => {
-    const res = await AxiosInstance.get("bank-accounts/");
-    setBankAccounts(res.data);
+    try {
+      const res = await AxiosInstance.get("bank-accounts/");
+      setBankAccounts(res.data || []);
+    } catch (err) {
+      console.error("Error loading bank accounts:", err);
+    }
   };
 
   // Load on page open
@@ -41,10 +57,10 @@ export default function BankAccount() {
     fetchBankAccounts();
   }, []);
 
-  // Handle change
+  // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((p) => ({ ...p, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   // Reset form
@@ -57,7 +73,7 @@ export default function BankAccount() {
       bankAddress: "",
       bankContact: "",
       bankMail: "",
-      previousBalance: "",
+      opening_balance: "",
     });
     setEditingId(null);
   };
@@ -68,30 +84,57 @@ export default function BankAccount() {
 
     const payload = {
       ...formData,
-      previousBalance: parseFloat(formData.previousBalance) || 0,
+      // ensure numeric for backend
+      opening_balance: parseFloat(formData.opening_balance) || 0,
     };
 
-    if (editingId) {
-      await AxiosInstance.put(`bank-accounts/${editingId}/`, payload);
-      alert("Updated!");
-    } else {
-      await AxiosInstance.post("bank-accounts/", payload);
-      alert("Saved!");
-    }
+    try {
+      if (editingId) {
+        await AxiosInstance.put(`bank-accounts/${editingId}/`, payload);
+        alert("Bank account updated!");
+      } else {
+        await AxiosInstance.post("bank-accounts/", payload);
+        alert("Bank account saved!");
+      }
 
-    resetForm();
-    fetchBankAccounts();
+      resetForm();
+      fetchBankAccounts();
+    } catch (err) {
+      console.error("Error saving bank account:", err);
+      alert("Error saving bank account. Check console for details.");
+    }
   };
 
+  // Edit row
   const handleEdit = (item) => {
     setEditingId(item.id);
-    setFormData(item);
+    setFormData({
+      accountCategory: item.accountCategory, // ID
+      accountName: item.accountName,
+      bankName: item.bankName,             // ID
+      accountNo: item.accountNo,
+      bankAddress: item.bankAddress,
+      bankContact: item.bankContact,
+      bankMail: item.bankMail,
+      opening_balance:
+        item.opening_balance !== null && item.opening_balance !== undefined
+          ? item.opening_balance
+          : "",
+    });
   };
 
+  // Delete row
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure?")) return;
-    await AxiosInstance.delete(`bank-accounts/${id}/`);
-    fetchBankAccounts();
+    if (!window.confirm("Are you sure you want to delete this bank account?")) {
+      return;
+    }
+    try {
+      await AxiosInstance.delete(`bank-accounts/${id}/`);
+      fetchBankAccounts();
+    } catch (err) {
+      console.error("Error deleting bank account:", err);
+      alert("Failed to delete bank account.");
+    }
   };
 
   return (
@@ -101,9 +144,11 @@ export default function BankAccount() {
       </h2>
 
       {/* FORM */}
-      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 bg-white p-4 border rounded">
-
-       
+      <form
+        onSubmit={handleSubmit}
+        className="grid grid-cols-2 gap-4 bg-white p-4 border rounded"
+      >
+        {/* BANK */}
         <div>
           <label className="block text-sm font-semibold mb-1">Bank *</label>
           <select
@@ -115,14 +160,14 @@ export default function BankAccount() {
           >
             <option value="">Select Bank</option>
             {banks.map((b) => (
-              <option key={b.id} value={b.name}>
+              <option key={b.id} value={b.id}>
                 {b.name}
               </option>
             ))}
           </select>
         </div>
 
-    
+        {/* ACCOUNT CATEGORY */}
         <div>
           <label className="block text-sm font-semibold mb-1">
             Account Category *
@@ -136,7 +181,7 @@ export default function BankAccount() {
           >
             <option value="">Select Category</option>
             {categories.map((cat) => (
-              <option key={cat.id} value={cat.name}>
+              <option key={cat.id} value={cat.id}>
                 {cat.name}
               </option>
             ))}
@@ -175,18 +220,22 @@ export default function BankAccount() {
 
         {/* ADDRESS */}
         <div className="col-span-2">
-          <label className="block text-sm font-semibold mb-1">Bank Address</label>
+          <label className="block text-sm font-semibold mb-1">
+            Bank Address
+          </label>
           <textarea
             name="bankAddress"
             value={formData.bankAddress}
             onChange={handleChange}
             className="border p-2 rounded w-full"
-          ></textarea>
+          />
         </div>
 
         {/* CONTACT */}
         <div>
-          <label className="block text-sm font-semibold mb-1">Bank Contact</label>
+          <label className="block text-sm font-semibold mb-1">
+            Bank Contact
+          </label>
           <input
             type="text"
             name="bankContact"
@@ -198,7 +247,9 @@ export default function BankAccount() {
 
         {/* EMAIL */}
         <div>
-          <label className="block text-sm font-semibold mb-1">Bank Email</label>
+          <label className="block text-sm font-semibold mb-1">
+            Bank Email
+          </label>
           <input
             type="email"
             name="bankMail"
@@ -208,13 +259,16 @@ export default function BankAccount() {
           />
         </div>
 
-        {/* PREVIOUS BALANCE */}
+        {/* OPENING BALANCE */}
         <div>
-          <label className="block text-sm font-semibold mb-1">Opening Balance</label>
+          <label className="block text-sm font-semibold mb-1">
+            Opening Balance
+          </label>
           <input
             type="number"
-            name="previousBalance"
-            value={formData.previousBalance}
+            step="0.01"
+            name="opening_balance"
+            value={formData.opening_balance}
             onChange={handleChange}
             className="border p-2 rounded w-full"
           />
@@ -237,7 +291,8 @@ export default function BankAccount() {
             <th className="border p-1">Category</th>
             <th className="border p-1">Account Name</th>
             <th className="border p-1">Account No</th>
-            <th className="border p-1">Balance</th>
+            <th className="border p-1">Opening Balance</th>
+            <th className="border p-1">Current Balance</th>
             <th className="border p-1">Edit</th>
             <th className="border p-1">Delete</th>
           </tr>
@@ -247,11 +302,27 @@ export default function BankAccount() {
           {bankAccounts.map((item, index) => (
             <tr key={item.id} className="text-center">
               <td className="border p-1">{index + 1}</td>
-              <td className="border p-1">{item.bankName}</td>
-              <td className="border p-1">{item.accountCategory}</td>
+              {/* Show readable names; fall back to raw value if needed */}
+              <td className="border p-1">
+                {item.bankName_name || item.bankName}
+              </td>
+              <td className="border p-1">
+                {item.accountCategory_name || item.accountCategory}
+              </td>
               <td className="border p-1">{item.accountName}</td>
               <td className="border p-1">{item.accountNo}</td>
-              <td className="border p-1">{item.previousBalance}</td>
+              <td className="border p-1">
+                {item.opening_balance !== undefined &&
+                item.opening_balance !== null
+                  ? item.opening_balance
+                  : ""}
+              </td>
+              <td className="border p-1">
+                {item.current_balance !== undefined &&
+                item.current_balance !== null
+                  ? item.current_balance
+                  : ""}
+              </td>
 
               <td
                 className="border p-1 text-yellow-600 cursor-pointer"
@@ -267,6 +338,16 @@ export default function BankAccount() {
               </td>
             </tr>
           ))}
+          {bankAccounts.length === 0 && (
+            <tr>
+              <td
+                colSpan={9}
+                className="border p-2 text-center text-gray-500"
+              >
+                No bank accounts found.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
