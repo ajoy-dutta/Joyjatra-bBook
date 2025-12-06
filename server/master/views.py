@@ -72,12 +72,10 @@ class AccountCategoryViewSet(viewsets.ModelViewSet):
 
 
 class BankAccountViewSet(viewsets.ModelViewSet):
-    permission_classes = [AllowAny]
-    queryset = BankAccount.objects.all()
+    queryset = BankAccount.objects.all().order_by("accountName")
     serializer_class = BankAccountSerializer
-    
-    
-    
+    permission_classes = [IsAuthenticated]
+
 
 class BankTransactionViewSet(viewsets.ModelViewSet):
     queryset = BankTransaction.objects.all().order_by("-date", "-id")

@@ -1,5 +1,5 @@
 from django.db import models
-from master.models import CostCategory
+from master.models import CostCategory, BankAccount, BankTransaction
 from people.models import Vendor
 from stocks.models import Product
 from django.utils.timezone import now
@@ -17,8 +17,37 @@ class Expense(models.Model):
     )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     note = models.CharField(max_length=255, blank=True)
-    expense_date = models.DateField()          # user-provided date
+    expense_date = models.DateField()
     recorded_by = models.CharField(max_length=100, blank=True, null=True)
+
+    # NEW: how this expense was paid
+    PAYMENT_SOURCES = [
+        ("CASH", "Cash"),
+        ("BANK", "Bank"),
+    ]
+    payment_source = models.CharField(
+        max_length=10,
+        choices=PAYMENT_SOURCES,
+        default="CASH",
+    )
+
+    # NEW: optional bank account (used when payment_source = BANK)
+    bank_account = models.ForeignKey(
+        BankAccount,
+        on_delete=models.PROTECT,
+        related_name="expenses",
+        blank=True,
+        null=True,
+    )
+
+    # NEW: link to created bank transaction (so updates don't duplicate)
+    bank_transaction = models.OneToOneField(
+        BankTransaction,
+        on_delete=models.SET_NULL,
+        related_name="expense",
+        blank=True,
+        null=True,
+    )
 
     def __str__(self):
         return f"{self.cost_category} - {self.amount}"

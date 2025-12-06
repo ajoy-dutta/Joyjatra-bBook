@@ -7,11 +7,29 @@ from master.serializers import *
 
 
 class ExpenseSerializer(serializers.ModelSerializer):
-    cost_category_name = serializers.CharField(source="cost_category.category_name", read_only=True)
+    cost_category_name = serializers.CharField(
+        source="cost_category.category_name", read_only=True
+    )
+    bank_account_detail = BankAccountSerializer(
+        source="bank_account", read_only=True
+    )
 
     class Meta:
         model = Expense
-        fields = ["id", "cost_category", "cost_category_name", "amount", "note", "expense_date", "recorded_by"]
+        fields = [
+            "id",
+            "cost_category",
+            "cost_category_name",
+            "amount",
+            "note",
+            "expense_date",
+            "recorded_by",
+            "payment_source",
+            "bank_account",
+            "bank_account_detail",
+            "bank_transaction",   # optional: if you want to see the id
+        ]
+        read_only_fields = ["bank_transaction"]
 
 
 
