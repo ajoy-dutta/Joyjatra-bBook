@@ -7,8 +7,6 @@ from django.utils.text import slugify
 from authentication.models import Staffs
 
 
-
-
 class Expense(models.Model):
     cost_category = models.ForeignKey(
         CostCategory,

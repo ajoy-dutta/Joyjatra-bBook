@@ -24,6 +24,8 @@ class SaleViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+
+
 class SalePaymentViewSet(viewsets.ModelViewSet):
     queryset = SalePayment.objects.all().order_by('-payment_date')
     serializer_class = SalePaymentSerializer

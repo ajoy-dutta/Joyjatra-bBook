@@ -1,4 +1,4 @@
-#!/media/utl-30/16DEF628DEF5FFB3/Utshab/Joyjatra-bBook/venv/bin/python3
+#!/home/utl-30/Documents/Joyjatra-bBook/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

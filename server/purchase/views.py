@@ -221,7 +221,7 @@ class UploadStockExcelView(APIView):
             for index, row in df.iterrows():
                 try:
                     # Parse fields safely
-                    product_code = str(row.get("CODE", "")).strip()
+                    product_code = str(row.get("Code", "")).strip()
                     product_name = str(row.get("Product Name", "")).strip()
                     remarks_raw = row.get("Remarks", "")
                     remarks = "" if pd.isna(remarks_raw) else str(remarks_raw).strip()

@@ -49,6 +49,8 @@ class SalePaymentSerializer(serializers.ModelSerializer):
     sale_id = serializers.PrimaryKeyRelatedField(
         queryset=Sale.objects.all(),
         source='sale',
+        required=False,
+        allow_null=True,
         write_only=True,
     )
 

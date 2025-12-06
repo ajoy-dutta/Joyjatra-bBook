@@ -4,10 +4,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import CombinedPurchaseSerializer
 from decimal import Decimal
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from sales.models import Sale
 from sales.serializers import SaleSerializer
-from purchase.models import Expense,Purchase
+from purchase.models import Expense, SalaryExpense, Purchase
 
 
 
@@ -123,79 +123,116 @@ class SaleReportView(APIView):
 
 
 
+
+
 class CombinedExpanseView(APIView):
     def get(self, request):
-        
         grouped_data = []
-        expenses = Expense.objects.all().order_by('-date')
 
-        # query params
-        from_date = request.query_params.get('from_date')
-        to_date = request.query_params.get('to_date')
-        account_title = request.query_params.get('account_title')
-        cost_category = request.query_params.get('cost_category')
-        receipt_no = request.query_params.get('receipt_no')
+        # ==========================
+        #   GET FILTER PARAMETERS
+        # ==========================
+        from_date = request.query_params.get("from_date")
+        to_date = request.query_params.get("to_date")
+        cost_category = request.query_params.get("cost_category")
+        account_title = request.query_params.get("account_title")
+        receipt_no = request.query_params.get("receipt_no")
 
-        # filtering
+        # ==========================
+        #   EXPENSES
+        # ==========================
+        expenses = Expense.objects.all().order_by("-expense_date")
+        print(expenses)
+
         if from_date:
-            expenses = expenses.filter(date__gte=parse_date(from_date))
+            expenses = expenses.filter(expense_date__gte=parse_date(from_date))
+
         if to_date:
-            expenses = expenses.filter(date__lte=parse_date(to_date))
+            expenses = expenses.filter(expense_date__lte=parse_date(to_date))
+
+        if cost_category and cost_category.lower() != "all":
+            expenses = expenses.filter(cost_category__id=cost_category)
+
         if account_title:
-            expenses = expenses.filter(accountTitle__icontains=account_title)
-        if cost_category and cost_category.lower() != 'all':
-            expenses = expenses.filter(costCategory=cost_category)
+            expenses = expenses.filter(recorded_by__icontains=account_title)
+
         if receipt_no:
-            expenses = expenses.filter(voucherNo__icontains=receipt_no)
+            expenses = expenses.filter(id__icontains=receipt_no)
 
-        for expense in expenses:
+        for ex in expenses:
             grouped_data.append({
-                "date": expense.date,
-                "voucher_no": expense.voucherNo,
-                "account_title": expense.accountTitle,
-                "cost_category": expense.costCategory,
-                "description": expense.remarks,
-                "amount": expense.amount,
-                "transaction_type": expense.transactionType,
-            })  
+                "date": ex.expense_date,
+                "voucher_no": f"EXP-{ex.id}",
+                "account_title": ex.recorded_by or "",
+                "cost_category": ex.cost_category.category_name,
+                "description": ex.note,
+                "amount": ex.amount,
+                "transaction_type": ex.payment_source,
+            })
 
-            purchases = (
-                Purchase.objects
-                .prefetch_related("payments", "supplier")  # prefetch supplier + related payments
-            )
+        # ==========================
+        #   PURCHASE PAYMENTS
+        # ==========================
+        purchases = Purchase.objects.select_related("vendor").prefetch_related("payments").all()
 
-            if from_date:
-                purchases = purchases.filter(purchase_date__gte=parse_date(from_date))
+        if from_date:
+            purchases = purchases.filter(purchase_date__gte=parse_date(from_date))
 
-            if to_date:
-                purchases = purchases.filter(purchase_date__lte=parse_date(to_date))
+        if to_date:
+            purchases = purchases.filter(purchase_date__lte=parse_date(to_date))
 
-            if account_title:
-                purchases = purchases.filter(payments__payment_mode__icontains=account_title)
+        if account_title:
+            purchases = purchases.filter(payments__payment_mode__icontains=account_title)
 
-            if receipt_no:
-                purchases = purchases.filter(invoice_no__icontains=receipt_no)
+        if receipt_no:
+            purchases = purchases.filter(invoice_no__icontains=receipt_no)
 
-            for purchase in purchases:
-                for payment in purchase.payments.all():
+        for p in purchases:
+            for pay in p.payments.all():
 
-                    account_title_value = (
-                        "Cash Buy" if payment.payment_mode == "Cash" 
-                        else purchase.supplier.supplier_name
-                    )
+                account_title_value = (
+                    "Cash Purchase" if pay.payment_mode == "Cash"
+                    else p.vendor.vendor_name if p.vendor else ""
+                )
 
-                    grouped_data.append({
-                        "date": purchase.purchase_date,
-                        "voucher_no": f"Payment for {purchase.invoice_no}",
-                        "account_title": account_title_value,
-                        "cost_category": "Supplier Purchase",
-                        "amount": payment.paid_amount,
-                        "transaction_type": payment.payment_mode,
-                    })
+                grouped_data.append({
+                    "date": p.purchase_date,
+                    "voucher_no": f"Payment for {p.invoice_no}",
+                    "account_title": account_title_value,
+                    "cost_category": "Purchase",
+                    "description": f"Purchase payment ({pay.payment_mode})",
+                    "amount": pay.paid_amount,
+                    "transaction_type": pay.payment_mode,
+                })
 
+        # ==========================
+        #   SALARY EXPENSE
+        # ==========================
+        salaries = SalaryExpense.objects.select_related("staff").all()
 
+        if from_date:
+            salaries = salaries.filter(created_at__date__gte=parse_date(from_date))
 
+        if to_date:
+            salaries = salaries.filter(created_at__date__lte=parse_date(to_date))
+
+        if account_title:
+            salaries = salaries.filter(staff__name__icontains=account_title)
+
+        for s in salaries:
+            grouped_data.append({
+                "date": s.created_at.date(),
+                "voucher_no": f"SAL-{s.id}",
+                "account_title": s.staff.name,
+                "cost_category": "Salary Expense",
+                "description": s.note or "",
+                "amount": s.total_salary,
+                "transaction_type": "Salary",
+            })
+
+        # ==========================
+        #   SORT FINAL DATA
+        # ==========================
         grouped_data.sort(key=lambda x: x["date"], reverse=True)
 
-        serializer = CombinedExpenseSerializer(grouped_data, many=True)
-        return Response(serializer.data)
+        return Response(grouped_data)

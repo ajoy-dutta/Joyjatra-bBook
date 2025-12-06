@@ -240,6 +240,8 @@ export default function CustomerProductSale() {
     product_name: p.product_name,
   }));
 
+  console.log("productCodeOptions",productCodeOptions)
+
   // ---------- Customer handlers ----------
   const handleCustomerChange = (e) => {
     const { name, value } = e.target;
