@@ -1,5 +1,5 @@
 from django.db import models
-from master.models import CostCategory, BankAccount, BankTransaction
+from master.models import CostCategory, PaymentMode, BankAccount, BankTransaction
 from people.models import Vendor
 from stocks.models import Product
 from django.utils.timezone import now
@@ -10,43 +10,33 @@ from authentication.models import Staffs
 
 
 class Expense(models.Model):
-    cost_category = models.ForeignKey(
-        CostCategory,
-        on_delete=models.PROTECT,
-        related_name="expenses",
-    )
+    cost_category = models.ForeignKey(CostCategory, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    note = models.CharField(max_length=255, blank=True)
+    note = models.TextField(blank=True, null=True)
     expense_date = models.DateField()
-    recorded_by = models.CharField(max_length=100, blank=True, null=True)
+    recorded_by = models.CharField(max_length=255, blank=True, null=True)
 
-    # NEW: how this expense was paid
-    PAYMENT_SOURCES = [
-        ("CASH", "Cash"),
-        ("BANK", "Bank"),
-    ]
-    payment_source = models.CharField(
-        max_length=10,
-        choices=PAYMENT_SOURCES,
-        default="CASH",
+    # NEW FIELDS
+    payment_mode = models.ForeignKey(
+        PaymentMode,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="general_expenses",
     )
-
-    # NEW: optional bank account (used when payment_source = BANK)
     bank_account = models.ForeignKey(
         BankAccount,
         on_delete=models.PROTECT,
-        related_name="expenses",
-        blank=True,
         null=True,
+        blank=True,
+        related_name="general_expenses",
     )
-
-    # NEW: link to created bank transaction (so updates don't duplicate)
     bank_transaction = models.OneToOneField(
         BankTransaction,
         on_delete=models.SET_NULL,
-        related_name="expense",
-        blank=True,
         null=True,
+        blank=True,
+        related_name="general_expense",
     )
 
     def __str__(self):
@@ -56,13 +46,12 @@ class Expense(models.Model):
 
 class SalaryExpense(models.Model):
     staff = models.ForeignKey(
-        Staffs,
+        Staffs,                         # ✅ use Staffs from authentication
         on_delete=models.PROTECT,
         related_name="salary_expenses",
-    ) 
+    )
     salary_month = models.CharField(max_length=7)  # e.g. "2025-01"
 
-    # renamed 'amount' → 'base_amount'
     base_amount = models.DecimalField(max_digits=12, decimal_places=2)
     allowance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     bonus = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -72,15 +61,10 @@ class SalaryExpense(models.Model):
 
     @property
     def total_salary(self):
-        """
-        Computed salary: base + allowance + bonus
-        Not stored in DB, just calculated when needed.
-        """
         return (self.base_amount or 0) + (self.allowance or 0) + (self.bonus or 0)
 
     def __str__(self):
         return f"{self.staff} - {self.salary_month}"
-
 
 
 

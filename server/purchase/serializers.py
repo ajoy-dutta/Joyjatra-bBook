@@ -10,8 +10,11 @@ class ExpenseSerializer(serializers.ModelSerializer):
     cost_category_name = serializers.CharField(
         source="cost_category.category_name", read_only=True
     )
-    bank_account_detail = BankAccountSerializer(
-        source="bank_account", read_only=True
+    payment_mode_name = serializers.CharField(
+        source="payment_mode.name", read_only=True
+    )
+    bank_account_name = serializers.CharField(
+        source="bank_account.accountName", read_only=True
     )
 
     class Meta:
@@ -24,22 +27,21 @@ class ExpenseSerializer(serializers.ModelSerializer):
             "note",
             "expense_date",
             "recorded_by",
-            "payment_source",
+            "payment_mode",
+            "payment_mode_name",
             "bank_account",
-            "bank_account_detail",
-            "bank_transaction",   # optional: if you want to see the id
+            "bank_account_name",
         ]
-        read_only_fields = ["bank_transaction"]
-
+        extra_kwargs = {
+            "payment_mode": {"required": False, "allow_null": True},
+            "bank_account": {"required": False, "allow_null": True},
+        }
 
 
 class SalaryExpenseSerializer(serializers.ModelSerializer):
     staff_name = serializers.CharField(source="staff.name", read_only=True)
-    # uses the @property on the model
     total_salary = serializers.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        read_only=True,
+        max_digits=12, decimal_places=2, read_only=True, source="total_salary"
     )
 
     class Meta:
@@ -52,12 +54,10 @@ class SalaryExpenseSerializer(serializers.ModelSerializer):
             "base_amount",
             "allowance",
             "bonus",
-            "total_salary",
             "note",
             "created_at",
+            "total_salary",
         ]
-        read_only_fields = ["total_salary", "created_at"]
-
 
 
 class PurchaseProductSerializer(serializers.ModelSerializer):

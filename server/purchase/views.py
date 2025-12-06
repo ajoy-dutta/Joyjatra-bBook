@@ -13,28 +13,20 @@ from decimal import Decimal, InvalidOperation
 
 
 class ExpenseViewSet(viewsets.ModelViewSet):
-    queryset = Expense.objects.select_related("cost_category").order_by("-id")
+    queryset = Expense.objects.all().order_by("-expense_date")
     serializer_class = ExpenseSerializer
-    permission_classes = [AllowAny]
-
 
 
 class SalaryExpenseViewSet(viewsets.ModelViewSet):
-    queryset = SalaryExpense.objects.select_related("staff").order_by("-id")
+    queryset = SalaryExpense.objects.all().order_by("-created_at")
     serializer_class = SalaryExpenseSerializer
-    permission_classes = [AllowAny]
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        search = self.request.query_params.get("search")
-        if search:
-            qs = qs.filter(
-                Q(staff__name__icontains=search)
-                | Q(salary_month__icontains=search)
-                | Q(note__icontains=search)
-            )
-        return qs
-
+    def perform_destroy(self, instance):
+        with db_transaction.atomic():
+            bt = instance.bank_transaction
+            super().perform_destroy(instance)
+            if bt:
+                bt.delete()
 
 
 class SupplierPurchaseViewSet(viewsets.ModelViewSet):
