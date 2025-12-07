@@ -6,10 +6,14 @@ export default function Products() {
   const [products, setProducts] = useState([]);
   const [openModal, setOpenModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null); // For edit modal
+  const [selectedCategory, setSelectedCategory] = useState(
+    JSON.parse(localStorage.getItem("business_category")) || null
+  );
+
 
   const getProducts = async () => {
     try {
-      const res = await AxiosInstance.get("/products/");
+      const res = await AxiosInstance.get(`products/?business_category=${selectedCategory.id}`);
       setProducts(res.data);
     } catch (err) {
       console.error("Error fetching products:", err);

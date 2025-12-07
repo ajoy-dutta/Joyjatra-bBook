@@ -23,7 +23,7 @@ class Product(models.Model):
 
 
 class StockProduct(models.Model):
-    # business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE)
+    business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE,blank=True, null=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
     purchase_quantity = models.PositiveIntegerField(default=0)

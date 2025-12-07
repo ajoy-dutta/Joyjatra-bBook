@@ -74,16 +74,16 @@ class StockSerializer(serializers.ModelSerializer):
         write_only=True,
         required=False
     )
-    # business_category = serializers.PrimaryKeyRelatedField(
-    #     queryset=BusinessCategory.objects.all(),
-    #     required=True
-    # )
+    business_category = serializers.PrimaryKeyRelatedField(
+        queryset=BusinessCategory.objects.all(),
+        required=True
+    )
 
     class Meta:
         model = StockProduct
         fields = [
             'id',
-            # 'business_category',
+            'business_category',
             'product',
             'product_id',
             'purchase_quantity',

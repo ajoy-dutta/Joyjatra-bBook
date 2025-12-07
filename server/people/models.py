@@ -1,10 +1,9 @@
 from django.db import models
-from master.models import SupplierTypeMaster 
-
-
+from master.models import SupplierTypeMaster , BusinessCategory
 
 
 class Customer(models.Model):
+    business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE, related_name='customers', blank=True, null=True)
     customer_name = models.CharField(max_length=255)
     division = models.CharField(max_length=100, blank=True, null=True)
     district = models.CharField(max_length=100, blank=True, null=True)
@@ -28,6 +27,7 @@ class Customer(models.Model):
 
 
 class Vendor(models.Model):
+    business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE, related_name='vendors', blank=True, null=True)
     vendor_name = models.CharField(max_length=200)
     division = models.CharField(max_length=100, blank=True, null=True)
     district = models.CharField(max_length=100, blank=True, null=True)

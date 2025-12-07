@@ -91,6 +91,7 @@ const menuConfig = [
     title: "Master",
     icon: "",
     items: [
+      { label: "Business Category", path: "/master/business-category" },
       { label: "Cost Category", path: "/master/cost-category" },
       { label: "Income Sources", path: "/master/income-sources" },
       { label: "Product Category", path: "/master/product-category" },

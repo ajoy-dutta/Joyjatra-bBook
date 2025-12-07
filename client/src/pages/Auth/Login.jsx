@@ -1,12 +1,13 @@
 // src/pages/auth/SignIn.jsx   (adjust the path if needed)
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import AxiosInstance from "../../components/AxiosInstance";
 import { useUser } from "../../Provider/UserProvider";
+import { SetCategory } from "./SetDefaultCategory";
 
 const Login = () => {
-  const { refreshUser } = useUser(); // pull refresh function from context
+  const { refreshUser, user} = useUser(); // pull refresh function from context
   const [showPassword, setShowPassword] = useState(false);
 
   const [credentials, setCredentials] = useState({
@@ -18,6 +19,7 @@ const Login = () => {
   const handleLoginChange = (e) => {
     setCredentials({ ...credentials, [e.target.name]: e.target.value });
   };
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -34,6 +36,13 @@ const Login = () => {
       // Optional: immediately refresh context user
       if (refreshUser) {
         refreshUser();
+      }
+
+      console.log("Superuser! Found !")
+      console.log("Superuser", user.role)
+      if (user?.role === "superuser") {
+        console.log("Superuser Found !")
+        await SetCategory();
       }
 
       alert("Login successful!");

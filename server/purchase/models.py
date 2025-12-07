@@ -1,5 +1,5 @@
 from django.db import models
-from master.models import CostCategory, PaymentMode, BankAccount, BankTransaction
+from master.models import BusinessCategory,CostCategory, PaymentMode, BankAccount, BankTransaction
 from people.models import Vendor
 from stocks.models import Product
 from django.utils.timezone import now
@@ -67,6 +67,7 @@ class SalaryExpense(models.Model):
 
 
 class Purchase(models.Model):
+    business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE, null=True, blank=True)
     vendor = models.ForeignKey(Vendor,on_delete=models.CASCADE,related_name="purchases",null=True, blank=True)
     purchase_date = models.DateField()
     invoice_no = models.CharField(max_length=100, blank=True, null=True)

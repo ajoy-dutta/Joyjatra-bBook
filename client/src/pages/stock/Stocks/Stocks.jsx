@@ -22,12 +22,15 @@ export default function Stocks() {
   const [selectedEditStock, setSelectedEditStock] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState(
+    JSON.parse(localStorage.getItem("business_category")) || null
+  );
 
   // Fetch stocks from API
   useEffect(() => {
     const fetchStocks = async () => {
       try {
-        const res = await AxiosInstance.get("stocks/");
+        const res = await AxiosInstance.get(`stocks/?business_category=${selectedCategory.id}`);
         setItems(res.data);
       } catch (err) {
         console.error("Failed to fetch stocks:", err);

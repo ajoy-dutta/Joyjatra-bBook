@@ -2,15 +2,20 @@ import { useState, useEffect, useRef } from 'react';
 import AxiosInstance from '../../components/AxiosInstance';
 
 export default function PurchaseEntry() {
+    const [selectedFile, setSelectedFile] = useState(null);
+    const fileInputRef = useRef(null);
+    const [selectedCategory, setSelectedCategory] = useState(
+        JSON.parse(localStorage.getItem("business_category")) || null
+    );
+
     const [formData, setFormData] = useState({
+        business_category: selectedCategory.id,
         invoice_no: 'AUTO GENERATE',
         purchase_date: '',
         display_purchase_date: '',
         total_price: '',
     });
 
-    const [selectedFile, setSelectedFile] = useState(null);
-    const fileInputRef = useRef(null);
     
 
 
@@ -51,17 +56,11 @@ export default function PurchaseEntry() {
 
         try {
             const data = new FormData();
+            data.append('business_category', formData.business_category);
             data.append('invoice_no', formData.invoice_no);
             data.append('purchase_date', formData.purchase_date);
             data.append('total_price', formData.total_price);
             data.append('xl_file', selectedFile);
-
-            console.log("Data to be sent:", {
-                invoice_no: formData.invoice_no,
-                purchase_date: formData.purchase_date,
-                total_price: formData.total_price,
-                xl_file: selectedFile ? selectedFile.name : null,
-            });
 
             const response = await AxiosInstance.post('upload-order-excel/', data, {
                 headers: { 'Content-Type': 'multipart/form-data' },

@@ -74,11 +74,17 @@ class PurchaseProductSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
+    business_category = serializers.PrimaryKeyRelatedField(
+        queryset=BusinessCategory.objects.all(),
+        required=True
+    )
+
     class Meta:
         model = PurchaseProduct
         fields = [
             'id',
             'product',
+            'business_category',
             'product_id',
             'product_no',
             'purchase_quantity',

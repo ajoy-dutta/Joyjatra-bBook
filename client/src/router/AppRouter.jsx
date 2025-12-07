@@ -64,6 +64,7 @@ import AssetsPage from "../pages/assets/Assets";
 import ReportsHome from "../pages/reports/ReportsHome";
 
 // Settings
+import BusinessCategory from "../pages/settings/businessCategory/page";
 import CostCategory from "../pages/settings/CostCategory/page";
 import SourceCategory from "../pages/settings/sourcecategory/page";
 import ProductCategory from "../pages/settings/productcategory/page";
@@ -161,6 +162,7 @@ export default function AppRouter() {
         <Route path="/reports" element={<ReportsHome />} />
 
         {/* Master / Settings */}
+        <Route path="/master/business-category" element={<BusinessCategory />} />
         <Route path="/master/cost-category" element={<CostCategory />} />
         <Route path="/master/income-sources" element={<SourceCategory />} />
         <Route path="/master/product-category" element={<ProductCategory />} />

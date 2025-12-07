@@ -9,26 +9,6 @@ import {
 } from "react-icons/fa";
 import AxiosInstance from "../../components/AxiosInstance";
 
-const BACKEND_URL = "http://localhost:8000"; // change in production
-
-const EMPTY_FORM = {
-  vendor_name: "",
-  division: "",
-  district: "",
-  country: "Bangladesh",
-  vendor_type: "", // will store type id
-  shop_name: "",
-  phone1: "",
-  phone2: "",
-  email: "",
-  address: "",
-  date_of_birth: "",
-  nid_no: "",
-  remarks: "",
-  previous_due_amount: "",
-};
-
-const API_URL = "vendors/"; // -> /api/vendors/
 
 export default function Vendors() {
   const [vendors, setVendors] = useState([]);
@@ -54,6 +34,30 @@ export default function Vendors() {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
 
+   const [selectedCategory, setSelectedCategory] = useState(
+      JSON.parse(localStorage.getItem("business_category")) || null
+    );
+
+
+  const EMPTY_FORM = {
+    business_category: selectedCategory.id,
+    vendor_name: "",
+    division: "",
+    district: "",
+    country: "Bangladesh",
+    vendor_type: "",
+    shop_name: "",
+    phone1: "",
+    phone2: "",
+    email: "",
+    address: "",
+    date_of_birth: "",
+    nid_no: "",
+    remarks: "",
+    previous_due_amount: "",
+    };
+
+
   // ---------- helpers ----------
 
   const resetFormState = () => {
@@ -76,7 +80,7 @@ export default function Vendors() {
       const params = {};
       if (searchValue.trim()) params.search = searchValue.trim();
 
-      const res = await AxiosInstance.get(API_URL, { params });
+      const res = await AxiosInstance.get(`vendors/?business_category=${selectedCategory.id}`);
       const data = res.data;
       const items = Array.isArray(data) ? data : data.results || [];
       setVendors(items);
@@ -193,9 +197,7 @@ export default function Vendors() {
 
     try {
       if (editingId) {
-        await AxiosInstance.patch(`${API_URL}${editingId}/`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        await AxiosInstance.patch(`${API_URL}${editingId}/`, formData);
       } else {
         await AxiosInstance.post(API_URL, formData, {
           headers: { "Content-Type": "multipart/form-data" },

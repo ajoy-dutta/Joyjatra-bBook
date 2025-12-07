@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from decimal import Decimal
 
 
 
@@ -148,6 +149,8 @@ class BankAccount(models.Model):
         if self.current_balance != balance:
             type(self).objects.filter(pk=self.pk).update(current_balance=balance)
             self.current_balance = balance
+
+
 
 
 class BankTransaction(models.Model):

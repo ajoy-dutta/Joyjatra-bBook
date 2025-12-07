@@ -3,6 +3,8 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import Customer, Vendor
 from .serializers import CustomerSerializer, VendorSerializer
 
+
+
 class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.objects.all().order_by("-created_at")
     serializer_class = CustomerSerializer
@@ -14,7 +16,19 @@ class CustomerViewSet(viewsets.ModelViewSet):
     # IMPORTANT: support image upload
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     
+
+    def get_queryset(self):
+        qs = Vendor.objects.all().order_by("-created_at")
+
+        business_category = self.request.query_params.get("business_category")
+        if business_category:
+            qs = qs.filter(business_category_id=business_category)
+
+        return qs
     
+
+
+
 class VendorViewSet(viewsets.ModelViewSet):
     queryset = Vendor.objects.all().order_by("-created_at")
     serializer_class = VendorSerializer
@@ -32,3 +46,14 @@ class VendorViewSet(viewsets.ModelViewSet):
         "country"
     ]
     ordering_fields = ["created_at", "vendor_name"]
+
+
+
+    def get_queryset(self):
+        qs = Vendor.objects.all().order_by("-created_at")
+
+        business_category = self.request.query_params.get("business_category")
+        if business_category:
+            qs = qs.filter(business_category_id=business_category)
+
+        return qs

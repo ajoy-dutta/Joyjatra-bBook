@@ -93,6 +93,7 @@ def create_purchase_entry(data):
         purchase, created = Purchase.objects.get_or_create(
             invoice_no=data["invoice_no"],
             purchase_date=data["purchase_date"],
+            business_category= data["business_category"],
             defaults={
                 "total_amount": Decimal("0"),
                 "total_payable_amount": Decimal("0"),
@@ -133,10 +134,11 @@ def create_purchase_entry(data):
 
 
 
-def update_stock(product, weight, quantity, price, total_price, sale_quantity, current_stock, remarks):
+def update_stock(business_category,product, weight, quantity, price, total_price, sale_quantity, current_stock, remarks):
     try:
         stock, created = StockProduct.objects.get_or_create(
             product=product,
+            business_category=business_category,
             defaults={
                 "net_weight": weight,
                 "purchase_quantity": quantity,
@@ -197,6 +199,7 @@ class UploadStockExcelView(APIView):
         file = request.FILES.get("xl_file")
         invoice_no = request.data.get("invoice_no", "AUTO_GENERATE")
         purchase_date = request.data.get("purchase_date")
+        business_category = request.data.get("business_category")
 
         if not file:
             return Response({"error": "No file uploaded"}, status=400)
@@ -243,6 +246,7 @@ class UploadStockExcelView(APIView):
                 try:
                     product, created = Product.objects.get_or_create(
                         product_name=product_name,
+                        business_category= business_category,
                         defaults={
                             "product_code": product_code,
                             "price": purchase_price,
@@ -262,6 +266,7 @@ class UploadStockExcelView(APIView):
                 # Update stock safely
                 try:
                     update_stock(
+                        business_category=business_category,
                         product=product,
                         weight=weight,
                         quantity=purchase_quantity,
@@ -280,6 +285,7 @@ class UploadStockExcelView(APIView):
                 # Create purchase entry safely
                 try:
                     create_purchase_entry({
+                        business_category:business_category,
                         "invoice_no": invoice_no,
                         "purchase_date": purchase_date,
                         "product": product,

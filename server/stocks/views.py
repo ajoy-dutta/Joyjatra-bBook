@@ -76,9 +76,9 @@ class StockViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
 
         # Filter by business_category
-        # business_category = self.request.query_params.get('business_category')
-        # if business_category:
-        #     qs = qs.filter(business_category_id=business_category)
+        business_category = self.request.query_params.get('business_category')
+        if business_category:
+            qs = qs.filter(business_category_id=business_category)
 
         # Filter by product
         product = self.request.query_params.get('product')
