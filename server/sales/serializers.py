@@ -4,7 +4,7 @@ from people.models import  Customer
 from people.serializers import CustomerSerializer
 from stocks.models import Product, StockProduct
 from stocks.serializers import ProductSerializer
-from master.models import PaymentMode, BankMaster
+from master.models import PaymentMode, BankMaster, BusinessCategory
 from master.serializers import PaymentModeSerializer, BankMasterSerializer
 from django.db import transaction
 
@@ -18,10 +18,16 @@ class SaleProductSerializer(serializers.ModelSerializer):
         write_only=True
     )
 
+    business_category = serializers.PrimaryKeyRelatedField(
+        queryset=BusinessCategory.objects.all(),
+        required=True
+    )
+
     class Meta:
         model = SaleProduct
         fields = [
             'id',
+            "business_category",
             'product',
             'product_id',
             'product_code',           # ✅ instead of part_no

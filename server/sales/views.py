@@ -16,6 +16,18 @@ class SaleViewSet(viewsets.ModelViewSet):
     serializer_class = SaleSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+
+        business_category = self.request.query_params.get('business_category')
+        if business_category:
+            try:
+                qs = qs.filter(business_category_id=business_category)
+            except ValueError:
+                qs = qs.none()
+
+        return qs
+
     @action(detail=True, methods=['get'])
     def payments(self, request, pk=None):
         sale = self.get_object()

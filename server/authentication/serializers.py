@@ -54,11 +54,15 @@ class StaffCreateSerializer(serializers.ModelSerializer):
     job_info = JobInfoSerializer(many=True, required=False)
 
     user = UserProfileSerializer(read_only=True)
+    business_category = serializers.PrimaryKeyRelatedField(
+        queryset=BusinessCategory.objects.all(),
+        required=True
+    )
 
     class Meta:
         model = Staffs
         fields = [
-            'id',
+            'id','business_category',
             'user',  # nested read-only user
             'username', 'password','role','email', # User fields
             # Staff fields

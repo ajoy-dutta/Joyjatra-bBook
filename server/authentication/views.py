@@ -49,7 +49,6 @@ class UpdateUserByIdView(APIView):
     
 
 
-
 class PasswordChangeView(APIView):
     permission_classes = [IsAuthenticated]  # Only authenticated users can access this view
 
@@ -77,9 +76,18 @@ class StaffViewSet(viewsets.ModelViewSet):
     serializer_class = StaffCreateSerializer
     permission_classes = [IsAdmin]
 
-
     def get_queryset(self):
-        return Staffs.objects.filter(user__role__in=['staff', 'admin'])
+        qs = Staffs.objects.filter(user__role__in=['staff', 'admin'])
+
+        business_category = self.request.query_params.get('business_category')
+        if business_category:
+            try:
+                qs = qs.filter(business_category_id=business_category)
+            except ValueError:
+                qs = qs.none()
+
+        return qs
+
 
     def destroy(self, request, *args, **kwargs):
         """Soft delete: deactivate the user"""

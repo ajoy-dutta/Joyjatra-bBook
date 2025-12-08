@@ -14,7 +14,9 @@ export default function AddStaff() {
   };
 
   const { id } = useParams();
-
+  const [selectedCategory, setSelectedCategory] = useState(
+        JSON.parse(localStorage.getItem("business_category")) || null
+    );
   
   const [sameAsPresent, setSameAsPresent] = useState(false);
   const [years, setYears] = useState([]);
@@ -34,6 +36,7 @@ export default function AddStaff() {
   }, []);
 
   const [formData, setFormData] = useState({
+    business_category: selectedCategory?.id || null,
     name: "",
     name_bn: "",
     username:"",
@@ -89,6 +92,7 @@ export default function AddStaff() {
 
 
   const initialFormData = {
+    business_category: selectedCategory?.id || null,
     name: "",
     name_bn: "",
     username:"",
@@ -466,8 +470,8 @@ export default function AddStaff() {
 
       console.log("Submitting formData:", formData);
 
-      // --- Prepare FormData ---
-      const formDataToSend = new FormData();
+    // --- Prepare FormData ---
+    const formDataToSend = new FormData();
 
      for (let key in formData) {
         if (key === "exam_records") continue;

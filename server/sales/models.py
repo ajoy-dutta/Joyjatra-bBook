@@ -1,12 +1,13 @@
 from django.db import models
 from people.models import Customer
 from stocks.models import Product,StockProduct
-from master.models import  PaymentMode, BankMaster
+from master.models import  PaymentMode, BankMaster, BusinessCategory
 from django.utils import timezone
 
 
 
 class Sale(models.Model):
+    business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE, null=True, blank=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     sale_date = models.DateField(default=timezone.now)
     invoice_no = models.CharField(max_length=100, blank=True, null=True)

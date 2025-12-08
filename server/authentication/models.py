@@ -3,6 +3,7 @@ from .models import*
 from django.db.models import Sum
 from decimal import Decimal
 from django.contrib.auth.models import AbstractUser
+from master.models import BusinessCategory
 
 
 
@@ -55,6 +56,7 @@ class Staffs(models.Model):
         ('NID', 'NID'),
         ('Birth Certificate', 'Birth Certificate'),
     )
+    business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE, null=True, blank=True)
     user = models.OneToOneField('User', on_delete=models.CASCADE, related_name='staff_profile')
     name = models.CharField(max_length=100)
     name_bn = models.CharField(max_length=100, blank=True, null=True)

@@ -6,6 +6,9 @@ import { Link } from "react-router-dom";
 export default function StaffList() {
   const [staffs, setStaffs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState(
+      JSON.parse(localStorage.getItem("business_category")) || null
+  );
 
 
   useEffect(() => {
@@ -14,7 +17,9 @@ export default function StaffList() {
 
   const fetchStaffs = async () => {
     try {
-      const res = await AxiosInstance.get("staffs/");
+      const res = await AxiosInstance.get("staffs/",{
+        params:{business_category:selectedCategory.id},
+      });
       setStaffs(res.data);
     } catch (err) {
       console.error(err);

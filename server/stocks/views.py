@@ -6,7 +6,6 @@ from .serializers import *
 from rest_framework.decorators import action
 
 
-
 # ----------------------------
 # Product ViewSet
 # ----------------------------
