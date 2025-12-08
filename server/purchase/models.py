@@ -8,6 +8,7 @@ from authentication.models import Staffs
 
 
 class Expense(models.Model):
+    business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE, null=True, blank=True)
     cost_category = models.ForeignKey(CostCategory, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     note = models.TextField(blank=True, null=True)
@@ -43,6 +44,7 @@ class Expense(models.Model):
 
 
 class SalaryExpense(models.Model):
+    business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE, null=True, blank=True)
     staff = models.ForeignKey(
         Staffs,                         # ✅ use Staffs from authentication
         on_delete=models.PROTECT,

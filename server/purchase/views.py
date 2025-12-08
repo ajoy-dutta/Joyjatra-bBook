@@ -18,9 +18,34 @@ class ExpenseViewSet(viewsets.ModelViewSet):
     serializer_class = ExpenseSerializer
 
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+
+        business_category = self.request.query_params.get('business_category')
+        if business_category:
+            try:
+                qs = qs.filter(business_category_id=business_category)
+            except ValueError:
+                qs = qs.none()
+        return qs
+
+
 class SalaryExpenseViewSet(viewsets.ModelViewSet):
     queryset = SalaryExpense.objects.all().order_by("-created_at")
     serializer_class = SalaryExpenseSerializer
+    
+    def get_queryset(self):
+        qs = super().get_queryset()
+
+        business_category = self.request.query_params.get('business_category')
+        if business_category:
+            try:
+                qs = qs.filter(business_category_id=business_category)
+            except ValueError:
+                qs = qs.none()
+
+        return qs
+
 
     def perform_destroy(self, instance):
         with db_transaction.atomic():
@@ -30,10 +55,23 @@ class SalaryExpenseViewSet(viewsets.ModelViewSet):
                 bt.delete()
 
 
-class SupplierPurchaseViewSet(viewsets.ModelViewSet):
+class PurchaseViewSet(viewsets.ModelViewSet):
     queryset = Purchase.objects.all().order_by('-purchase_date')
     serializer_class = PurchaseSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+
+        business_category = self.request.query_params.get('business_category')
+        if business_category:
+            try:
+                qs = qs.filter(business_category_id=business_category)
+            except ValueError:
+                qs = qs.none()
+
+        return qs
 
 
 

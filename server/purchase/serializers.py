@@ -7,6 +7,10 @@ from master.serializers import *
 
 
 class ExpenseSerializer(serializers.ModelSerializer):
+    business_category = serializers.PrimaryKeyRelatedField(
+        queryset=BusinessCategory.objects.all(),
+        required=True
+    )
     cost_category_name = serializers.CharField(
         source="cost_category.category_name", read_only=True
     )
@@ -21,6 +25,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
         model = Expense
         fields = [
             "id",
+            "business_category",
             "cost_category",
             "cost_category_name",
             "amount",
@@ -39,6 +44,10 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
 
 class SalaryExpenseSerializer(serializers.ModelSerializer):
+    business_category = serializers.PrimaryKeyRelatedField(
+        queryset=BusinessCategory.objects.all(),
+        required=True
+    )
     staff_name = serializers.CharField(source="staff.name", read_only=True)
     total_salary = serializers.DecimalField(
         max_digits=12, decimal_places=2, read_only=True, source="total_salary"
@@ -48,6 +57,7 @@ class SalaryExpenseSerializer(serializers.ModelSerializer):
         model = SalaryExpense
         fields = [
             "id",
+            "business_category",
             "staff",
             "staff_name",
             "salary_month",
@@ -58,6 +68,7 @@ class SalaryExpenseSerializer(serializers.ModelSerializer):
             "created_at",
             "total_salary",
         ]
+
 
 
 class PurchaseProductSerializer(serializers.ModelSerializer):
@@ -74,17 +85,11 @@ class PurchaseProductSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
-    business_category = serializers.PrimaryKeyRelatedField(
-        queryset=BusinessCategory.objects.all(),
-        required=True
-    )
-
     class Meta:
         model = PurchaseProduct
         fields = [
             'id',
             'product',
-            'business_category',
             'product_id',
             'product_no',
             'purchase_quantity',
@@ -153,6 +158,12 @@ class PurchaseSerializer(serializers.ModelSerializer):
         write_only=True
     )
 
+    business_category = serializers.PrimaryKeyRelatedField(
+        queryset=BusinessCategory.objects.all(),
+        required=True
+    )
+
+
     # computed fields from model @property
     total_returned_quantity = serializers.IntegerField(read_only=True)
     total_returned_value = serializers.DecimalField(
@@ -165,6 +176,7 @@ class PurchaseSerializer(serializers.ModelSerializer):
         model = Purchase
         fields = [
             'id',
+            "business_category",
             'vendor',                  # read-only nested vendor
             'vendor_id',               # write-only FK id
             'purchase_date',
