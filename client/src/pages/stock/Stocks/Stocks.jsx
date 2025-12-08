@@ -32,17 +32,16 @@ export default function Stocks() {
   useEffect(() => {
     const fetchStocks = async () => {
       try {
-        // if no category in localStorage, just load all or stop
+        // if no category in localStorage, just load none
         if (!selectedCategory?.id) {
           setItems([]);
           setLoading(false);
           return;
         }
 
-        const res = await AxiosInstance.get(
-          `stocks/`,
-          { params: { business_category: selectedCategory.id } }
-        );
+        const res = await AxiosInstance.get("stocks/", {
+          params: { business_category: selectedCategory.id },
+        });
         setItems(res.data);
       } catch (err) {
         console.error("Failed to fetch stocks:", err);
@@ -100,7 +99,7 @@ export default function Stocks() {
     .filter((i) => isExpired(i))
     .reduce((sum, i) => sum + (i.current_stock_quantity || 0), 0);
 
-  // 🔔 NEW: total units expiring in the next 2 days
+  // total units expiring in the next 2 days
   const expiringSoonUnits = items
     .filter((i) => isExpiringSoon(i))
     .reduce((sum, i) => sum + (i.current_stock_quantity || 0), 0);
@@ -126,7 +125,7 @@ export default function Stocks() {
   const stockStatusLabel = (item) => {
     if (isExpired(item)) return "Expired";
     if (item.current_stock_quantity <= item.reorder_level) return "Low Stock";
-    if (isExpiringSoon(item)) return "Expiring Soon"; // 2-day warning text
+    if (isExpiringSoon(item)) return "Expiring Soon";
     if (item.moving_speed === "Fast-moving") return "Fast-moving";
     return "Healthy";
   };
@@ -149,7 +148,7 @@ export default function Stocks() {
       case "Expired":
         matchesFilter = isExpired(item);
         break;
-      case "Expiring soon": // filter for soon-expiring
+      case "Expiring soon":
         matchesFilter = isExpiringSoon(item);
         break;
       default:
@@ -158,6 +157,135 @@ export default function Stocks() {
 
     return matchesSearch && matchesFilter;
   });
+
+  // ---- Export handlers ----
+
+  // Excel = CSV export of the current filtered view
+  const handleExportExcel = () => {
+    if (!filteredItems.length) {
+      toast.error("No data to export");
+      return;
+    }
+
+    const header = [
+      "Product",
+      "Code",
+      "PurchaseQty",
+      "SaleQty",
+      "OnHand",
+      "Damage",
+      "Mfg",
+      "Exp",
+      "Status",
+    ];
+
+    const rows = filteredItems.map((item) => [
+      item.product?.product_name || "",
+      item.product?.product_code || "",
+      item.purchase_quantity ?? "",
+      item.sale_quantity ?? "",
+      item.current_stock_quantity ?? "",
+      item.damage_quantity ?? "",
+      item.manufacture_date || "",
+      item.expiry_date || "",
+      stockStatusLabel(item),
+    ]);
+
+    const csvContent = [header, ...rows]
+      .map((row) =>
+        row
+          .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+          .join(",")
+      )
+      .join("\n");
+
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    // .csv opens in Excel fine
+    link.download = "inventory.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // PDF = open a clean window with a table and trigger print (user can save as PDF)
+  const handleExportPDF = () => {
+    if (!filteredItems.length) {
+      toast.error("No data to export");
+      return;
+    }
+
+    const win = window.open("", "_blank");
+    if (!win) {
+      toast.error("Popup blocked. Please allow popups for this site.");
+      return;
+    }
+
+    const tableRows = filteredItems
+      .map(
+        (item) => `
+          <tr>
+            <td>${item.product?.product_name || ""}</td>
+            <td>${item.product?.product_code || ""}</td>
+            <td style="text-align:right;">${item.purchase_quantity ?? ""}</td>
+            <td style="text-align:right;">${item.sale_quantity ?? ""}</td>
+            <td style="text-align:right;">${item.current_stock_quantity ?? ""}</td>
+            <td style="text-align:right;">${item.damage_quantity ?? ""}</td>
+            <td>${item.manufacture_date || ""}</td>
+            <td>${item.expiry_date || ""}</td>
+            <td>${stockStatusLabel(item)}</td>
+          </tr>`
+      )
+      .join("");
+
+    win.document.write(`
+      <html>
+        <head>
+          <title>Inventory Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; font-size: 12px; }
+            h1 { text-align: center; margin-bottom: 16px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #ccc; padding: 4px 6px; }
+            th { background: #f3f4f6; }
+          </style>
+        </head>
+        <body>
+          <h1>Inventory Report</h1>
+          <table>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Code</th>
+                <th>PurchaseQty</th>
+                <th>SaleQty</th>
+                <th>OnHand</th>
+                <th>Damage</th>
+                <th>Mfg</th>
+                <th>Exp</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `);
+
+    win.document.close();
+    win.focus();
+    // small delay so content fully renders before print dialog
+    setTimeout(() => {
+      win.print(); // user chooses "Save as PDF"
+    }, 300);
+  };
 
   if (loading) return <p>Loading inventory...</p>;
 
@@ -258,6 +386,24 @@ export default function Stocks() {
               <option value="Expired">Expired</option>
               <option value="Expiring soon">Expiring soon</option>
             </select>
+          </div>
+
+          {/* Export buttons */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              className="px-3 py-1.5 text-sm rounded-lg border border-emerald-500 text-emerald-700 hover:bg-emerald-50"
+            >
+              Export Excel
+            </button>
+            <button
+              type="button"
+              onClick={handleExportPDF}
+              className="px-3 py-1.5 text-sm rounded-lg border border-slate-500 text-slate-700 hover:bg-slate-50"
+            >
+              Export PDF
+            </button>
           </div>
         </div>
 
