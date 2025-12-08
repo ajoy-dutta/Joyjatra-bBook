@@ -1,0 +1,54 @@
+# =========================
+# Python / Django
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+*.pot
+.Python
+
+# Django specific
+media/
+staticfiles/
+static/
+local_settings.py
+db.sqlite3
+
+# Ignore Django migrations except __init__.py
+**/migrations/
+!**/migrations/__init__.py
+
+# Environment / Secrets
+*.env
+.env.local
+.env.production
+.env.development
+
+# Virtual environment (if created inside server/)
+venv/
+env/
+.venv/
+
+# =========================
+# Build & cache
+# =========================
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# OS-generated files
+# =========================
+.DS_Store
+Thumbs.db
