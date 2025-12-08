@@ -15,18 +15,16 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     # IMPORTANT: support image upload
     parser_classes = [MultiPartParser, FormParser, JSONParser]
-    
 
     def get_queryset(self):
-        qs = Vendor.objects.all().order_by("-created_at")
+        # ✅ use Customer here, not Vendor
+        qs = Customer.objects.all().order_by("-created_at")
 
         business_category = self.request.query_params.get("business_category")
         if business_category:
             qs = qs.filter(business_category_id=business_category)
 
         return qs
-    
-
 
 
 class VendorViewSet(viewsets.ModelViewSet):
@@ -43,11 +41,9 @@ class VendorViewSet(viewsets.ModelViewSet):
         "shop_name",
         "district",
         "division",
-        "country"
+        "country",
     ]
     ordering_fields = ["created_at", "vendor_name"]
-
-
 
     def get_queryset(self):
         qs = Vendor.objects.all().order_by("-created_at")

@@ -173,3 +173,11 @@ class StockViewSet(viewsets.ModelViewSet):
             },
             status=status.HTTP_200_OK
         )
+     
+     
+    def get_queryset(self):
+      qs = super().get_queryset()
+      business_category = self.request.query_params.get("business_category")
+      if business_category:
+          qs = qs.filter(business_category_id=business_category)
+      return qs
