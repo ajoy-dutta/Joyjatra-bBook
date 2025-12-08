@@ -180,3 +180,21 @@ class StockViewSet(viewsets.ModelViewSet):
       if business_category:
           qs = qs.filter(business_category_id=business_category)
       return qs
+
+
+
+class AssetViewSet(viewsets.ModelViewSet):
+    queryset = Asset.objects.all().order_by("-id")
+    serializer_class = AssetSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+
+        business_category = self.request.query_params.get("business_category")
+        if business_category:
+            try:
+                qs = qs.filter(business_category_id=int(business_category))
+            except ValueError:
+                qs = qs.none()
+
+        return qs

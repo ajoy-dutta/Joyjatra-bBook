@@ -22,6 +22,10 @@ export default function PurchaseInvoices() {
     paidAmount: "",
   });
 
+  const [selectedCategory, setSelectedCategory] = useState(
+        JSON.parse(localStorage.getItem("business_category")) || null
+    );
+
   const safeNumber = (value) => {
     const num = parseFloat(value || 0);
     return Number.isNaN(num) ? 0 : num;
@@ -49,7 +53,9 @@ export default function PurchaseInvoices() {
       setLoading(true);
       setError("");
 
-      const res = await AxiosInstance.get("/purchases/");
+      const res = await AxiosInstance.get("/purchases/",{
+        params:{business_category: selectedCategory.id}
+      });
       const raw = res.data;
       const list = Array.isArray(raw) ? raw : raw.results || [];
 

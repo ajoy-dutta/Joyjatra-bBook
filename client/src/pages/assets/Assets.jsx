@@ -2,16 +2,7 @@ import React, { Fragment, useEffect, useState } from "react";
 import { Combobox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import AxiosInstance from "../../components/AxiosInstance";
-
 const todayStr = new Date().toISOString().slice(0, 10);
-
-const emptyForm = {
-  name: "",
-  code: "",
-  purchase_date: todayStr,
-  total_qty: "",
-  damaged_qty: "0",
-};
 
 function autoGenerateCode(name) {
   if (!name) return "";
@@ -23,8 +14,22 @@ function autoGenerateCode(name) {
 }
 
 export default function AssetsPage() {
+
+  const [selectedCategory, setSelectedCategory] = useState(
+    JSON.parse(localStorage.getItem("business_category")) || null
+  );
+
+  const getEmptyForm =(category)=> ({
+      business_category: category,
+      name: "",
+      code: "",
+      purchase_date: todayStr,
+      total_qty: "",
+      damaged_qty: "0",
+    });
+  
   const [assets, setAssets] = useState([]);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(getEmptyForm(selectedCategory?.id || null));
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
@@ -54,7 +59,9 @@ export default function AssetsPage() {
   // =============================
   const loadAssets = async () => {
     try {
-      const res = await AxiosInstance.get("assets/");
+      const res = await AxiosInstance.get("assets/",{
+        params:{business_category:selectedCategory?.id || null}
+      });
       setAssets(res.data);
     } catch (e) {
       console.error("Failed to load assets", e);
@@ -84,7 +91,7 @@ export default function AssetsPage() {
   };
 
   const resetForm = () => {
-    setForm(emptyForm);
+    setForm(getEmptyForm(selectedCategory?.id || null));
     setEditingId(null);
     setAutoCode(true);
     setNameQuery("");
@@ -147,6 +154,7 @@ export default function AssetsPage() {
   // =============================
   const onEdit = (asset) => {
     setForm({
+      business_category:selectedCategory?.id || null,
       name: asset.name,
       code: asset.code,
       purchase_date: asset.purchase_date || todayStr,

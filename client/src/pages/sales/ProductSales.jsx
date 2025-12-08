@@ -159,6 +159,9 @@ export default function CustomerProductSale() {
   });
   const [payments, setPayments] = useState([]);
   const [totalPaidAmount, setTotalPaidAmount] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState(
+      JSON.parse(localStorage.getItem("business_category")) || null
+  );
 
   // ---------- Fetch customers + products ----------
   useEffect(() => {
@@ -545,6 +548,7 @@ export default function CustomerProductSale() {
 
     try {
       const payload = {
+        business_category:selectedCategory?.id || null,
         customer_id: selectedCustomer.value,
         sale_date: saleDate,
         total_amount: parseFloat(totalAmount) || 0,

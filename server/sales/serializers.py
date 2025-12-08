@@ -18,16 +18,10 @@ class SaleProductSerializer(serializers.ModelSerializer):
         write_only=True
     )
 
-    business_category = serializers.PrimaryKeyRelatedField(
-        queryset=BusinessCategory.objects.all(),
-        required=True
-    )
-
     class Meta:
         model = SaleProduct
         fields = [
             'id',
-            "business_category",
             'product',
             'product_id',
             'product_code',           # ✅ instead of part_no
@@ -107,12 +101,18 @@ class SaleSerializer(serializers.ModelSerializer):
         source='customer',
         write_only=True
     )
+
+    business_category = serializers.PrimaryKeyRelatedField(
+        queryset=BusinessCategory.objects.all(),
+        required=True
+    )
     
 
     class Meta:
         model = Sale
         fields = [
             'id',
+            "business_category",
             'customer',
             'customer_id',
             'sale_date',

@@ -71,3 +71,17 @@ class StockBatch(models.Model):
     def is_expired(self):
         from django.utils import timezone
         return bool(self.expiry_date and self.expiry_date < timezone.now().date())
+
+
+
+class Asset(models.Model):
+    business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    code = models.CharField(max_length=100, blank=True, null=True)
+    purchase_date = models.DateField()
+    total_qty = models.PositiveIntegerField(default=0)
+    damaged_qty = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"

@@ -194,3 +194,24 @@ class StockBatchSerializer(serializers.ModelSerializer):
 
     def get_is_expired(self, obj):
         return obj.is_expired
+
+
+
+
+class AssetSerializer(serializers.ModelSerializer):
+    business_category = serializers.PrimaryKeyRelatedField(
+        queryset=BusinessCategory.objects.all()
+    )
+    
+    class Meta:
+        model = Asset
+        fields = [
+            "id",
+            "business_category",
+            "name",
+            "code",
+            "purchase_date",
+            "total_qty",
+            "damaged_qty",
+            "created_at",
+        ]

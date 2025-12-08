@@ -138,6 +138,9 @@ export default function SalesList() {
   const [returnModalSale, setReturnModalSale] = useState(null);
   const [returnData, setReturnData] = useState([]);
   const [payModalSale, setPayModalSale] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(
+      JSON.parse(localStorage.getItem("business_category")) || null
+  );
 
   const [formData, setFormData] = useState({
     returnDate: new Date().toISOString().slice(0, 10),
@@ -169,7 +172,9 @@ export default function SalesList() {
   const fetchSales = async () => {
     setLoading(true);
     try {
-      const res = await AxiosInstance.get("/sales/");
+      const res = await AxiosInstance.get("/sales/", {
+        params:{business_category:selectedCategory?.id || null}
+      });
       setAllSales(res.data);
       setSales(res.data);
     } catch (err) {
@@ -182,7 +187,9 @@ export default function SalesList() {
 
   const fetchStockData = async () => {
     try {
-      const response = await AxiosInstance.get("/stocks/");
+      const response = await AxiosInstance.get("/stocks/", {
+        params:{business_category:selectedCategory?.id || null}
+      });
       setStockData(response.data);
     } catch (error) {
       console.error("Error fetching stock data:", error);
@@ -211,7 +218,9 @@ export default function SalesList() {
           AxiosInstance.get("/districts/").then((res) => {
             setDistricts(res.data.map((d) => ({ value: d.id, label: d.name })));
           }),
-          AxiosInstance.get("/customers/").then((res) => {
+          AxiosInstance.get("/customers/", {
+          params:{business_category:selectedCategory?.id || null}
+        }).then((res) => {
             setCustomers(
               res.data.map((c) => ({
                 value: c.id,

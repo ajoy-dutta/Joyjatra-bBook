@@ -11,37 +11,16 @@ import {
 } from "react-icons/fa";
 import AxiosInstance from "../../components/AxiosInstance";
 
-// change if your backend is elsewhere
-const BACKEND_URL = "http://localhost:8000";
 
-const EMPTY_FORM = {
-  customer_name: "",
-  division: "",
-  district: "",
-  customer_type: "",
-  shop_name: "",
-  phone1: "",
-  phone2: "",
-  email: "",
-  address: "",
-  date_of_birth: "",
-  nid_no: "",
-  courier_name: "",
-  remarks: "",
-  previous_due_amount: "",
-};
-
-const API_URL = "customers/"; // AxiosInstance baseURL: http://localhost:8000/api/
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
   const [search, setSearch] = useState("");
-  const [form, setForm] = useState(EMPTY_FORM);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
+  
   // edit mode
   const [editingId, setEditingId] = useState(null);
 
@@ -56,8 +35,33 @@ export default function Customers() {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
 
+  const [selectedCategory, setSelectedCategory] = useState(
+      JSON.parse(localStorage.getItem("business_category")) || null
+  );
+
+
+  const getEmptyForm = (categoryId) => ({
+    business_category: categoryId,
+    customer_name: "",
+    division: "",
+    district: "",
+    customer_type: "",
+    shop_name: "",
+    phone1: "",
+    phone2: "",
+    email: "",
+    address: "",
+    date_of_birth: "",
+    nid_no: "",
+    courier_name: "",
+    remarks: "",
+    previous_due_amount: "",
+  });
+
+  const [form, setForm] = useState(() => getEmptyForm(selectedCategory.id));
+
   const resetFormState = () => {
-    setForm(EMPTY_FORM);
+    setForm(getEmptyForm(selectedCategory.id));
     setEditingId(null);
     setSelectedDivisionId("");
     setSelectedDistrictId("");
@@ -73,10 +77,11 @@ export default function Customers() {
       setLoading(true);
       setError("");
 
-      const params = {};
       if (searchValue.trim()) params.search = searchValue.trim();
 
-      const res = await AxiosInstance.get(API_URL, { params });
+      const res = await AxiosInstance.get("customers/", {
+         params: {business_category:selectedCategory.id } 
+        });
       const data = res.data;
       const items = Array.isArray(data) ? data : data.results || [];
       setCustomers(items);
@@ -191,13 +196,9 @@ export default function Customers() {
 
     try {
       if (editingId) {
-        await AxiosInstance.patch(`${API_URL}${editingId}/`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        await AxiosInstance.patch(`customers/${editingId}/`, formData);
       } else {
-        await AxiosInstance.post(API_URL, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        await AxiosInstance.post("customers/", formData);
       }
 
       resetFormState();
@@ -259,7 +260,7 @@ export default function Customers() {
       return;
     }
     try {
-      await AxiosInstance.delete(`${API_URL}${id}/`);
+      await AxiosInstance.delete(`customers/${id}/`);
       setCustomers((prev) => prev.filter((c) => c.id !== id));
     } catch (err) {
       console.error(err);
@@ -682,13 +683,14 @@ export default function Customers() {
                   {/* Address */}
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
-                      Address
+                      Address *
                     </label>
                     <textarea
                       name="address"
                       value={form.address}
                       onChange={handleFormChange}
                       rows={2}
+                      required
                       className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:ring focus:ring-blue-500/30"
                     />
                   </div>

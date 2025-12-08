@@ -11,6 +11,9 @@ export default function CustomerStatements() {
   const [searchCustomer, setSearchCustomer] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState(
+      JSON.parse(localStorage.getItem("business_category")) || null
+  );
 
   const safeNumber = (value) => {
     const num = parseFloat(value || 0);
@@ -21,7 +24,9 @@ export default function CustomerStatements() {
 
   const loadCustomers = async () => {
     try {
-      const res = await AxiosInstance.get("customers/");
+      const res = await AxiosInstance.get("customers/", {
+        params:{business_category:selectedCategory?.id || null}
+      });
       const raw = res.data;
       const items = Array.isArray(raw) ? raw : raw.results || [];
       setCustomers(items);
@@ -35,7 +40,9 @@ export default function CustomerStatements() {
     try {
       setLoading(true);
       setError("");
-      const res = await AxiosInstance.get("sales/");
+      const res = await AxiosInstance.get("sales/", {
+        params:{business_category:selectedCategory?.id || null}
+      });
       const raw = res.data;
       const items = Array.isArray(raw) ? raw : raw.results || [];
       setSales(items);
