@@ -63,13 +63,6 @@ class StockViewSet(viewsets.ModelViewSet):
     serializer_class = StockSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    search_fields = [
-        'product__product_name',
-        'product__product_code',
-    ]
-
-    filterset_fields = ['product']
-
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -96,14 +89,31 @@ class StockViewSet(viewsets.ModelViewSet):
 
         return qs
 
+
     def create(self, request, *args, **kwargs):
-        """Handle stock creation with proper data mapping"""
-        # The serializer will handle the product_id → product mapping automatically
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except IntegrityError:
+            return Response(
+                {"error": "Stock already exists for this product"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     def update(self, request, *args, **kwargs):
         try:
