@@ -68,85 +68,74 @@ class ProductSerializer(serializers.ModelSerializer):
 # Stock Serializer
 # ----------------------------
 class StockSerializer(serializers.ModelSerializer):
-    product = ProductSerializer(read_only=True)
-    product_id = serializers.PrimaryKeyRelatedField(
-        queryset=Product.objects.all(),
-        source='product',
-        write_only=True,
-        required=False
-    )
     business_category = serializers.PrimaryKeyRelatedField(
         queryset=BusinessCategory.objects.all(),
         required=True
+    )
+    product = ProductSerializer(read_only=True)
+    product_id = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all(),
+        source="product",
+        write_only=True
     )
 
     class Meta:
         model = StockProduct
         fields = [
-            'id',
-            'business_category',
-            'product',
-            'product_id',
-            'purchase_quantity',
-            'sale_quantity',
+            "id",
+            "business_category",
+            "product",
+            "product_id",
+            "purchase_quantity",
+            "sale_quantity",
+            "damage_quantity",
             "current_stock_quantity",
-            'damage_quantity',
-            'purchase_price',
-            'sale_price',
-            'current_stock_value',
-            'net_weight',
-            'manufacture_date',  
-            'expiry_date',  
-            'remarks',     
-            'created_at',
-        ]
-
-        read_only_fields = (
+            "purchase_price",
             "current_stock_value",
+            "manufacture_date",
+            "expiry_date",
+            "remarks",
+            "created_at",
+        ]
+        read_only_fields = (
             "current_stock_quantity",
+            "current_stock_value",
+            "product",
+            "created_at",
         )
 
     def validate(self, data):
-        # ---- price validation ----
-        purchase_price = data.get('purchase_price')
-        sale_price = data.get('sale_price')
+        purchase_qty = data.get("purchase_quantity") or 0
+        sale_qty = data.get("sale_quantity") or 0
+        damage_qty = data.get("damage_quantity") or 0
 
-        # Prices must be non-negative
-        if purchase_price is not None and purchase_price < 0:
-            raise serializers.ValidationError({
-                'purchase_price': 'Purchase price cannot be negative.'
-            })
+        if purchase_qty < 0 or sale_qty < 0 or damage_qty < 0:
+            raise serializers.ValidationError(
+                "Quantities cannot be negative."
+            )
 
-        if sale_price is not None and sale_price < 0:
-            raise serializers.ValidationError({
-                'sale_price': 'Sale price cannot be negative.'
-            })
-
-        # ---- quantity validation ----
-        quantities = ['purchase_quantity', 'sale_quantity', 'damage_quantity']
-        for quantity_field in quantities:
-            if quantity_field in data and data[quantity_field] < 0:
-                raise serializers.ValidationError({
-                    quantity_field: 'Quantity cannot be negative.'
-                })
+        if sale_qty + damage_qty > purchase_qty:
+            raise serializers.ValidationError(
+                "Sale + Damage cannot exceed Purchase quantity."
+            )
 
         return data
 
     def create(self, validated_data):
-        # Calculate current stock quantity
-        validated_data['current_stock_quantity'] = (
-            validated_data.get('purchase_quantity', 0) -
-            validated_data.get('sale_quantity', 0) -
-            validated_data.get('damage_quantity', 0)
-        )
+        purchase_qty = validated_data.get("purchase_quantity") or 0
+        sale_qty = validated_data.get("sale_quantity") or 0
+        damage_qty = validated_data.get("damage_quantity") or 0
 
-        # Protect against missing purchase_price on create
-        purchase_price = validated_data.get('purchase_price') or 0
-        validated_data['current_stock_value'] = (
-            validated_data['current_stock_quantity'] * purchase_price
-        )
+        current_stock = purchase_qty - sale_qty - damage_qty
+
+        validated_data["current_stock_quantity"] = current_stock
+
+        purchase_price = validated_data.get("purchase_price") or 0
+        validated_data["current_stock_value"] = current_stock * purchase_price
 
         return super().create(validated_data)
+
+
 
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():

@@ -63,6 +63,11 @@ export default function Stocks() {
     );
   };
 
+  const addItem = (newStock) => {
+    setItems((prev) => [...prev, newStock]);
+  };
+
+
   // ---- Date helpers ----
   const today = new Date();
   const parseDate = (d) => (d ? new Date(d) : null);
@@ -523,7 +528,7 @@ export default function Stocks() {
         <AddModal
           business_category={selectedCategory.id}
           onClose={() => setAddStockModal(false)}
-          onUpdated={updateItem}
+          onAdd={addItem}
         />
       )}
     </div>

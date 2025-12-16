@@ -47,7 +47,8 @@ export default function EditModal({ stock, onClose, onUpdated }) {
     };
 
     try {
-      const res = await AxiosInstance.put(`/stocks/${stock.id}/`, payload);
+      const res = await AxiosInstance.patch(`/stocks/${stock.id}/`, payload);
+      console.log("response",res.data);
       toast.success("Stock updated successfully!");
       onUpdated(res.data);
       onClose();

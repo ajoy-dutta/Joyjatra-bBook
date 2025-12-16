@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import AxiosInstance from "../../../components/AxiosInstance";
 
-export default function AddModal({ onClose, business_category, onUpdated }) {
+export default function AddModal({ onClose, business_category, onAdd }) {
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({
     business_category: business_category || null,
-    product: "",
+    product_id: "",
     purchase_quantity: "",
     sale_quantity: "",
     damage_quantity: "",
@@ -55,7 +55,7 @@ export default function AddModal({ onClose, business_category, onUpdated }) {
 
     const payload = {
       ...formData,
-      product: formData.product, // ID from select
+      product_id: formData.product,
       business_category: formData.business_category, // ID
       purchase_quantity: normalize(formData.purchase_quantity),
       sale_quantity: normalize(formData.sale_quantity),
@@ -63,7 +63,6 @@ export default function AddModal({ onClose, business_category, onUpdated }) {
       current_stock_quantity: normalize(formData.current_stock_quantity),
       purchase_price: normalize(formData.purchase_price),
       sale_price: normalize(formData.sale_price),
-      current_stock_value: normalize(formData.current_stock_value),
       net_weight: normalize(formData.net_weight),
       manufacture_date: normalize(formData.manufacture_date),
       expiry_date: normalize(formData.expiry_date),
@@ -73,7 +72,7 @@ export default function AddModal({ onClose, business_category, onUpdated }) {
     try {
       const res = await AxiosInstance.post("stocks/", payload);
       toast.success("Stock added successfully!");
-      onUpdated(res.data);
+      onAdd(res.data);
       onClose();
     } catch (error) {
       console.error(error);
