@@ -141,3 +141,46 @@ class PurchasePayment(models.Model):
         return f"Payment for {self.purchase.invoice_no}"
     
     
+
+
+
+class Order(models.Model):
+    order_no = models.CharField(max_length=30, unique=True, blank=True)
+    company_name = models.CharField(max_length=255, blank=True, null=True)
+    order_date = models.DateField(blank=True, null=True)
+    due_date = models.DateField(blank=True, null=True)
+    advance_payment = models.DecimalField(max_digits=12, decimal_places=2, default=0, blank=True, null=True)
+    remarks = models.CharField(max_length=100, blank=True, null=True)
+
+
+    def save(self, *args, **kwargs):
+        if not self.order_no:
+            today = now().strftime('%Y%m%d')
+            last_order = Order.objects.filter(order_no__startswith=f"ORD-{today}").order_by('id').last()
+            next_number = 1
+
+            if last_order:
+                try:
+                    last_no = last_order.order_no.split('-')[-1]
+                    next_number = int(last_no) + 1
+                except:
+                    pass
+
+            self.order_no = f"ORD-{today}-{next_number:03d}"
+
+        super().save(*args, **kwargs)
+
+
+    def __str__(self):
+        return f"Order for {self.company_name} - {self.order_date}"
+
+
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, blank=True, null=True)
+    quantity = models.PositiveIntegerField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Order for {self.product_name}-{self.quantity}"

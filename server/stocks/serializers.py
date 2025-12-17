@@ -20,6 +20,7 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'business_category',
+            'company_name',
             'product_name', 
             'product_code',
             'price',
