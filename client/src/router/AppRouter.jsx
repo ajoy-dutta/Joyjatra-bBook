@@ -30,6 +30,8 @@ import ProductsServicesPurchases from "../pages/purchases/ProductsPurchases";
 import PurchaseInvoices from "../pages/purchases/Invoices";
 import PurchasePayments from "../pages/purchases/PurchasePayments";
 import PurchaseEntry from "../pages/purchases/purchaseEntry";
+import Order from "../pages/purchases/Product Order/Order";
+import OrderList from "../pages/purchases/Product Order/OrderList";
 
 
 // Accounting
@@ -66,6 +68,7 @@ import ReportsHome from "../pages/reports/ReportsHome";
 
 // Settings
 import BusinessCategory from "../pages/settings/businessCategory/page";
+import InventoryCategory from "../pages/settings/InventoryCategory/page";
 import CostCategory from "../pages/settings/CostCategory/page";
 import SourceCategory from "../pages/settings/sourcecategory/page";
 import ProductCategory from "../pages/settings/productcategory/page";
@@ -146,6 +149,8 @@ export default function AppRouter() {
             <Route path="/purchases/products-services" element={<ProductsServicesPurchases />} />
             <Route path="/purchases/invoices" element={<PurchaseInvoices />} />
             <Route path="/purchases/payments" element={<PurchasePayments />} />
+            <Route path="/purchases/products-order" element={<Order />} />
+            <Route path="/purchases/order-list" element={<OrderList />} />
             <Route path="/purchases/purchase-entry" element={<PurchaseEntry />} />
           </>
         )}
@@ -187,6 +192,7 @@ export default function AppRouter() {
 
         {/* Master / Settings */}
         <Route path="/master/business-category" element={<BusinessCategory />} />
+        <Route path="/master/inventory-category" element={<InventoryCategory />} />
         <Route path="/master/cost-category" element={<CostCategory />} />
         <Route path="/master/income-sources" element={<SourceCategory />} />
         <Route path="/master/product-category" element={<ProductCategory />} />

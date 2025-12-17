@@ -116,3 +116,10 @@ class BankTransactionSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["running_balance", "created_at"]
+
+
+
+class InventoryCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InventoryCategory
+        fields = '__all__'

@@ -350,3 +350,14 @@ class UploadStockExcelView(APIView):
                     )
 
         return Response({"message": "Stock uploaded successfully"}, status=200)
+
+
+
+
+# ----------------------------
+# Order
+# ----------------------------
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.prefetch_related('items__product').all()
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]

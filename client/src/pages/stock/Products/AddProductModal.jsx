@@ -12,6 +12,7 @@ export default function AddProductModal({ editProduct, closeModal, refreshProduc
 
   const [formData, setFormData] = useState({
     business_category: selectedCategory.id,
+    company_name: "",
     product_name: "",
     product_code: "",
     price: "",
@@ -24,6 +25,7 @@ export default function AddProductModal({ editProduct, closeModal, refreshProduc
     if (editProduct) {
       setFormData({
         business_category: selectedCategory.id,
+        comapny_name: editProduct.comapny_name || "",
         product_name: editProduct.product_name || "",
         product_code: editProduct.product_code || "",
         price: editProduct.price || "",
@@ -145,6 +147,25 @@ export default function AddProductModal({ editProduct, closeModal, refreshProduc
           )}
 
           <div className="space-y-4">
+
+             <div>
+              <label className="text-sm font-medium flex items-center gap-2">
+                📦 Company Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="company_name"
+                value={formData.company_name}
+                onChange={handleChange}
+                placeholder="Enter Company Name"
+                className={`w-full border rounded-xl px-4 py-3 text-sm
+                  focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all duration-200
+                  ${errors.company_name ? 'border-red-300 focus:ring-red-400 bg-red-50' : 'border-slate-300 focus:ring-blue-500 focus:border-blue-400 hover:border-slate-400'}
+                `}
+              />
+              {errors.company_name && <p className="text-red-500 text-xs mt-1">⚠️ {errors.company_name}</p>}
+            </div>
+
             {/* Product Name */}
             <div>
               <label className="text-sm font-medium flex items-center gap-2">

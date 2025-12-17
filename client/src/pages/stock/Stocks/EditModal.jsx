@@ -3,7 +3,9 @@ import toast from "react-hot-toast";
 import AxiosInstance from "../../../components/AxiosInstance";
 
 export default function EditModal({ stock, onClose, onUpdated }) {
+  const [inventoryCategories, setInventoryCategories] = useState([]);
   const [formData, setFormData] = useState({
+    inventory_category: "",
     purchase_quantity: "",
     sale_quantity: "",
     damage_quantity: "",
@@ -18,6 +20,7 @@ export default function EditModal({ stock, onClose, onUpdated }) {
   useEffect(() => {
     if (stock) {
       setFormData({
+        inventory_category: stock.inventory_category || "",
         purchase_quantity: stock.purchase_quantity || 0,
         sale_quantity: stock.sale_quantity || 0,
         damage_quantity: stock.damage_quantity || 0,
@@ -36,6 +39,19 @@ export default function EditModal({ stock, onClose, onUpdated }) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+   useEffect(() => {
+      const fetchInventoryCategory = async () => {
+        try {
+          const response = await AxiosInstance.get("inventory-categories/");
+          setInventoryCategories(response.data);
+        } catch (error) {
+          console.error(error);
+          toast.error("Failed to fetch inventory categories");
+        }
+      };
+      fetchInventoryCategory();
+    }, []);
 
   const normalize = (value) => (value === "" ? null : value);
 
@@ -64,6 +80,26 @@ export default function EditModal({ stock, onClose, onUpdated }) {
         <h2 className="text-xl font-semibold mb-4">Edit Stock</h2>
 
         <div className="grid grid-cols-2 gap-4">
+
+          {/* Category Dropdown */}
+          <div className="flex flex-col">
+            <label className="text-sm font-medium">category</label>
+            <select
+              name="inventory_category"
+              value={formData.inventory_category}
+              onChange={handleChange}
+              className="border px-2 py-1 rounded"
+              required
+            >
+              <option value="">Select product</option>
+              {inventoryCategories.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Purchase Quantity */}
           <div className="flex flex-col">
             <label className="text-sm font-medium mb-1">Purchase Quantity</label>

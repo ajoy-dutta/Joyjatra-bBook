@@ -4,8 +4,10 @@ import AxiosInstance from "../../../components/AxiosInstance";
 
 export default function AddModal({ onClose, business_category, onAdd }) {
   const [products, setProducts] = useState([]);
+  const [inventoryCategories, setInventoryCategories] = useState([]);
   const [formData, setFormData] = useState({
     business_category: business_category || null,
+    inventory_category: "",
     product_id: "",
     purchase_quantity: "",
     sale_quantity: "",
@@ -36,6 +38,21 @@ export default function AddModal({ onClose, business_category, onAdd }) {
     fetchProducts();
   }, [business_category]);
 
+
+
+   useEffect(() => {
+    const fetchInventoryCategory = async () => {
+      try {
+        const response = await AxiosInstance.get("inventory-categories/");
+        setInventoryCategories(response.data);
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to fetch inventory categories");
+      }
+    };
+    fetchInventoryCategory();
+  }, [business_category]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -56,6 +73,7 @@ export default function AddModal({ onClose, business_category, onAdd }) {
     const payload = {
       ...formData,
       product_id: formData.product,
+      inventory_category: formData.inventory_category, // ID
       business_category: formData.business_category, // ID
       purchase_quantity: normalize(formData.purchase_quantity),
       sale_quantity: normalize(formData.sale_quantity),
@@ -86,14 +104,35 @@ export default function AddModal({ onClose, business_category, onAdd }) {
         <h2 className="text-xl font-semibold mb-4">Add Stock</h2>
 
         <div className="grid grid-cols-2 gap-4">
+
+          {/* Category Dropdown */}
+          <div className="flex flex-col">
+            <label className="text-sm font-medium">category *</label>
+            <select
+              name="inventory_category"
+              value={formData.inventory_category}
+              onChange={handleChange}
+              className="border px-2 py-1 rounded"
+              required
+            >
+              <option value="">Select product</option>
+              {inventoryCategories.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Product Dropdown */}
-          <div className="flex flex-col col-span-2">
-            <label className="text-sm font-medium">Product</label>
+          <div className="flex flex-col">
+            <label className="text-sm font-medium">Product *</label>
             <select
               name="product"
               value={formData.product}
               onChange={handleChange}
               className="border px-2 py-1 rounded"
+              required
             >
               <option value="">Select product</option>
               {products.map((p) => (

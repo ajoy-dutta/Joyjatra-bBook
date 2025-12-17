@@ -2,13 +2,13 @@ from django.db import models
 from django.utils import timezone
 from django.utils.timezone import now
 from django.utils.text import slugify
-from master.models import BusinessCategory
+from master.models import BusinessCategory, InventoryCategory
 
 
 
 class Product(models.Model):
+    company_name = models.CharField(max_length=250, blank=True, null=True)
     business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE, null=True, blank=True)
-    # image = models.ImageField(upload_to='product_images/', blank=True, null=True)
     product_name = models.CharField(max_length=250)
     product_code = models.CharField(max_length=250,blank=True, null=True)
     price = models.DecimalField(max_digits=12, decimal_places=3, default=0)
@@ -24,8 +24,12 @@ class Product(models.Model):
 
 class StockProduct(models.Model):
     business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE,blank=True, null=True)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, unique=True)
-
+    product = models.OneToOneField(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="stock"
+    )
+    inventory_category = models.ForeignKey(InventoryCategory,on_delete=models.CASCADE,blank=True,null=True)
     purchase_quantity = models.PositiveIntegerField(default=0,blank=True, null=True)
     sale_quantity = models.PositiveIntegerField(default=0,blank=True, null=True)
     damage_quantity = models.PositiveIntegerField(default=0, blank=True, null=True)

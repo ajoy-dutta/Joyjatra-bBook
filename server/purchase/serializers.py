@@ -223,3 +223,70 @@ class PurchaseSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
     
+
+
+
+
+# ----------------------------
+# Order Item Serializer
+# ----------------------------
+class OrderItemSerializer(serializers.ModelSerializer):
+    product_details = ProductSerializer(source='product', read_only=True)
+    product_id = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), source='product')
+
+    class Meta:
+        model = OrderItem
+        fields = [
+            'id',
+            'product_id',
+            'quantity',
+            'product_details',
+        ]
+
+
+# ----------------------------
+# Order Serializer
+# ----------------------------
+class OrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True)
+    
+    class Meta:
+        model = Order
+        fields = ['id', 'order_no', 'order_date','company_name', 'items']
+
+
+    def create(self, validated_data):
+        items_data = validated_data.pop('items')
+        order = Order.objects.create(**validated_data)
+        for item_data in items_data:
+            OrderItem.objects.create(order=order, **item_data)
+        return order
+
+
+    def update(self, instance, validated_data):
+        items_data = validated_data.pop('items', [])
+        instance.order_no = validated_data.get('order_no', instance.order_no)
+        instance.order_date = validated_data.get('order_date', instance.order_date)
+        instance.save()
+
+        existing_item_ids = [item.id for item in instance.items.all()]
+        new_item_ids = []
+
+        for item_data in items_data:
+            item_id = item_data.get('id', None)
+            if item_id and item_id in existing_item_ids:
+                item = OrderItem.objects.get(id=item_id, order=instance)
+                for attr, value in item_data.items():
+                    setattr(item, attr, value)
+                item.save()
+                new_item_ids.append(item_id)
+            else:
+                item = OrderItem.objects.create(order=instance, **item_data)
+                new_item_ids.append(item.id)
+
+        for item in instance.items.all():
+            if item.id not in new_item_ids:
+                item.delete()
+
+        return instance
+

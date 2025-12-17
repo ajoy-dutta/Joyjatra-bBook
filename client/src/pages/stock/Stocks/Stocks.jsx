@@ -27,6 +27,8 @@ export default function Stocks() {
   const [AddStockModal, setAddStockModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [inventoryCategories, setInventoryCategories] = useState([]);
+  const [activeInventoryCategory, setActiveInventoryCategory] = useState(null);
 
   // ✅ read selected business category from localStorage
   // NOTE: keeping your existing behavior (non-reactive) to avoid changing logic.
@@ -90,6 +92,21 @@ export default function Stocks() {
 
     fetchBanner();
   }, [selectedCategory?.id]);
+
+
+
+  useEffect(() => {
+      const fetchInventoryCategory = async () => {
+        try {
+          const response = await AxiosInstance.get("inventory-categories/");
+          setInventoryCategories(response.data);
+        } catch (error) {
+          console.error(error);
+          toast.error("Failed to fetch inventory categories");
+        }
+      };
+      fetchInventoryCategory();
+    }, []);
 
   const updateItem = (updatedStock) => {
     setItems((prev) =>
@@ -171,8 +188,18 @@ export default function Stocks() {
     return "Healthy";
   };
 
+
+
+  // ---- Filtered items ----
+  const filteredItemsByCategory = useMemo(() => {
+    if (!activeInventoryCategory) return items;
+    return items.filter(
+      (item) => parseInt(item.inventory_category) === activeInventoryCategory.id
+    );
+  }, [items, activeInventoryCategory]);
+
   // ---- Search + filter ----
-  const filteredItems = items.filter((item) => {
+  const filteredItems = filteredItemsByCategory.filter((item) => {
     const term = searchTerm.toLowerCase().trim();
     const name = item.product?.product_name?.toLowerCase() || "";
     const code = item.product?.product_code?.toLowerCase() || "";
@@ -517,6 +544,33 @@ export default function Stocks() {
       {/* Inventory Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+
+           {/* Category Tabs */}
+          <div className="flex gap-2 mb-4 overflow-x-auto">
+            <button
+              onClick={() => setActiveInventoryCategory(null)}
+              className={`px-3 py-1 rounded ${
+                !activeInventoryCategory ? "bg-emerald-500 text-white" : "bg-slate-100"
+              }`}
+            >
+              All
+            </button>
+            {inventoryCategories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveInventoryCategory(cat)}
+                className={`px-3 py-1 rounded ${
+                  activeInventoryCategory?.id === cat.id
+                    ? "bg-emerald-500 text-white"
+                    : "bg-slate-100"
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+
+
           <div className="flex gap-2">
             <input
               type="text"

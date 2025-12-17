@@ -82,6 +82,7 @@ export default function Sidebar() {
       icon: "",
       items: [
         { label: "Business Category", path: "/master/business-category" },
+        { label: "Inventory Category", path: "/master/inventory-category" },
         { label: "Cost Category", path: "/master/cost-category" },
         { label: "Income Sources", path: "/master/income-sources" },
         { label: "Product Category", path: "/master/product-category" },
@@ -118,6 +119,7 @@ export default function Sidebar() {
           { label: "Invoice", path: "/purchases/invoices" },
           { label: "Payments", path: "/purchases/payments" },
           { label: "Bills", path: "/purchases/bills" },
+          { label: "Work Order", path: "/purchases/products-order" },
           { label: "Purchase Entry", path: "/purchases/purchase-entry" },
         ],
       });

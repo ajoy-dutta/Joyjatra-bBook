@@ -1,6 +1,6 @@
 from .models import *
 from rest_framework import serializers
-from master.serializers import BusinessCategorySerializer
+from master.serializers import BusinessCategorySerializer, InventoryCategorySerializer
 from master.models import BusinessCategory
 
 # ----------------------------
@@ -20,6 +20,7 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'business_category',
+            'company_name',
             'product_name', 
             'product_code',
             'price',
@@ -78,12 +79,20 @@ class StockSerializer(serializers.ModelSerializer):
         source="product",
         write_only=True
     )
+    inventory_category = serializers.PrimaryKeyRelatedField(
+        queryset=InventoryCategory.objects.all(),
+        required=False,
+        allow_null=True
+    )
+    category_details = InventoryCategorySerializer(read_only=True)
 
     class Meta:
         model = StockProduct
         fields = [
             "id",
             "business_category",
+            'inventory_category',
+            'category_details',
             "product",
             "product_id",
             "purchase_quantity",
@@ -102,6 +111,7 @@ class StockSerializer(serializers.ModelSerializer):
             "current_stock_value",
             "product",
             "created_at",
+            "category_details",
         )
 
     def validate(self, data):

@@ -10,3 +10,5 @@ class ExpenseAdmin(admin.ModelAdmin):
 admin.site.register(Purchase)
 admin.site.register(PurchaseProduct)
 admin.site.register(PurchasePayment)
+admin.site.register(Order)
+admin.site.register(OrderItem)

@@ -85,3 +85,12 @@ class BankTransactionViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["narration", "reference_no", "bank_account__accountName"]
     ordering_fields = ["date", "created_at", "amount"]
+
+
+
+
+
+class InventoryCategoryViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]
+    queryset = InventoryCategory.objects.all()
+    serializer_class = InventoryCategorySerializer
