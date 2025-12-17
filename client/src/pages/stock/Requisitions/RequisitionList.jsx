@@ -16,6 +16,7 @@ export default function RequisitionList() {
   const fetchRows = async () => {
     try {
       setLoading(true);
+
       if (!selectedCategory?.id) {
         setRows([]);
         return;
@@ -43,32 +44,49 @@ export default function RequisitionList() {
   const filtered = useMemo(() => {
     const term = search.toLowerCase().trim();
     if (!term) return rows;
+
     return rows.filter((r) => {
       const a = (r.requisition_no || "").toLowerCase();
       const b = (r.requisite_name || "").toLowerCase();
-      const c = (r.item_name || "").toLowerCase();
+      // ✅ CHANGED: search by product_name instead of item_name
+      const c = (r.product_name || "").toLowerCase();
       return a.includes(term) || b.includes(term) || c.includes(term);
     });
   }, [rows, search]);
 
-  const toggleStatus = async (row) => {
+  const approveRequisition = async (row) => {
+    if (row.status) return toast("Already approved");
+
+    // ✅ Optional safety: don’t allow approve if product not linked
+    if (!row.product) {
+      return toast.error("Select a product for this requisition first.");
+    }
+
+    const ok = window.confirm(
+      "Approve this requisition? This will deduct the quantity from stock."
+    );
+    if (!ok) return;
+
     try {
-      const res = await AxiosInstance.patch(`requisitions/${row.id}/`, {
-        status: !row.status,
-      });
+      const res = await AxiosInstance.post(`requisitions/${row.id}/approve/`);
       setRows((prev) => prev.map((x) => (x.id === row.id ? res.data : x)));
-      toast.success("Status updated");
+      toast.success("Approved & stock deducted");
     } catch (e) {
       console.error(e);
-      toast.error("Failed to update status");
+      toast.error(e?.response?.data?.detail || "Approval failed");
     }
   };
 
-  const deleteRow = async (id) => {
+  const deleteRow = async (row) => {
+    if (row.status) {
+      return toast.error("Approved requisition cannot be deleted.");
+    }
+
     if (!window.confirm("Delete this requisition?")) return;
+
     try {
-      await AxiosInstance.delete(`requisitions/${id}/`);
-      setRows((prev) => prev.filter((x) => x.id !== id));
+      await AxiosInstance.delete(`requisitions/${row.id}/`);
+      setRows((prev) => prev.filter((x) => x.id !== row.id));
       toast.success("Deleted");
     } catch (e) {
       console.error(e);
@@ -80,6 +98,7 @@ export default function RequisitionList() {
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-xl font-semibold">Requisitions</h1>
@@ -96,11 +115,12 @@ export default function RequisitionList() {
         </Link>
       </div>
 
+      {/* Filters */}
       <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search REQ no / requisite / item..."
+          placeholder="Search REQ no / requisite / product..."
           className="w-full md:w-[420px] border border-slate-200 rounded-lg px-3 py-2 text-sm"
         />
 
@@ -120,6 +140,7 @@ export default function RequisitionList() {
         </div>
       </div>
 
+      {/* Table */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -128,10 +149,10 @@ export default function RequisitionList() {
                 <th className="p-3 border-b">REQ No</th>
                 <th className="p-3 border-b">Date</th>
                 <th className="p-3 border-b">Requisite Name</th>
-                <th className="p-3 border-b">Item</th>
-                <th className="p-3 border-b text-right">Item No.</th>
+                <th className="p-3 border-b">Product</th>
+                <th className="p-3 border-b text-right">Qty</th>
                 <th className="p-3 border-b">Remarks</th>
-                <th className="p-3 border-b">Status</th>
+                <th className="p-3 border-b">Approval</th>
                 <th className="p-3 border-b text-right">Actions</th>
               </tr>
             </thead>
@@ -140,39 +161,77 @@ export default function RequisitionList() {
               {filtered.map((r) => (
                 <tr key={r.id} className="hover:bg-slate-50">
                   <td className="p-3 border-b font-medium">{r.requisition_no}</td>
+
                   <td className="p-3 border-b">
                     {r.requisition_date
                       ? new Date(r.requisition_date).toLocaleDateString("en-GB")
                       : "—"}
                   </td>
+
                   <td className="p-3 border-b">{r.requisite_name}</td>
-                  <td className="p-3 border-b">{r.item_name}</td>
+
+                  {/* ✅ CHANGED: show product_name */}
+                  <td className="p-3 border-b">{r.product_name || "—"}</td>
+
                   <td className="p-3 border-b text-right">{r.item_number}</td>
-                  <td className="p-3 border-b max-w-[260px] truncate" title={r.remarks || ""}>
+
+                  <td
+                    className="p-3 border-b max-w-[260px] truncate"
+                    title={r.remarks || ""}
+                  >
                     {r.remarks || "—"}
                   </td>
+
+                  {/* Approve */}
                   <td className="p-3 border-b">
                     <button
-                      onClick={() => toggleStatus(r)}
-                      className={`px-2 py-1 rounded-md text-xs border ${
+                      onClick={() => approveRequisition(r)}
+                      disabled={!!r.status || !r.product}
+                      className={[
+                        "px-2 py-1 rounded-md text-xs border",
                         r.status
-                          ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                          : "bg-amber-50 border-amber-200 text-amber-700"
-                      }`}
+                          ? "bg-emerald-50 border-emerald-200 text-emerald-700 cursor-not-allowed"
+                          : !r.product
+                          ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
+                          : "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100",
+                      ].join(" ")}
+                      title={
+                        r.status
+                          ? "Already approved"
+                          : !r.product
+                          ? "Select a product first"
+                          : "Approve & deduct from stock"
+                      }
                     >
-                      {r.status ? "Approved" : "Pending"}
+                      {r.status ? "Approved" : !r.product ? "Select Product" : "Approve"}
                     </button>
                   </td>
+
+                  {/* Actions */}
                   <td className="p-3 border-b text-right space-x-2">
                     <Link
                       to={`/stock/requisitions/${r.id}/edit`}
-                      className="px-2 py-1 rounded border border-slate-200 hover:border-blue-500 text-xs"
+                      className={[
+                        "px-2 py-1 rounded border text-xs",
+                        r.status
+                          ? "border-slate-200 text-slate-400 pointer-events-none"
+                          : "border-slate-200 hover:border-blue-500",
+                      ].join(" ")}
+                      title={r.status ? "Approved requisition cannot be edited" : "Edit"}
                     >
                       Edit
                     </Link>
+
                     <button
-                      onClick={() => deleteRow(r.id)}
-                      className="px-2 py-1 rounded border border-slate-200 hover:border-red-500 text-xs"
+                      onClick={() => deleteRow(r)}
+                      className={[
+                        "px-2 py-1 rounded border text-xs",
+                        r.status
+                          ? "border-slate-200 text-slate-400 cursor-not-allowed"
+                          : "border-slate-200 hover:border-red-500",
+                      ].join(" ")}
+                      disabled={!!r.status}
+                      title={r.status ? "Approved requisition cannot be deleted" : "Delete"}
                     >
                       Delete
                     </button>

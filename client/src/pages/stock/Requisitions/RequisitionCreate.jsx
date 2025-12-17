@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import AxiosInstance from "../../../components/AxiosInstance";
@@ -8,15 +8,69 @@ export default function RequisitionCreate() {
   const selectedCategory =
     JSON.parse(localStorage.getItem("business_category")) || null;
 
+  // ✅ products state
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productSearch, setProductSearch] = useState("");
+
   const [form, setForm] = useState({
     business_category: selectedCategory?.id || null,
     requisition_date: new Date().toISOString().slice(0, 10),
     requisite_name: "",
-    item_name: "",
+    product: "", // ✅ store product id here
     item_number: 1,
     remarks: "",
-    status: false,
+    status: false, // keep false on create (recommended)
   });
+
+  // ✅ fetch products for dropdown
+  const fetchProducts = async () => {
+    try {
+      setProductsLoading(true);
+
+      if (!selectedCategory?.id) {
+        setProducts([]);
+        return;
+      }
+
+      // 🔧 Change this endpoint if yours is different:
+      // Example: "dashboard/products/" or "stock/products/"
+      const res = await AxiosInstance.get("products/", {
+        params: { business_category: selectedCategory.id },
+      });
+
+      const list = Array.isArray(res.data) ? res.data : res.data?.results || [];
+      setProducts(list);
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to load products");
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory?.id]);
+
+  const filteredProducts = useMemo(() => {
+    const term = productSearch.toLowerCase().trim();
+    if (!term) return products;
+
+    return products.filter((p) => {
+      const name =
+        (p.name || p.product_name || p.title || "").toLowerCase();
+      const sku = (p.sku || p.code || "").toLowerCase();
+      return name.includes(term) || sku.includes(term);
+    });
+  }, [products, productSearch]);
+
+  const selectedProductObj = useMemo(() => {
+    const id = Number(form.product);
+    if (!id) return null;
+    return products.find((p) => p.id === id) || null;
+  }, [form.product, products]);
 
   const onChange = (e) => {
     const { name, value, type } = e.target;
@@ -31,13 +85,27 @@ export default function RequisitionCreate() {
 
     if (!form.business_category) return toast.error("Business category missing");
     if (!form.requisition_date) return toast.error("Date is required");
-    if (!form.requisite_name.trim()) return toast.error("Requisite name is required");
-    if (!form.item_name.trim()) return toast.error("Item name is required");
+    if (!form.requisite_name.trim())
+      return toast.error("Requisite name is required");
+
+    if (!form.product) return toast.error("Please select a product");
     if (!form.item_number || form.item_number <= 0)
       return toast.error("Item number must be positive");
 
+    // ✅ Do NOT allow approving from create page (recommended)
+    // Approval should happen from list -> approve button (deducts stock)
+    const payload = {
+      business_category: form.business_category,
+      requisition_date: form.requisition_date,
+      requisite_name: form.requisite_name,
+      product: Number(form.product),
+      item_number: Number(form.item_number),
+      remarks: form.remarks,
+      status: false,
+    };
+
     try {
-      await AxiosInstance.post("requisitions/", form);
+      await AxiosInstance.post("requisitions/", payload);
       toast.success("Requisition created");
       navigate("/stock/requisitions");
     } catch (err) {
@@ -65,6 +133,7 @@ export default function RequisitionCreate() {
 
       <form onSubmit={submit} className="mt-6 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Date */}
           <div>
             <label className="text-sm font-medium">Date</label>
             <input
@@ -76,20 +145,20 @@ export default function RequisitionCreate() {
             />
           </div>
 
+          {/* Status (readonly on create) */}
           <div>
             <label className="text-sm font-medium">Status</label>
-            <select
-              value={form.status ? "true" : "false"}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, status: e.target.value === "true" }))
-              }
-              className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2"
-            >
-              <option value="false">Pending</option>
-              <option value="true">Approved</option>
-            </select>
+            <input
+              value="Pending"
+              readOnly
+              className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-600"
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              Approve from Requisition List to deduct stock.
+            </p>
           </div>
 
+          {/* Requisite Name */}
           <div className="md:col-span-2">
             <label className="text-sm font-medium">Name of Requisite</label>
             <input
@@ -101,17 +170,56 @@ export default function RequisitionCreate() {
             />
           </div>
 
-          <div>
-            <label className="text-sm font-medium">Item</label>
+          {/* Product search */}
+          <div className="md:col-span-2">
+            <label className="text-sm font-medium">Find Product</label>
             <input
-              name="item_name"
-              value={form.item_name}
-              onChange={onChange}
-              placeholder="Tissue box / Pen / Flour..."
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+              placeholder="Search product by name / sku..."
               className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2"
             />
           </div>
 
+          {/* Product select */}
+          <div className="md:col-span-2">
+            <label className="text-sm font-medium">Product</label>
+            <select
+              name="product"
+              value={form.product}
+              onChange={onChange}
+              className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2"
+              disabled={productsLoading}
+            >
+              <option value="">
+                {productsLoading ? "Loading products..." : "Select a product"}
+              </option>
+
+              {filteredProducts.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {(p.product_name || p.name || p.title || "Unnamed Product") +
+                    (p.sku || p.code ? ` • ${(p.sku || p.code)}` : "")}
+                </option>
+              ))}
+            </select>
+
+            {selectedProductObj ? (
+              <p className="text-xs text-slate-500 mt-1">
+                Selected:{" "}
+                <span className="font-semibold text-slate-700">
+                  {selectedProductObj.product_name ||
+                    selectedProductObj.name ||
+                    selectedProductObj.title}
+                </span>
+              </p>
+            ) : (
+              <p className="text-xs text-slate-500 mt-1">
+                Choose a product that already exists in stock.
+              </p>
+            )}
+          </div>
+
+          {/* Quantity */}
           <div>
             <label className="text-sm font-medium">Item Number</label>
             <input
@@ -124,6 +232,7 @@ export default function RequisitionCreate() {
             />
           </div>
 
+          {/* Remarks */}
           <div className="md:col-span-2">
             <label className="text-sm font-medium">Remarks</label>
             <textarea
@@ -145,6 +254,7 @@ export default function RequisitionCreate() {
           >
             Cancel
           </button>
+
           <button
             type="submit"
             className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
