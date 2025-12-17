@@ -1,9 +1,15 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Select from "react-select";
 import AxiosInstance from "../../components/AxiosInstance";
 import toast from "react-hot-toast";
 
+// optional logo (if you want it on invoice)
+import joyjatraLogo from "../../assets/joyjatra_logo.jpeg";
+
 export default function SalesList() {
+  // ✅ Manual tag for PDF (since removed from DB)
+  const DOC_TOP_TAG = "ক্যাশ মেমো"; // or "Cash Memo"
+
   const customSelectStyles = {
     control: (base, state) => ({
       ...base,
@@ -20,7 +26,6 @@ export default function SalesList() {
       alignItems: "center",
       backgroundColor: "#ffffff",
     }),
-
     valueContainer: (base) => ({
       ...base,
       height: "34px",
@@ -29,7 +34,6 @@ export default function SalesList() {
       alignItems: "center",
       flexWrap: "nowrap",
     }),
-
     placeholder: (base) => ({
       ...base,
       fontSize: "0.875rem",
@@ -39,7 +43,6 @@ export default function SalesList() {
       top: "50%",
       transform: "translateY(-50%)",
     }),
-
     singleValue: (base) => ({
       ...base,
       fontSize: "0.875rem",
@@ -49,7 +52,6 @@ export default function SalesList() {
       top: "50%",
       transform: "translateY(-50%)",
     }),
-
     input: (base) => ({
       ...base,
       fontSize: "0.875rem",
@@ -60,14 +62,12 @@ export default function SalesList() {
       top: "50%",
       transform: "translateY(-50%)",
     }),
-
     indicatorsContainer: (base) => ({
       ...base,
       height: "34px",
       display: "flex",
       alignItems: "center",
     }),
-
     indicatorSeparator: (base) => ({
       ...base,
       backgroundColor: "#e5e7eb",
@@ -75,7 +75,6 @@ export default function SalesList() {
       marginTop: "auto",
       marginBottom: "auto",
     }),
-
     dropdownIndicator: (base) => ({
       ...base,
       color: "#6b7280",
@@ -83,11 +82,8 @@ export default function SalesList() {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      "&:hover": {
-        color: "#0f172a",
-      },
+      "&:hover": { color: "#0f172a" },
     }),
-
     clearIndicator: (base) => ({
       ...base,
       color: "#6b7280",
@@ -95,53 +91,44 @@ export default function SalesList() {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      "&:hover": {
-        color: "#0f172a",
-      },
+      "&:hover": { color: "#0f172a" },
     }),
-
     option: (base, state) => ({
       ...base,
       fontSize: "0.875rem",
-      backgroundColor: state.isSelected
-        ? "#0f766e"
-        : state.isFocused
-        ? "#ecfeff"
-        : "white",
+      backgroundColor: state.isSelected ? "#0f766e" : state.isFocused ? "#ecfeff" : "white",
       color: state.isSelected ? "white" : "#111827",
-      "&:hover": {
-        backgroundColor: state.isSelected ? "#0f766e" : "#ecfeff",
-      },
+      "&:hover": { backgroundColor: state.isSelected ? "#0f766e" : "#ecfeff" },
     }),
-
-    menu: (base) => ({
-      ...base,
-      fontSize: "0.875rem",
-      zIndex: 30,
-    }),
-
-    menuList: (base) => ({
-      ...base,
-      fontSize: "0.875rem",
-    }),
+    menu: (base) => ({ ...base, fontSize: "0.875rem", zIndex: 30 }),
+    menuList: (base) => ({ ...base, fontSize: "0.875rem" }),
   };
 
-  // State declarations
+  // ✅ business category (reactive)
+  const [selectedCategory, setSelectedCategory] = useState(
+    JSON.parse(localStorage.getItem("business_category")) || null
+  );
+
+  // ✅ banner info from business master
+  const [banner, setBanner] = useState(null);
+  const [bannerLoading, setBannerLoading] = useState(false);
+
+  // Main states
   const [allSales, setAllSales] = useState([]);
   const [sales, setSales] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [stockData, setStockData] = useState([]);
+  const [returnData, setReturnData] = useState([]);
+
   const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
   const [loading, setLoading] = useState(false);
   const [expandedRows, setExpandedRows] = useState(new Set());
-  const [returnModalSale, setReturnModalSale] = useState(null);
-  const [returnData, setReturnData] = useState([]);
-  const [payModalSale, setPayModalSale] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState(
-    JSON.parse(localStorage.getItem("business_category")) || null
-  );
 
+  // Return modal
+  const [returnModalSale, setReturnModalSale] = useState(null);
   const [formData, setFormData] = useState({
     returnDate: new Date().toISOString().slice(0, 10),
     productName: "",
@@ -155,28 +142,92 @@ export default function SalesList() {
     returnRemarks: "",
     selectedProductIndex: 0,
   });
-
   const [errors, setErrors] = useState({});
+  const returnModalRef = useRef(null);
 
+  // Payment modal
+  const [payModalSale, setPayModalSale] = useState(null);
+  const payModalRef = useRef(null);
+
+  const [banks, setBanks] = useState([]);
+  const [paymentModes, setPaymentModes] = useState([]);
+  const [editingPayment, setEditingPayment] = useState(null);
+
+  // ✅ keep only ONE paymentData state (you had duplicate before)
+  const [paymentData, setPaymentData] = useState({
+    paymentMode: "",
+    bankName: "",
+    accountNo: "",
+    chequeNo: "",
+    paidAmount: "",
+  });
+  const [isBank, setIsBank] = useState(false);
+  const [isCheque, setIsCheque] = useState(false);
+
+  // Filters
   const [filters, setFilters] = useState({
     customer: null,
     district: null,
     billNo: "",
   });
 
-  const itemsPerPage = 5;
-  const returnModalRef = useRef(null);
-  const payModalRef = useRef(null);
+  const safeNumber = (v) => {
+    const n = parseFloat(v ?? 0);
+    return Number.isNaN(n) ? 0 : n;
+  };
 
-  // Data fetching functions
-  const fetchSales = async () => {
+  // ✅ Listen to business switch (same tab + other tabs)
+  useEffect(() => {
+    const readBusiness = () => {
+      setSelectedCategory(JSON.parse(localStorage.getItem("business_category")) || null);
+    };
+
+    const onStorage = (e) => {
+      if (e.key === "business_category") readBusiness();
+    };
+
+    const onBusinessChanged = () => readBusiness();
+
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("business_category_changed", onBusinessChanged);
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("business_category_changed", onBusinessChanged);
+    };
+  }, []);
+
+  // ✅ fetch banner
+  const fetchBanner = async (categoryId) => {
+    if (!categoryId) {
+      setBanner(null);
+      return;
+    }
+    try {
+      setBannerLoading(true);
+      const res = await AxiosInstance.get(`/business-categories/${categoryId}/`);
+      setBanner(res.data);
+    } catch (e) {
+      console.error("Failed to fetch banner:", e);
+      setBanner(null);
+    } finally {
+      setBannerLoading(false);
+    }
+  };
+
+  // Data fetches
+  const fetchSales = async (categoryId) => {
     setLoading(true);
     try {
       const res = await AxiosInstance.get("/sales/", {
-        params: { business_category: selectedCategory?.id || null },
+        params: { business_category: categoryId || null },
       });
-      setAllSales(res.data);
-      setSales(res.data);
+
+      const raw = res.data;
+      const list = Array.isArray(raw) ? raw : raw.results || [];
+
+      setAllSales(list);
+      setSales(list);
     } catch (err) {
       console.error("Failed to load sales:", err);
       toast.error("Failed to load sales data");
@@ -185,12 +236,13 @@ export default function SalesList() {
     }
   };
 
-  const fetchStockData = async () => {
+  const fetchStockData = async (categoryId) => {
     try {
-      const response = await AxiosInstance.get("/stocks/", {
-        params: { business_category: selectedCategory?.id || null },
+      const res = await AxiosInstance.get("/stocks/", {
+        params: { business_category: categoryId || null },
       });
-      setStockData(response.data);
+      const raw = res.data;
+      setStockData(Array.isArray(raw) ? raw : raw.results || []);
     } catch (error) {
       console.error("Error fetching stock data:", error);
       toast.error("Failed to load stock data");
@@ -199,50 +251,89 @@ export default function SalesList() {
 
   const fetchReturnData = async () => {
     try {
-      const response = await AxiosInstance.get("/sale-returns/");
-      setReturnData(response.data);
+      const res = await AxiosInstance.get("/sale-returns/");
+      const raw = res.data;
+      setReturnData(Array.isArray(raw) ? raw : raw.results || []);
     } catch (error) {
       console.error("Error fetching return data:", error);
       toast.error("Failed to load return data");
     }
   };
 
-  // Initial data loading
+  const fetchDistricts = async () => {
+    const res = await AxiosInstance.get("/districts/");
+    const raw = res.data;
+    const list = Array.isArray(raw) ? raw : raw.results || [];
+    setDistricts(list.map((d) => ({ value: d.id, label: d.name })));
+  };
+
+  const fetchCustomers = async (categoryId) => {
+    const res = await AxiosInstance.get("/customers/", {
+      params: { business_category: categoryId || null },
+    });
+    const raw = res.data;
+    const list = Array.isArray(raw) ? raw : raw.results || [];
+    setCustomers(
+      list.map((c) => ({
+        value: c.id,
+        label: c.customer_name,
+      }))
+    );
+  };
+
+  // ✅ fetch banks + payment modes once
   useEffect(() => {
-    const fetchInitialData = async () => {
+    const run = async () => {
+      try {
+        const [bRes, pmRes] = await Promise.all([
+          AxiosInstance.get("/banks/"),
+          AxiosInstance.get("/payment-mode/"),
+        ]);
+
+        const bRaw = bRes.data;
+        const pmRaw = pmRes.data;
+
+        const bList = Array.isArray(bRaw) ? bRaw : bRaw.results || [];
+        const pmList = Array.isArray(pmRaw) ? pmRaw : pmRaw.results || [];
+
+        setBanks(bList.map((bank) => ({ value: bank.id, label: bank.name })));
+        setPaymentModes(pmList.map((mode) => ({ value: mode.id, label: mode.name })));
+      } catch (e) {
+        console.error(e);
+        toast.error("Failed to load banks/payment modes");
+      }
+    };
+    run();
+  }, []);
+
+  // ✅ refetch everything when business changes
+  useEffect(() => {
+    const id = selectedCategory?.id || null;
+
+    const run = async () => {
       try {
         await Promise.all([
-          fetchSales(),
-          fetchStockData(),
+          fetchBanner(id),
+          fetchSales(id),
+          fetchStockData(id),
           fetchReturnData(),
-          AxiosInstance.get("/districts/").then((res) => {
-            setDistricts(res.data.map((d) => ({ value: d.id, label: d.name })));
-          }),
-          AxiosInstance.get("/customers/", {
-            params: { business_category: selectedCategory?.id || null },
-          }).then((res) => {
-            setCustomers(
-              res.data.map((c) => ({
-                value: c.id,
-                label: c.customer_name,
-              }))
-            );
-          }),
+          fetchDistricts(),
+          fetchCustomers(id),
         ]);
-      } catch (error) {
-        console.error("Initial data loading failed:", error);
+      } catch (e) {
+        console.error("Initial/business data loading failed:", e);
       }
     };
 
-    fetchInitialData();
+    run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selectedCategory?.id]);
 
-  // Toggle row expansion
+  // Expand row
   const toggleRow = (id) => {
-    const newExpandedRows = new Set(expandedRows);
-    newExpandedRows.has(id) ? newExpandedRows.delete(id) : newExpandedRows.add(id);
-    setExpandedRows(newExpandedRows);
+    const newSet = new Set(expandedRows);
+    newSet.has(id) ? newSet.delete(id) : newSet.add(id);
+    setExpandedRows(newSet);
   };
 
   // Filtering logic
@@ -254,14 +345,12 @@ export default function SalesList() {
     }
 
     if (filters.district) {
-      filtered = filtered.filter(
-        (s) => s.customer?.district_detail?.id === filters.district.value
-      );
+      filtered = filtered.filter((s) => s.customer?.district_detail?.id === filters.district.value);
     }
 
     if (filters.billNo.trim() !== "") {
       filtered = filtered.filter((s) =>
-        s.invoice_no?.toLowerCase().includes(filters.billNo.trim().toLowerCase())
+        (s.invoice_no || "").toLowerCase().includes(filters.billNo.trim().toLowerCase())
       );
     }
 
@@ -273,15 +362,14 @@ export default function SalesList() {
   const handleCustomerChange = (selectedOption) => {
     setFilters((prev) => ({ ...prev, customer: selectedOption }));
   };
-
   const handleDistrictChange = (selectedOption) => {
     setFilters((prev) => ({ ...prev, district: selectedOption }));
   };
-
   const handleBillNoChange = (e) => {
     setFilters((prev) => ({ ...prev, billNo: e.target.value }));
   };
 
+  // ===== Return modal logic =====
   const handleOpenReturnModal = (sale) => {
     if (!sale || !sale.products || sale.products.length === 0) {
       toast.error("Invalid sale data");
@@ -289,30 +377,26 @@ export default function SalesList() {
     }
 
     const firstProduct = sale.products[0];
-    const matchedStock = stockData.find(
-      (stock) => stock.product?.id === firstProduct.product?.id
-    );
+    const matchedStock = stockData.find((stock) => stock.product?.id === firstProduct.product?.id);
 
     const alreadyReturnedQty = returnData
       .filter((returnItem) => returnItem.sale_product?.id === firstProduct.id)
-      .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+      .reduce((sum, item) => sum + safeNumber(item.quantity), 0);
 
     const dueAmount = (
-      parseFloat(sale.total_payable_amount || 0) -
-      (sale.payments?.reduce((acc, p) => acc + parseFloat(p.paid_amount || 0), 0) ||
-        0)
+      safeNumber(sale.total_payable_amount) -
+      (sale.payments?.reduce((acc, p) => acc + safeNumber(p.paid_amount), 0) || 0)
     ).toFixed(2);
 
     setReturnModalSale(sale);
-
     setFormData({
       returnDate: new Date().toISOString().slice(0, 10),
       productName: firstProduct.product?.product_name || "",
       saleQty: firstProduct.sale_quantity || "",
       currentQty: matchedStock?.current_stock_quantity || "0",
       price: firstProduct.sale_price || "",
-      dueAmount: dueAmount,
-      alreadyReturnQty: alreadyReturnedQty.toString(),
+      dueAmount,
+      alreadyReturnQty: String(alreadyReturnedQty),
       returnQty: "",
       returnAmount: "",
       returnRemarks: "",
@@ -330,8 +414,8 @@ export default function SalesList() {
 
   const handleReturnQtyChange = (e) => {
     const inputValue = e.target.value;
-    const price = parseFloat(formData.price) || 0;
-    const returnQty = Math.max(0, parseFloat(inputValue) || 0);
+    const price = safeNumber(formData.price);
+    const returnQty = Math.max(0, safeNumber(inputValue));
     const returnAmount = (returnQty * price).toFixed(2);
 
     setFormData((prev) => ({
@@ -339,7 +423,6 @@ export default function SalesList() {
       returnQty: inputValue,
       returnAmount,
     }));
-
     setErrors((prev) => ({ ...prev, returnQty: "" }));
   };
 
@@ -347,13 +430,11 @@ export default function SalesList() {
     const selectedIndex = parseInt(e.target.value, 10);
     const selectedProduct = returnModalSale.products[selectedIndex];
 
-    const matchedStock = stockData.find(
-      (stock) => stock.product?.id === selectedProduct.product?.id
-    );
+    const matchedStock = stockData.find((stock) => stock.product?.id === selectedProduct.product?.id);
 
     const alreadyReturnedQty = returnData
       .filter((returnItem) => returnItem.sale_product?.id === selectedProduct.id)
-      .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+      .reduce((sum, item) => sum + safeNumber(item.quantity), 0);
 
     setFormData((prev) => ({
       ...prev,
@@ -361,19 +442,19 @@ export default function SalesList() {
       saleQty: selectedProduct.sale_quantity || "",
       currentQty: matchedStock?.current_stock_quantity || "0",
       price: selectedProduct.sale_price || "",
-      alreadyReturnQty: alreadyReturnedQty.toString(),
+      alreadyReturnQty: String(alreadyReturnedQty),
       selectedProductIndex: selectedIndex,
       returnQty: "",
       returnAmount: "",
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmitReturn = async (e) => {
     e.preventDefault();
 
-    const finalReturnQty = parseFloat(formData.returnQty) || 0;
-    const saleQty = parseFloat(formData.saleQty) || 0;
-    const alreadyReturnedQty = parseFloat(formData.alreadyReturnQty) || 0;
+    const finalReturnQty = safeNumber(formData.returnQty);
+    const saleQty = safeNumber(formData.saleQty);
+    const alreadyReturnedQty = safeNumber(formData.alreadyReturnQty);
 
     if (finalReturnQty <= 0) {
       setErrors({ ...errors, returnQty: "Please enter a valid quantity" });
@@ -401,7 +482,11 @@ export default function SalesList() {
 
       toast.success("Return created successfully");
 
-      await Promise.all([fetchStockData(), fetchSales(), fetchReturnData()]);
+      await Promise.all([
+        fetchStockData(selectedCategory?.id || null),
+        fetchSales(selectedCategory?.id || null),
+        fetchReturnData(),
+      ]);
 
       returnModalRef.current?.close();
       setReturnModalSale(null);
@@ -425,22 +510,21 @@ export default function SalesList() {
     }
   };
 
-  // ======== CLEANED-UP INVOICE PDF (header replaced with image text) =========
+  // ===== Invoice PDF (NOW uses banner + manual top tag) =====
   const handleGenerateSalePdf = (sale) => {
-    const totalQty = sale.products.reduce(
-      (sum, item) => sum + parseFloat(item.sale_quantity || 0),
-      0
-    );
-    const totalAmount = parseFloat(sale.total_amount || 0);
-    const discount = parseFloat(sale.discount_amount || 0);
+    if (!sale) return;
+
+    const totalQty = (sale.products || []).reduce((sum, item) => sum + safeNumber(item.sale_quantity), 0);
+    const totalAmount = safeNumber(sale.total_amount);
+    const discount = safeNumber(sale.discount_amount);
     const grossTotal = totalAmount - discount;
-    const previousBalance = parseFloat(sale.customer?.previous_due_amount || 0);
+
+    const previousBalance = safeNumber(sale.customer?.previous_due_amount);
     const netAmount = grossTotal;
+
     const paidAmount =
-      sale.payments?.reduce(
-        (sum, payment) => sum + parseFloat(payment.paid_amount || 0),
-        0
-      ) || 0;
+      sale.payments?.reduce((sum, p) => sum + safeNumber(p.paid_amount), 0) || 0;
+
     const dueAmount = netAmount - paidAmount;
     const totalDueBalance = previousBalance + dueAmount;
 
@@ -454,43 +538,39 @@ export default function SalesList() {
       hour12: true,
     });
 
-    // Bangla heading (from your image)
+    // ✅ header from banner, tag manual
     const bnHeader = {
-      topTag: "ক্যাশ মেমো",
-      title: "জয়যাত্রা ফুড কর্ণার",
-      address1: "২২/৭ হরিনাথ দত্ত লেন, নিরালাপট্টি, যশোর।",
-      address2: "(নেতা হাসপাতালের পাশে)",
-      mobile: "মোবাঃ ০১৩১৬-৮১৬৮১৯",
+      topTag: DOC_TOP_TAG,
+      title: banner?.banner_title || selectedCategory?.name || "Business Name",
+      address1: banner?.banner_address1 || "",
+      address2: banner?.banner_address2 || "",
+      mobile: banner?.banner_phone || "",
     };
+
+    const logoUrl = joyjatraLogo;
 
     const htmlContent = `
   <html>
   <head>
+    <title>Sale Invoice - ${sale.invoice_no || ""}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700;800&display=swap" rel="stylesheet">
 
     <style>
       @page { margin: 15mm; size: A4; }
-
-      body {
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-        margin: 0;
-        padding: 15px;
-        font-size: 14px;
-        font-family: Arial;
-        box-sizing: border-box;
-      }
-
+      body { margin: 0; padding: 15px; font-size: 12px; font-family: Arial; color:#000; }
       .bn { font-family: "Noto Sans Bengali", Arial, sans-serif; }
 
-      .header {
-        text-align: center;
-        line-height: 1.4;
-        margin-top: 2px;
+      .header-wrap{
+        display: grid;
+        grid-template-columns: 120px 1fr 120px;
+        align-items: center;
+        column-gap: 10px;
+        margin-bottom: 10px;
       }
+      .logo-img{ width: 110px; height: auto; object-fit: contain; }
+      .header-text{ text-align: center; }
 
       .bn-top-tag {
         display: inline-block;
@@ -501,195 +581,123 @@ export default function SalesList() {
         border-radius: 18px;
         margin-bottom: 6px;
       }
+      .bn-title { font-size: 26px; font-weight: 800; }
+      .contact-info { font-size: 12px; color:#444; margin-top:2px; line-height:1.3; }
 
-      .bn-title {
-        font-size: 26px;
-        font-weight: 800;
-        letter-spacing: 0.2px;
-      }
+      .customer-info { display:flex; justify-content:space-between; margin: 10px 0; font-size: 12px; }
 
-      .contact-info {
-        font-size: 12px;
-        color: #444;
-        margin-top: 2px;
-        line-height: 1.3;
-      }
-
-      .customer-info {
-        display: flex;
-        justify-content: space-between;
-        margin: 10px 0;
-      }
-
-      .left-info, .right-info {
-        flex: 1;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
-      }
-
-      th, td {
-        border: 1px solid #000;
-        padding: 6px;
-        text-align: left;
-      }
-
-      .text-right { text-align: right; }
-      .text-center { text-align: center; }
+      table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+      th, td { border: 1px solid #000; padding: 6px; font-size: 11px; }
+      th { text-align: center; background-color: #f3f4f6; }
+      .text-center { text-align:center; }
+      .text-right { text-align:right; }
 
       .calc-table {
-        width: 60%;
+        width: 55%;
         margin-left: auto;
-        margin-top: 20px;
-        margin-bottom: 30px;
-      }
-
-      .calc-table td {
-        padding: 6px;
-      }
-
-      .calc-table td:last-child {
-        text-align: right;
-      }
-
-      .main-content { flex: 1; }
-
-      .bottom-section {
-        margin-top: auto;
-        page-break-inside: avoid;
-        break-inside: avoid;
-      }
-
-      .signature-container {
-        display: flex;
-        justify-content: space-between;
-        margin: 30px 0 10px 0;
-        page-break-inside: avoid;
-      }
-
-      .signature {
-        text-align: center;
-        width: 45%;
-      }
-
-      .signature-line {
-        margin-bottom: 2px;
-        border-top: 1px solid #000;
-        width: 100%;
-      }
-
-      .footer-content {
-        display: flex;
-        justify-content: space-between;
+        margin-top: 14px;
+        border-collapse: collapse;
         font-size: 12px;
-        border-top: 1px solid #000;
-        padding-top: 10px;
-        page-break-inside: avoid;
       }
+      .calc-table td { border: 1px solid #000; padding: 6px; }
+      .calc-table td:last-child { text-align:right; }
 
-      .footer-left { text-align: left; }
-      .footer-right { text-align: right; }
+      .signature-container { display:flex; justify-content:space-between; margin-top: 25px; font-size: 11px; }
+      .signature { width:45%; text-align:center; }
+      .signature-line { border-top:1px solid #000; margin-bottom:2px; }
+
+      .footer-content { display:flex; justify-content:space-between; font-size: 11px; border-top:1px solid #000; padding-top:8px; margin-top: 14px; }
     </style>
   </head>
   <body>
-    <div class="main-content">
-      <!-- ✅ REPLACED HEADER -->
-      <div class="header">
-        <div class="bn bn-top-tag">${bnHeader.topTag}</div>
-        <div class="bn bn-title">${bnHeader.title}</div>
-        <div class="bn contact-info">${bnHeader.address1}</div>
-        <div class="bn contact-info">${bnHeader.address2}</div>
-        <div class="bn contact-info">${bnHeader.mobile}</div>
+    <div class="header-wrap">
+      <div>
+        <img class="logo-img" src="${logoUrl}" alt="Logo" />
       </div>
 
-      <h2 style="text-align:center; margin: 20px 0;">Sale Invoice</h2>
-
-      <div class="customer-info">
-        <div class="left-info">
-          <div><strong>Invoice No:</strong> ${sale.invoice_no || "N/A"}</div>
-          <div><strong>Customer Name:</strong> ${sale.customer?.customer_name || "N/A"}</div>
-          <div><strong>Address:</strong> ${sale.customer?.address || "N/A"}</div>
-        </div>
-        <div class="right-info" style="text-align:right;">
-          <div><strong>Sale Date:</strong> ${sale.sale_date || "N/A"}</div>
-          <div><strong>Shop Name:</strong> ${sale.customer?.shop_name || "N/A"}</div>
-          <div><strong>Phone:</strong> ${sale.customer?.phone1 || "N/A"}</div>
-        </div>
+      <div class="header-text">
+        ${bnHeader.topTag ? `<div class="bn bn-top-tag">${bnHeader.topTag}</div>` : ""}
+        <div class="bn bn-title">${bnHeader.title || ""}</div>
+        ${bnHeader.address1 ? `<div class="bn contact-info">${bnHeader.address1}</div>` : ""}
+        ${bnHeader.address2 ? `<div class="bn contact-info">${bnHeader.address2}</div>` : ""}
+        ${bnHeader.mobile ? `<div class="bn contact-info">${bnHeader.mobile}</div>` : ""}
       </div>
-
-      <div><strong>Product Details:</strong> </div>
-
-      <table>
-        <thead>
-          <tr>
-            <th class="text-center">Sl No</th>
-            <th class="text-center">Product Name</th>
-            <th class="text-center">Quantity</th>
-            <th class="text-center">MRP</th>
-            <th class="text-center">Price</th>
-            <th class="text-center">Total Taka</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${sale.products
-            .map(
-              (item, index) => `
-            <tr>
-              <td class="text-center">${index + 1}</td>
-              <td class="text-center">${item.product?.product_name || "N/A"}</td>
-              <td class="text-center">${parseFloat(item.sale_quantity || 0).toFixed(2)}</td>
-              <td class="text-center">${parseFloat(item.product?.product_mrp || 0).toFixed(2)}</td>
-              <td class="text-center">${parseFloat(item.sale_price || 0).toFixed(2)}</td>
-              <td class="text-center">${parseFloat(item.total_price || 0).toFixed(2)}</td>
-            </tr>
-          `
-            )
-            .join("")}
-          <tr>
-            <td colspan="2" style="border: none;"></td>
-            <td style="border: none;">Total Quantity</td>
-            <td style="border: none;" class="text-right"><strong>${totalQty.toFixed(2)}</strong></td>
-            <td colspan="2" style="border: none;"></td>
-          </tr>
-        </tbody>
-      </table>
-
-      <table class="calc-table">
-        <tr><td>Total Sale Amount</td><td>${totalAmount.toFixed(2)}</td></tr>
-        <tr><td>(-) Discount</td><td>${discount.toFixed(2)}</td></tr>
-        <tr><td>Gross Total</td><td>${grossTotal.toFixed(2)}</td></tr>
-        <tr><td>(+) Previous Balance</td><td>${previousBalance.toFixed(2)}</td></tr>
-        <tr><td>Net Amount</td><td>${netAmount.toFixed(2)}</td></tr>
-        <tr><td>Paid Taka</td><td>${paidAmount.toFixed(2)}</td></tr>
-        <tr><td>Returnable Taka</td><td>0.00</td></tr>
-        <tr><td>Due Balance</td><td>${dueAmount.toFixed(2)}</td></tr>
-        <tr><td>Total Due Balance</td><td>${totalDueBalance.toFixed(2)}</td></tr>
-      </table>
+      <div></div>
     </div>
 
-    <div class="bottom-section">
-      <div class="signature-container">
-        <div class="signature">
-          <div class="signature-line"></div>
-          Customer Signature
-        </div>
-        <div class="signature">
-          <div class="signature-line"></div>
-          Approved By
-        </div>
+    <h2 style="text-align:center; margin: 14px 0;">Sale Invoice</h2>
+
+    <div class="customer-info">
+      <div>
+        <div><strong>Invoice No:</strong> ${sale.invoice_no || "N/A"}</div>
+        <div><strong>Customer Name:</strong> ${sale.customer?.customer_name || "N/A"}</div>
+        <div><strong>Address:</strong> ${sale.customer?.address || "N/A"}</div>
       </div>
-      <div class="footer-content">
-        <div class="footer-left">
-          <div>*Sold goods are not returnable (especially electronics).</div>
-          <div>*Save Trees, Save Generations.</div>
-        </div>
-        <div class="footer-right">
-          Print: Admin, ${printDate}
-        </div>
+      <div style="text-align:right;">
+        <div><strong>Sale Date:</strong> ${sale.sale_date || "N/A"}</div>
+        <div><strong>Shop Name:</strong> ${sale.customer?.shop_name || "N/A"}</div>
+        <div><strong>Phone:</strong> ${sale.customer?.phone1 || "N/A"}</div>
       </div>
+    </div>
+
+    <div><strong>Product Details:</strong></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Sl No</th>
+          <th>Product Name</th>
+          <th>Quantity</th>
+          <th>MRP</th>
+          <th>Price</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${(sale.products || [])
+          .map(
+            (item, idx) => `
+          <tr>
+            <td class="text-center">${idx + 1}</td>
+            <td>${item.product?.product_name || "N/A"}</td>
+            <td class="text-center">${safeNumber(item.sale_quantity).toFixed(2)}</td>
+            <td class="text-center">${safeNumber(item.product?.product_mrp).toFixed(2)}</td>
+            <td class="text-center">${safeNumber(item.sale_price).toFixed(2)}</td>
+            <td class="text-center">${safeNumber(item.total_price).toFixed(2)}</td>
+          </tr>
+        `
+          )
+          .join("")}
+        <tr>
+          <td colspan="2" class="text-right"><strong>Total</strong></td>
+          <td class="text-center"><strong>${totalQty.toFixed(2)}</strong></td>
+          <td colspan="3"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="calc-table">
+      <tr><td>Total Sale Amount</td><td>${totalAmount.toFixed(2)}</td></tr>
+      <tr><td>(-) Discount</td><td>${discount.toFixed(2)}</td></tr>
+      <tr><td>Gross Total</td><td>${grossTotal.toFixed(2)}</td></tr>
+      <tr><td>(+) Previous Balance</td><td>${previousBalance.toFixed(2)}</td></tr>
+      <tr><td>Net Amount</td><td>${netAmount.toFixed(2)}</td></tr>
+      <tr><td>Paid Taka</td><td>${paidAmount.toFixed(2)}</td></tr>
+      <tr><td>Due Balance</td><td>${dueAmount.toFixed(2)}</td></tr>
+      <tr><td>Total Due Balance</td><td>${totalDueBalance.toFixed(2)}</td></tr>
+    </table>
+
+    <div class="signature-container">
+      <div class="signature"><div class="signature-line"></div>Customer Signature</div>
+      <div class="signature"><div class="signature-line"></div>Approved By</div>
+    </div>
+
+    <div class="footer-content">
+      <div>
+        <div>*Sold goods are not returnable (especially electronics).</div>
+        <div>*Save Trees, Save Generations.</div>
+      </div>
+      <div>Print: Admin, ${printDate}</div>
     </div>
 
     <script>
@@ -697,76 +705,28 @@ export default function SalesList() {
     </script>
   </body>
   </html>
-  `;
+    `;
 
-    const printWindow = window.open("", "_blank");
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+    const w = window.open("", "_blank");
+    if (w) {
+      w.document.write(htmlContent);
+      w.document.close();
+    } else {
+      toast.error("Popup blocked. Please allow popups to print invoice.");
+    }
   };
 
-  // Banks / payments
-  const [banks, setBanks] = useState([]);
-  const [paymentModes, setPaymentModes] = useState([]);
-  const [editingPayment, setEditingPayment] = useState(null);
-
-  const [paymentData, setPaymentData] = useState({
-    paymentMode: "",
-    bankName: "",
-    accountNo: "",
-    chequeNo: "",
-    paidAmount: "",
-  });
-
-  const [isBank, setIsBank] = useState(false);
-  const [isCheque, setIsCheque] = useState(false);
-
-  useEffect(() => {
-    const fetchBanks = async () => {
-      try {
-        const res = await AxiosInstance.get("/banks/");
-        const options = res.data.map((bank) => ({
-          value: bank.id,
-          label: bank.name,
-        }));
-        setBanks(options);
-      } catch (error) {
-        console.error("Error fetching banks:", error);
-        toast.error("Failed to load banks");
-      }
-    };
-
-    const fetchPaymentModes = async () => {
-      try {
-        const res = await AxiosInstance.get("/payment-mode/");
-        const options = res.data.map((mode) => ({
-          value: mode.id,
-          label: mode.name,
-        }));
-        setPaymentModes(options);
-      } catch (error) {
-        console.error("Error fetching payment modes:", error);
-        toast.error("Failed to load payment modes");
-      }
-    };
-
-    fetchBanks();
-    fetchPaymentModes();
-  }, []);
-
-  // Open Pay dialog when payModalSale is set
+  // ===== Payment logic (KEEP) =====
   useEffect(() => {
     if (payModalSale && payModalRef.current) {
-      // reset form & default paid amount to current due
       setEditingPayment(null);
       setIsBank(false);
       setIsCheque(false);
 
       const totalPaid =
-        payModalSale.payments?.reduce(
-          (acc, p) => acc + parseFloat(p.paid_amount || 0),
-          0
-        ) || 0;
-      const due = parseFloat(payModalSale.total_payable_amount || 0) - totalPaid;
+        payModalSale.payments?.reduce((acc, p) => acc + safeNumber(p.paid_amount), 0) || 0;
+
+      const due = safeNumber(payModalSale.total_payable_amount) - totalPaid;
 
       setPaymentData({
         paymentMode: "",
@@ -782,23 +742,15 @@ export default function SalesList() {
 
   const getBankName = (bank) => {
     if (!bank) return "N/A";
-
-    const bankId =
-      typeof bank === "object" && bank !== null ? bank.id : Number(bank);
+    const bankId = typeof bank === "object" && bank !== null ? bank.id : Number(bank);
     if (!bankId) return "N/A";
-
     const option = banks.find((b) => b.value === bankId);
     return option?.label || "N/A";
   };
 
   const getPaymentModeName = (value) => {
     if (!value) return "N/A";
-
-    // If backend stored plain string like "Cash", "Bank", etc.
-    if (typeof value === "string" && isNaN(Number(value))) {
-      return value;
-    }
-
+    if (typeof value === "string" && isNaN(Number(value))) return value;
     const numericId = Number(value);
     const mode = paymentModes.find((pm) => pm.value === numericId);
     return mode?.label || String(value);
@@ -839,30 +791,24 @@ export default function SalesList() {
   const buildPaymentPayload = () => {
     if (!payModalSale) return null;
 
-    const paid = parseFloat(paymentData.paidAmount || 0);
+    const paid = safeNumber(paymentData.paidAmount);
     if (!paid || paid <= 0) {
       toast.error("Enter a valid paid amount.");
       return null;
     }
 
     const totalPaid =
-      payModalSale.payments?.reduce(
-        (acc, p) => acc + parseFloat(p.paid_amount || 0),
-        0
-      ) || 0;
-    const due = parseFloat(payModalSale.total_payable_amount || 0) - totalPaid;
+      payModalSale.payments?.reduce((acc, p) => acc + safeNumber(p.paid_amount), 0) || 0;
 
-    if (paid > due) {
+    const due = safeNumber(payModalSale.total_payable_amount) - totalPaid;
+    if (paid > due + 0.0001) {
       toast.error("Paid amount cannot be greater than due.");
       return null;
     }
 
-    const selectedMode = paymentModes.find(
-      (opt) => opt.value === Number(paymentData.paymentMode)
-    );
+    const selectedMode = paymentModes.find((opt) => opt.value === Number(paymentData.paymentMode));
     const paymentModeLabel = selectedMode?.label || "";
 
-    // sale_id key to match serializer
     return {
       sale_id: payModalSale.id,
       payment_mode: paymentModeLabel,
@@ -882,7 +828,7 @@ export default function SalesList() {
       await AxiosInstance.post("/sale-payments/", payload);
       toast.success("Payment saved successfully.");
 
-      await fetchSales();
+      await fetchSales(selectedCategory?.id || null);
       setPayModalSale(null);
       handleResetPaymentForm();
       payModalRef.current?.close();
@@ -894,21 +840,18 @@ export default function SalesList() {
   };
 
   const handleEditClick = (payment) => {
-    // Map payment_mode string (e.g. "Cash") to option value
     const modeOption = paymentModes.find(
       (opt) =>
-        String(opt.label).toLowerCase() ===
-        String(payment.payment_mode || "").toLowerCase()
+        String(opt.label).toLowerCase() === String(payment.payment_mode || "").toLowerCase()
     );
 
-    const editData = {
+    setPaymentData({
       paymentMode: modeOption?.value || "",
       bankName: payment.bank_name?.id || "",
       accountNo: payment.account_no || "",
       chequeNo: payment.cheque_no || "",
       paidAmount: payment.paid_amount ? String(payment.paid_amount) : "",
-    };
-    setPaymentData(editData);
+    });
 
     const modeLabel = String(payment.payment_mode || "").toLowerCase();
     setIsBank(modeLabel === "bank");
@@ -927,7 +870,7 @@ export default function SalesList() {
       await AxiosInstance.put(`/sale-payments/${editingPayment}/`, payload);
       toast.success("Payment updated successfully.");
 
-      await fetchSales();
+      await fetchSales(selectedCategory?.id || null);
       setEditingPayment(null);
       setPayModalSale(null);
       handleResetPaymentForm();
@@ -941,24 +884,27 @@ export default function SalesList() {
 
   // Pagination
   const totalPages = Math.ceil(sales.length / itemsPerPage);
-  const paginatedSales = sales.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedSales = sales.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="min-h-screen bg-slate-100 p-4 md:p-6">
-      {/* Page Header */}
+      {/* Header */}
       <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-xl font-semibold text-slate-800">Sales</h1>
           <p className="text-xs md:text-sm text-slate-500">
             Manage your invoices, payments and product returns.
           </p>
+
+          <div className="mt-1 text-xs text-slate-500">
+            Business:{" "}
+            <span className="font-semibold text-slate-700">{selectedCategory?.name || "N/A"}</span>
+            {bannerLoading ? <span className="ml-2 text-slate-400">(Loading banner...)</span> : null}
+          </div>
         </div>
+
         <div className="text-xs md:text-sm text-slate-500">
-          Total Invoices:{" "}
-          <span className="font-semibold text-slate-700">{allSales.length}</span>
+          Total Invoices: <span className="font-semibold text-slate-700">{allSales.length}</span>
         </div>
       </div>
 
@@ -969,9 +915,7 @@ export default function SalesList() {
         </div>
         <div className="grid gap-3 md:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
-              Customer
-            </label>
+            <label className="mb-1 block text-xs font-medium text-slate-600">Customer</label>
             <Select
               options={customers}
               isClearable
@@ -982,9 +926,7 @@ export default function SalesList() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
-              District
-            </label>
+            <label className="mb-1 block text-xs font-medium text-slate-600">District</label>
             <Select
               options={districts}
               isClearable
@@ -995,9 +937,7 @@ export default function SalesList() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
-              Bill No
-            </label>
+            <label className="mb-1 block text-xs font-medium text-slate-600">Bill No</label>
             <input
               type="text"
               value={filters.billNo}
@@ -1012,10 +952,9 @@ export default function SalesList() {
       {/* Table */}
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 px-4 py-2 text-xs text-slate-500">
-          {loading
-            ? "Loading invoices..."
-            : `Showing ${paginatedSales.length} of ${sales.length} invoices`}
+          {loading ? "Loading invoices..." : `Showing ${paginatedSales.length} of ${sales.length} invoices`}
         </div>
+
         <div className="overflow-x-auto">
           <table className="table table-zebra-zebra text-xs md:text-sm">
             <thead className="bg-slate-800 text-xs uppercase tracking-wide text-white">
@@ -1034,6 +973,7 @@ export default function SalesList() {
                 <th className="w-[80px] text-center">Return</th>
               </tr>
             </thead>
+
             <tbody>
               {paginatedSales.length === 0 ? (
                 <tr>
@@ -1045,76 +985,37 @@ export default function SalesList() {
                 paginatedSales.map((sale) => {
                   const isExpanded = expandedRows.has(sale.id);
                   const paidAmount =
-                    sale.payments?.reduce(
-                      (acc, p) => acc + parseFloat(p.paid_amount || 0),
-                      0
-                    ) || 0;
-                  const dueAmount =
-                    parseFloat(sale.total_payable_amount || 0) - paidAmount;
+                    sale.payments?.reduce((acc, p) => acc + safeNumber(p.paid_amount), 0) || 0;
+                  const dueAmount = safeNumber(sale.total_payable_amount) - paidAmount;
 
                   return (
                     <React.Fragment key={sale.id}>
                       <tr className="hover:bg-gray-50">
-                        <td
-                          className="w-10 text-center cursor-pointer select-none"
-                          onClick={() => toggleRow(sale.id)}
-                        >
+                        <td className="w-10 text-center cursor-pointer select-none" onClick={() => toggleRow(sale.id)}>
                           {isExpanded ? (
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">
-                              −
-                            </span>
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">−</span>
                           ) : (
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">
-                              +
-                            </span>
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">+</span>
                           )}
                         </td>
 
                         <td className="w-[220px] max-w-[260px]">
-                          <div className="font-medium text-slate-800">
-                            {sale.customer?.customer_name || "N/A"}
-                          </div>
-                          <div className="text-[11px] text-slate-500">
-                            Contact: {sale.customer?.phone1 || "N/A"}
-                          </div>
+                          <div className="font-medium text-slate-800">{sale.customer?.customer_name || "N/A"}</div>
+                          <div className="text-[11px] text-slate-500">Contact: {sale.customer?.phone1 || "N/A"}</div>
                           <div className="truncate text-[11px] text-slate-500">
-                            Address:{" "}
-                            {sale.customer?.address?.replace(/\r\n/g, ", ") || "N/A"}
+                            Address: {sale.customer?.address?.replace(/\r\n/g, ", ") || "N/A"}
                           </div>
-                          <div className="text-[11px] text-slate-500">
-                            District: {sale.customer?.district || "N/A"}
-                          </div>
+                          <div className="text-[11px] text-slate-500">District: {sale.customer?.district || "N/A"}</div>
                         </td>
 
-                        <td className="w-[120px] text-center align-middle">
-                          {sale.invoice_no}
-                        </td>
+                        <td className="w-[120px] text-center align-middle">{sale.invoice_no}</td>
+                        <td className="w-[110px] text-center align-middle">{sale.sale_date}</td>
+                        <td className="w-[80px] text-center align-middle">{safeNumber(sale.total_amount).toFixed(2)}</td>
+                        <td className="w-[80px] text-center align-middle">{safeNumber(sale.discount_amount).toFixed(2)}</td>
+                        <td className="w-[80px] text-center align-middle">{safeNumber(sale.total_payable_amount).toFixed(2)}</td>
+                        <td className="w-[80px] text-center align-middle">{paidAmount.toFixed(2)}</td>
 
-                        <td className="w-[110px] text-center align-middle">
-                          {sale.sale_date}
-                        </td>
-
-                        <td className="w-[80px] text-center align-middle">
-                          {parseFloat(sale.total_amount || 0).toFixed(2)}
-                        </td>
-
-                        <td className="w-[80px] text-center align-middle">
-                          {parseFloat(sale.discount_amount || 0).toFixed(2)}
-                        </td>
-
-                        <td className="w-[80px] text-center align-middle">
-                          {parseFloat(sale.total_payable_amount || 0).toFixed(2)}
-                        </td>
-
-                        <td className="w-[80px] text-center align-middle">
-                          {paidAmount.toFixed(2)}
-                        </td>
-
-                        <td
-                          className={`w-[80px] text-center align-middle font-medium ${
-                            dueAmount > 0 ? "text-amber-700" : "text-emerald-700"
-                          }`}
-                        >
+                        <td className={`w-[80px] text-center align-middle font-medium ${dueAmount > 0 ? "text-amber-700" : "text-emerald-700"}`}>
                           {dueAmount.toFixed(2)}
                         </td>
 
@@ -1129,9 +1030,7 @@ export default function SalesList() {
 
                         <td className="w-[80px] text-center align-middle">
                           <button
-                            onClick={() => {
-                              setPayModalSale(sale);
-                            }}
+                            onClick={() => setPayModalSale(sale)}
                             className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 hover:bg-emerald-200"
                           >
                             Pay
@@ -1172,27 +1071,13 @@ export default function SalesList() {
                                       sale.products.map((prod) => (
                                         <tr key={prod.id}>
                                           <td className="truncate">
-                                            {prod.product?.category_detail?.category_name ||
-                                              prod.product?.product_name ||
-                                              ""}
+                                            {prod.product?.category_detail?.category_name || prod.product?.product_name || ""}
                                           </td>
-                                          <td className="text-center">
-                                            {parseFloat(prod.sale_quantity || 0).toFixed(2)}
-                                          </td>
-                                          <td className="text-center">
-                                            {parseFloat(prod.sale_price || 0).toFixed(2)}
-                                          </td>
-                                          <td className="text-center">
-                                            {parseFloat(prod.percentage || 0).toFixed(2)}%
-                                          </td>
-                                          <td className="text-center">
-                                            {parseFloat(
-                                              prod.sale_price_with_percentage || 0
-                                            ).toFixed(2)}
-                                          </td>
-                                          <td className="text-center">
-                                            {parseFloat(prod.total_price || 0).toFixed(2)}
-                                          </td>
+                                          <td className="text-center">{safeNumber(prod.sale_quantity).toFixed(2)}</td>
+                                          <td className="text-center">{safeNumber(prod.sale_price).toFixed(2)}</td>
+                                          <td className="text-center">{safeNumber(prod.percentage).toFixed(2)}%</td>
+                                          <td className="text-center">{safeNumber(prod.sale_price_with_percentage).toFixed(2)}</td>
+                                          <td className="text-center">{safeNumber(prod.total_price).toFixed(2)}</td>
                                         </tr>
                                       ))
                                     ) : (
@@ -1279,25 +1164,16 @@ export default function SalesList() {
               <div className="grid gap-2 md:grid-cols-4">
                 <div>
                   <span className="font-semibold text-slate-700">Total Payable:</span>{" "}
-                  {parseFloat(payModalSale.total_payable_amount || 0).toFixed(2)}
+                  {safeNumber(payModalSale.total_payable_amount).toFixed(2)}
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Total Paid:</span>{" "}
-                  {(
-                    payModalSale.payments?.reduce(
-                      (acc, p) => acc + parseFloat(p.paid_amount || 0),
-                      0
-                    ) || 0
-                  ).toFixed(2)}
+                  {(payModalSale.payments?.reduce((acc, p) => acc + safeNumber(p.paid_amount), 0) || 0).toFixed(2)}
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Due Amount:</span>{" "}
-                  {(
-                    parseFloat(payModalSale.total_payable_amount || 0) -
-                    (payModalSale.payments?.reduce(
-                      (acc, p) => acc + parseFloat(p.paid_amount || 0),
-                      0
-                    ) || 0)
+                  {(safeNumber(payModalSale.total_payable_amount) -
+                    (payModalSale.payments?.reduce((acc, p) => acc + safeNumber(p.paid_amount), 0) || 0)
                   ).toFixed(2)}
                 </div>
                 <div>
@@ -1308,26 +1184,19 @@ export default function SalesList() {
             </div>
 
             <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <h4 className="mb-3 text-sm font-semibold text-slate-700">
-                Add / Update Payment
-              </h4>
+              <h4 className="mb-3 text-sm font-semibold text-slate-700">Add / Update Payment</h4>
+
               <div className="grid gap-3 text-xs md:grid-cols-5">
                 <div>
-                  <label className="mb-1 block font-medium text-slate-600">
-                    Payment Mode*
-                  </label>
+                  <label className="mb-1 block font-medium text-slate-600">Payment Mode*</label>
                   <Select
                     options={paymentModes}
                     value={
                       paymentData.paymentMode
-                        ? paymentModes.find(
-                            (opt) => opt.value === Number(paymentData.paymentMode)
-                          ) || null
+                        ? paymentModes.find((opt) => opt.value === Number(paymentData.paymentMode)) || null
                         : null
                     }
-                    onChange={(selected) =>
-                      handlePaymentChange("paymentMode", selected?.value || "")
-                    }
+                    onChange={(selected) => handlePaymentChange("paymentMode", selected?.value || "")}
                     placeholder="Select mode"
                     className="text-sm"
                     styles={customSelectStyles}
@@ -1335,20 +1204,15 @@ export default function SalesList() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block font-medium text-slate-600">
-                    Bank Name
-                  </label>
+                  <label className="mb-1 block font-medium text-slate-600">Bank Name</label>
                   <Select
                     options={banks}
                     value={
                       paymentData.bankName
-                        ? banks.find((opt) => opt.value === Number(paymentData.bankName)) ||
-                          null
+                        ? banks.find((opt) => opt.value === Number(paymentData.bankName)) || null
                         : null
                     }
-                    onChange={(selected) =>
-                      handlePaymentChange("bankName", selected?.value || "")
-                    }
+                    onChange={(selected) => handlePaymentChange("bankName", selected?.value || "")}
                     placeholder="Select bank"
                     isClearable
                     isDisabled={!isBank}
@@ -1358,9 +1222,7 @@ export default function SalesList() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block font-medium text-slate-600">
-                    Account No
-                  </label>
+                  <label className="mb-1 block font-medium text-slate-600">Account No</label>
                   <input
                     type="text"
                     value={paymentData.accountNo}
@@ -1374,9 +1236,7 @@ export default function SalesList() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block font-medium text-slate-600">
-                    Cheque No
-                  </label>
+                  <label className="mb-1 block font-medium text-slate-600">Cheque No</label>
                   <input
                     type="text"
                     value={paymentData.chequeNo}
@@ -1390,9 +1250,7 @@ export default function SalesList() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block font-medium text-slate-600">
-                    Paid Amount*
-                  </label>
+                  <label className="mb-1 block font-medium text-slate-600">Paid Amount*</label>
                   <input
                     type="number"
                     value={paymentData.paidAmount}
@@ -1454,18 +1312,12 @@ export default function SalesList() {
                       <tr key={payment.id}>
                         <td className="text-center">{idx + 1}</td>
                         <td className="text-center">{payment.due_date || "N/A"}</td>
-                        <td className="text-center">
-                          {getPaymentModeName(payment.payment_mode)}
-                        </td>
+                        <td className="text-center">{getPaymentModeName(payment.payment_mode)}</td>
                         <td className="text-center">{getBankName(payment.bank_name)}</td>
                         <td className="text-center">{payment.account_no || "N/A"}</td>
                         <td className="text-center">{payment.cheque_no || "N/A"}</td>
-                        <td className="text-center">
-                          {parseFloat(payment.paid_amount || 0).toFixed(2)}
-                        </td>
-                        <td className="text-center">
-                          {payment.payment_date ? payment.payment_date.slice(0, 10) : "N/A"}
-                        </td>
+                        <td className="text-center">{safeNumber(payment.paid_amount).toFixed(2)}</td>
+                        <td className="text-center">{payment.payment_date ? payment.payment_date.slice(0, 10) : "N/A"}</td>
                         <td className="text-center">{payment.due_invoice || "N/A"}</td>
                         <td className="text-center">
                           <button
@@ -1543,10 +1395,7 @@ export default function SalesList() {
               </p>
             </div>
 
-            <form
-              onSubmit={handleSubmit}
-              className="grid gap-3 text-xs md:text-sm md:grid-cols-5"
-            >
+            <form onSubmit={handleSubmitReturn} className="grid gap-3 text-xs md:text-sm md:grid-cols-5">
               <div>
                 <label className="mb-1 block font-medium text-slate-600">Return Date</label>
                 <input
@@ -1593,9 +1442,7 @@ export default function SalesList() {
                   name="saleQty"
                   value={
                     formData.saleQty ||
-                    (returnModalSale.products.length === 1
-                      ? returnModalSale.products[0]?.sale_quantity
-                      : "")
+                    (returnModalSale.products.length === 1 ? returnModalSale.products[0]?.sale_quantity : "")
                   }
                   readOnly
                   className="w-full rounded-md border border-slate-300 bg-slate-100 px-2 py-1 text-sm"
@@ -1620,12 +1467,7 @@ export default function SalesList() {
                   type="number"
                   name="price"
                   step="0.01"
-                  value={
-                    formData.price ||
-                    (returnModalSale.products.length === 1
-                      ? returnModalSale.products[0]?.sale_price
-                      : "")
-                  }
+                  value={formData.price || (returnModalSale.products.length === 1 ? returnModalSale.products[0]?.sale_price : "")}
                   readOnly
                   className="w-full rounded-md border border-slate-300 bg-slate-100 px-2 py-1 text-sm"
                   required
@@ -1639,11 +1481,8 @@ export default function SalesList() {
                   name="dueAmount"
                   step="0.01"
                   value={(
-                    parseFloat(returnModalSale.total_payable_amount || 0) -
-                    (returnModalSale.payments?.reduce(
-                      (acc, p) => acc + parseFloat(p.paid_amount || 0),
-                      0
-                    ) || 0)
+                    safeNumber(returnModalSale.total_payable_amount) -
+                    (returnModalSale.payments?.reduce((acc, p) => acc + safeNumber(p.paid_amount), 0) || 0)
                   ).toFixed(2)}
                   readOnly
                   className="w-full rounded-md border border-slate-300 bg-slate-100 px-2 py-1 text-sm"
@@ -1651,9 +1490,7 @@ export default function SalesList() {
               </div>
 
               <div>
-                <label className="mb-1 block font-medium text-slate-600">
-                  Already Returned Qty
-                </label>
+                <label className="mb-1 block font-medium text-slate-600">Already Returned Qty</label>
                 <input
                   type="number"
                   name="alreadyReturnQty"
@@ -1673,9 +1510,7 @@ export default function SalesList() {
                   className="w-full rounded-md border border-slate-300 px-2 py-1 text-sm outline-none focus:border-teal-600 focus:ring-1 focus:ring-teal-600"
                   required
                 />
-                {errors.returnQty && (
-                  <p className="mt-1 text-xs text-rose-500">{errors.returnQty}</p>
-                )}
+                {errors.returnQty && <p className="mt-1 text-xs text-rose-500">{errors.returnQty}</p>}
               </div>
 
               <div>
@@ -1701,44 +1536,6 @@ export default function SalesList() {
               </div>
 
               <div className="col-span-5 mt-2 flex justify-center gap-3 pt-3">
-                <button
-                  type="reset"
-                  className="rounded-full border border-slate-300 px-4 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                  onClick={() => {
-                    const selectedProduct =
-                      returnModalSale.products[formData.selectedProductIndex];
-                    const matchedStock = stockData.find(
-                      (stock) => stock.product?.id === selectedProduct.product?.id
-                    );
-                    const alreadyReturnedQty = returnData
-                      .filter((returnItem) => returnItem.sale_product?.id === selectedProduct.id)
-                      .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
-                    const dueAmount = (
-                      parseFloat(returnModalSale.total_payable_amount || 0) -
-                      (returnModalSale.payments?.reduce(
-                        (acc, p) => acc + parseFloat(p.paid_amount || 0),
-                        0
-                      ) || 0)
-                    ).toFixed(2);
-
-                    setFormData({
-                      returnDate: new Date().toISOString().slice(0, 10),
-                      productName: selectedProduct.product?.product_name || "",
-                      saleQty: selectedProduct.sale_quantity || "",
-                      currentQty: matchedStock?.current_stock_quantity || "0",
-                      price: selectedProduct.sale_price || "",
-                      dueAmount: dueAmount,
-                      alreadyReturnQty: alreadyReturnedQty.toString(),
-                      returnQty: "",
-                      returnAmount: "",
-                      returnRemarks: "",
-                      selectedProductIndex: formData.selectedProductIndex,
-                    });
-                    setErrors({});
-                  }}
-                >
-                  Reset
-                </button>
                 <button
                   type="submit"
                   className="rounded-full bg-slate-800 px-5 py-1.5 text-xs font-medium text-white hover:bg-slate-700"
@@ -1775,41 +1572,30 @@ export default function SalesList() {
                             <td className="text-center">{index + 1}</td>
                             <td className="text-center">
                               {item.return_date
-                                ? new Date(item.return_date).toLocaleString("en-GB", {
-                                    dateStyle: "short",
-                                  })
+                                ? new Date(item.return_date).toLocaleString("en-GB", { dateStyle: "short" })
                                 : "N/A"}
                             </td>
+                            <td className="text-center">{item.sale_product?.product?.product_name || "N/A"}</td>
                             <td className="text-center">
-                              {item.sale_product?.product?.product_name || "N/A"}
+                              {item.sale_product?.product?.category_detail?.company_detail?.company_name || "N/A"}
                             </td>
-                            <td className="text-center">
-                              {item.sale_product?.product?.category_detail?.company_detail?.company_name ||
-                                "N/A"}
-                            </td>
-                            <td className="text-center">
-                              {item.sale_product?.sale_quantity || 0}
-                            </td>
+                            <td className="text-center">{item.sale_product?.sale_quantity || 0}</td>
                             <td className="text-center">{item.quantity || 0}</td>
                             <td className="text-center">
-                              {(
-                                parseFloat(item.sale_product?.sale_price || 0) *
-                                parseFloat(item.quantity || 0)
-                              ).toFixed(2)}
+                              {(safeNumber(item.sale_product?.sale_price) * safeNumber(item.quantity)).toFixed(2)}
                             </td>
                           </tr>
                         ))}
                     </tbody>
                   </table>
                 ) : (
-                  <div className="py-4 text-center text-sm text-slate-500">
-                    No returns for this invoice yet.
-                  </div>
+                  <div className="py-4 text-center text-sm text-slate-500">No returns for this invoice yet.</div>
                 )}
               </div>
             </div>
           </div>
         )}
+
         <form method="dialog" className="modal-backdrop">
           <button>close</button>
         </form>

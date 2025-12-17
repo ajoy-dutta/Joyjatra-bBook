@@ -3,6 +3,9 @@
 import React, { useEffect, useState, useMemo } from "react";
 import AxiosInstance from "../../components/AxiosInstance";
 
+// ✅ logo fallback (same idea like PurchaseInvoices)
+import joyjatraLogo from "../../assets/joyjatra_logo.jpeg";
+
 const safeNumber = (value) => {
   const num = parseFloat(value || 0);
   return Number.isNaN(num) ? 0 : num;
@@ -19,6 +22,41 @@ export default function PurchaseExpense() {
   const [filterVendor, setFilterVendor] = useState(""); // key for vendor
   const [filterStartDate, setFilterStartDate] = useState(""); // YYYY-MM-DD
   const [filterEndDate, setFilterEndDate] = useState(""); // YYYY-MM-DD
+
+  // ✅ business category (reactive) (same pattern as Expense.jsx)
+  const [selectedCategory, setSelectedCategory] = useState(
+    JSON.parse(localStorage.getItem("business_category")) || null
+  );
+
+  // ✅ banner info (category-wise)
+  const [banner, setBanner] = useState(null);
+  const [bannerLoading, setBannerLoading] = useState(false);
+
+  // ✅ Print header tag (like Purchase Invoice top pill)
+  const DOC_TOP_TAG = ""; // you can rename to "Purchase Expense" if your invoice uses that
+
+  // ✅ Listen to business switch (same tab + other tabs)
+  useEffect(() => {
+    const readBusiness = () => {
+      setSelectedCategory(
+        JSON.parse(localStorage.getItem("business_category")) || null
+      );
+    };
+
+    const onStorage = (e) => {
+      if (e.key === "business_category") readBusiness();
+    };
+
+    const onBusinessChanged = () => readBusiness();
+
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("business_category_changed", onBusinessChanged);
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("business_category_changed", onBusinessChanged);
+    };
+  }, []);
 
   // -------- load data --------
   const loadPurchases = async (searchValue = "") => {
@@ -44,6 +82,31 @@ export default function PurchaseExpense() {
     loadPurchases();
   }, []);
 
+  // ✅ Fetch banner category-wise (same as Expense.jsx)
+  const fetchBanner = async (categoryId) => {
+    if (!categoryId) {
+      setBanner(null);
+      return;
+    }
+    try {
+      setBannerLoading(true);
+      const res = await AxiosInstance.get(`/business-categories/${categoryId}/`);
+      setBanner(res.data);
+    } catch (e) {
+      console.error("Failed to fetch banner:", e);
+      setBanner(null);
+    } finally {
+      setBannerLoading(false);
+    }
+  };
+
+  // ✅ refetch banner when business changes
+  useEffect(() => {
+    const id = selectedCategory?.id || null;
+    fetchBanner(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory?.id]);
+
   // -------- vendor options for filter --------
   const vendorOptions = useMemo(() => {
     const map = new Map();
@@ -51,9 +114,7 @@ export default function PurchaseExpense() {
       const v = p.vendor;
       if (!v) return;
       const key =
-        v.id != null
-          ? String(v.id)
-          : v.vendor_name || v.shop_name || "";
+        v.id != null ? String(v.id) : v.vendor_name || v.shop_name || "";
       if (!key) return;
       if (!map.has(key)) {
         map.set(key, {
@@ -68,9 +129,7 @@ export default function PurchaseExpense() {
   const getVendorKey = (p) => {
     const v = p.vendor;
     if (!v) return "";
-    return v.id != null
-      ? String(v.id)
-      : v.vendor_name || v.shop_name || "";
+    return v.id != null ? String(v.id) : v.vendor_name || v.shop_name || "";
   };
 
   // -------- derived values --------
@@ -81,10 +140,7 @@ export default function PurchaseExpense() {
     if (search.trim()) {
       const s = search.toLowerCase();
       result = result.filter((p) => {
-        const vendorName =
-          p.vendor?.vendor_name ||
-          p.vendor?.shop_name ||
-          "";
+        const vendorName = p.vendor?.vendor_name || p.vendor?.shop_name || "";
         return (
           vendorName.toLowerCase().includes(s) ||
           (p.invoice_no || "").toLowerCase().includes(s)
@@ -94,24 +150,18 @@ export default function PurchaseExpense() {
 
     // vendor filter
     if (filterVendor) {
-      result = result.filter(
-        (p) => getVendorKey(p) === filterVendor
-      );
+      result = result.filter((p) => getVendorKey(p) === filterVendor);
     }
 
     // date range filter - purchase_date assumed "YYYY-MM-DD"
     if (filterStartDate) {
       result = result.filter(
-        (p) =>
-          p.purchase_date &&
-          p.purchase_date >= filterStartDate
+        (p) => p.purchase_date && p.purchase_date >= filterStartDate
       );
     }
     if (filterEndDate) {
       result = result.filter(
-        (p) =>
-          p.purchase_date &&
-          p.purchase_date <= filterEndDate
+        (p) => p.purchase_date && p.purchase_date <= filterEndDate
       );
     }
 
@@ -119,11 +169,7 @@ export default function PurchaseExpense() {
   }, [purchases, search, filterVendor, filterStartDate, filterEndDate]);
 
   const totalPurchaseExpense = useMemo(
-    () =>
-      filtered.reduce(
-        (sum, p) => sum + safeNumber(p.total_payable_amount),
-        0
-      ),
+    () => filtered.reduce((sum, p) => sum + safeNumber(p.total_payable_amount), 0),
     [filtered]
   );
 
@@ -148,19 +194,12 @@ export default function PurchaseExpense() {
   };
 
   const handleExportCsv = () => {
-    const headers = [
-      "Date",
-      "Invoice No",
-      "Vendor",
-      "Total Payable",
-    ];
+    const headers = ["Date", "Invoice No", "Vendor", "Total Payable"];
 
     const rows = filtered.map((p) => [
       p.purchase_date || "",
       p.invoice_no || `PU-${p.id}`,
-      p.vendor?.vendor_name ||
-        p.vendor?.shop_name ||
-        "N/A",
+      p.vendor?.vendor_name || p.vendor?.shop_name || "N/A",
       safeNumber(p.total_payable_amount).toFixed(2),
     ]);
 
@@ -181,52 +220,169 @@ export default function PurchaseExpense() {
     URL.revokeObjectURL(url);
   };
 
+  // ---------------- PRINT / PDF (MAKE LIKE PURCHASE INVOICE) ----------------
   const handlePrint = () => {
-    const content = document.getElementById(
-      "purchase-expense-print-area"
-    );
-    if (!content) return;
+    const now = new Date();
+    const printDate = now.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
 
-    const printWindow = window.open("", "_blank");
-    printWindow.document.write(`
+    const header = {
+      topTag: DOC_TOP_TAG,
+      title: banner?.banner_title || selectedCategory?.name || "Business Name",
+      address1: banner?.banner_address1 || "",
+      address2: banner?.banner_address2 || "",
+      mobile: banner?.banner_phone || "",
+    };
+
+    const rowsHtml =
+      filtered.length === 0
+        ? `<tr><td colspan="5" class="text-center">No data found</td></tr>`
+        : filtered
+            .map(
+              (p, idx) => `
+                <tr>
+                  <td class="text-center">${idx + 1}</td>
+                  <td class="text-center">${p.purchase_date || "-"}</td>
+                  <td class="text-center">${p.invoice_no || `PU-${p.id}`}</td>
+                  <td>${p.vendor?.vendor_name || p.vendor?.shop_name || "N/A"}</td>
+                  <td class="text-right">${safeNumber(p.total_payable_amount).toFixed(2)}</td>
+                </tr>
+              `
+            )
+            .join("");
+
+    const html = `
       <html>
-        <head>
-          <title>Purchase Expense</title>
-          <style>
-            body {
-              font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-              padding: 16px;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              font-size: 12px;
-            }
-            th, td {
-              border: 1px solid #ccc;
-              padding: 4px 6px;
-              text-align: right;
-            }
-            th:nth-child(1), td:nth-child(1),
-            th:nth-child(2), td:nth-child(2),
-            th:nth-child(3), td:nth-child(3) {
-              text-align: left;
-            }
-            thead { background-color: #f3f4f6; }
-            tfoot { background-color: #111827; color: white; }
-            h2 { margin-bottom: 12px; }
-          </style>
-        </head>
-        <body>
-          <h2>Purchase Expense</h2>
-          ${content.innerHTML}
-        </body>
+      <head>
+        <title>Purchase Expense</title>
+
+        <style>
+          @page { margin: 15mm; size: A4; }
+          body { margin: 0; font-family: Arial, sans-serif; font-size: 12px; color: #000; }
+
+          .topline { display:flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px; }
+          .topline-center { flex: 1; text-align: center; font-weight: 700; }
+          .topline-left { width: 180px; }
+          .topline-right { width: 180px; }
+
+          .header-wrap{
+            display: grid;
+            grid-template-columns: 120px 1fr 120px;
+            align-items: center;
+            column-gap: 10px;
+            margin-bottom: 10px;
+          }
+          .logo-box{ display:flex; justify-content:flex-start; align-items:center; }
+          .logo-img{ width: 110px; height: auto; object-fit: contain; }
+
+          .header-text{ text-align:center; }
+          .top-tag{
+            display:inline-block;
+            font-weight:700;
+            font-size: 13px;
+            padding: 2px 10px;
+            border: 1px solid #000;
+            border-radius: 14px;
+            margin-bottom: 6px;
+          }
+          .company-name{ font-size: 26px; font-weight: 800; }
+          .contact-info{ font-size: 12px; margin-top: 2px; line-height: 1.35; }
+
+          h2{ text-align:center; margin: 14px 0; }
+
+          table{ width: 100%; border-collapse: collapse; margin-top: 8px; }
+          th, td{ border: 1px solid #000; padding: 4px; font-size: 11px; }
+          th{ text-align: center; background: #f3f4f6; }
+          .text-center{ text-align:center; }
+          .text-right{ text-align:right; }
+
+          tfoot td{
+            font-weight: 700;
+            background: #111827;
+            color: #fff;
+          }
+
+          .footer-content{
+            display:flex;
+            justify-content: space-between;
+            font-size: 11px;
+            border-top: 1px solid #000;
+            padding-top: 8px;
+            margin-top: 14px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="topline">
+          <div class="topline-left">${printDate}</div>
+          <div class="topline-center">Purchase Expense</div>
+          <div class="topline-right"></div>
+        </div>
+
+        <div class="header-wrap">
+          <div class="logo-box">
+            <img class="logo-img" src="${joyjatraLogo}" alt="Logo" />
+          </div>
+
+          <div class="header-text">
+            ${header.topTag ? `<div class="top-tag">${header.topTag}</div>` : ""}
+            <div class="company-name">${header.title || ""}</div>
+            ${header.address1 ? `<div class="contact-info">${header.address1}</div>` : ""}
+            ${header.address2 ? `<div class="contact-info">${header.address2}</div>` : ""}
+            ${header.mobile ? `<div class="contact-info">${header.mobile}</div>` : ""}
+          </div>
+
+          <div></div>
+        </div>
+
+        <h2>Purchase Expense</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40px;">SL</th>
+              <th style="width:90px;">Date</th>
+              <th style="width:120px;">Invoice No</th>
+              <th>Vendor</th>
+              <th style="width:110px;">Total Payable</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4">Total</td>
+              <td class="text-right">৳ ${safeNumber(totalPurchaseExpense).toFixed(2)}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div class="footer-content">
+          <div>
+            <div>*Keep this report for future reference.</div>
+            <div>*Save Trees, Save Generations.</div>
+          </div>
+          <div>Print: Admin, ${printDate}</div>
+        </div>
+
+        <script>
+          setTimeout(() => { window.print(); }, 200);
+        </script>
+      </body>
       </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+    `;
+
+    const win = window.open("", "_blank");
+    if (!win) return alert("Popup blocked. Please allow popups to print.");
+    win.document.write(html);
+    win.document.close();
   };
 
   // -------- UI --------
@@ -235,13 +391,23 @@ export default function PurchaseExpense() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-slate-800">
-            Purchase Expense
-          </h2>
+          <h2 className="text-xl font-semibold text-slate-800">Purchase Expense</h2>
           <p className="text-xs text-slate-500">
             All purchase invoices treated as company expenses.
           </p>
+
+          {/* ✅ optional banner loading indicator like Expense.jsx */}
+          <div className="text-xs text-slate-500 mt-1">
+            Business:{" "}
+            <span className="font-semibold text-slate-700">
+              {selectedCategory?.name || "N/A"}
+            </span>
+            {bannerLoading ? (
+              <span className="ml-2 text-slate-400">(Loading banner...)</span>
+            ) : null}
+          </div>
         </div>
+
         <div className="flex items-center gap-2">
           <input
             type="text"
@@ -265,20 +431,14 @@ export default function PurchaseExpense() {
       {/* Summary */}
       <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-wrap gap-6 text-sm">
         <div>
-          <div className="text-xs text-slate-500 uppercase">
-            Total Purchase Expense
-          </div>
+          <div className="text-xs text-slate-500 uppercase">Total Purchase Expense</div>
           <div className="mt-1 text-lg font-semibold">
             {formatCurrency(totalPurchaseExpense)}
           </div>
         </div>
         <div>
-          <div className="text-xs text-slate-500 uppercase">
-            Total Purchase Invoices
-          </div>
-          <div className="mt-1 text-lg font-semibold">
-            {filtered.length}
-          </div>
+          <div className="text-xs text-slate-500 uppercase">Total Purchase Invoices</div>
+          <div className="mt-1 text-lg font-semibold">{filtered.length}</div>
         </div>
       </div>
 
@@ -359,9 +519,7 @@ export default function PurchaseExpense() {
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-slate-800">
-            Purchase Expense Details
-          </h3>
+          <h3 className="text-sm font-semibold text-slate-800">Purchase Expense Details</h3>
         </div>
 
         {loading ? (
@@ -376,24 +534,16 @@ export default function PurchaseExpense() {
                   <th className="py-2 px-2">Date</th>
                   <th className="py-2 px-2">Invoice No</th>
                   <th className="py-2 px-2">Vendor</th>
-                  <th className="py-2 px-2 text-right">
-                    Total Payable
-                  </th>
+                  <th className="py-2 px-2 text-right">Total Payable</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((p) => (
                   <tr key={p.id} className="border-b last:border-0">
+                    <td className="py-2 px-2">{p.purchase_date || "--"}</td>
+                    <td className="py-2 px-2">{p.invoice_no || `PU-${p.id}`}</td>
                     <td className="py-2 px-2">
-                      {p.purchase_date || "--"}
-                    </td>
-                    <td className="py-2 px-2">
-                      {p.invoice_no || `PU-${p.id}`}
-                    </td>
-                    <td className="py-2 px-2">
-                      {p.vendor?.vendor_name ||
-                        p.vendor?.shop_name ||
-                        "N/A"}
+                      {p.vendor?.vendor_name || p.vendor?.shop_name || "N/A"}
                     </td>
                     <td className="py-2 px-2 text-right">
                       {formatCurrency(p.total_payable_amount)}
@@ -402,10 +552,7 @@ export default function PurchaseExpense() {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td
-                      colSpan={4}
-                      className="py-4 px-2 text-center text-slate-400"
-                    >
+                    <td colSpan={4} className="py-4 px-2 text-center text-slate-400">
                       No purchase expenses found.
                     </td>
                   </tr>

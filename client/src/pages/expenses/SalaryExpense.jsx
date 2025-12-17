@@ -4,6 +4,9 @@ import React, { useEffect, useState, useMemo } from "react";
 import AxiosInstance from "../../components/AxiosInstance";
 import { FaSearch, FaEdit, FaTrash } from "react-icons/fa";
 
+// ✅ logo fallback (same idea like PurchaseInvoices)
+import joyjatraLogo from "../../assets/joyjatra_logo.jpeg";
+
 const EMPTY_FORM = {
   staff: "",
   salary_month: "",
@@ -33,6 +36,18 @@ export default function SalaryExpense() {
   const [filterStaff, setFilterStaff] = useState(""); // staff id
   const [filterMonth, setFilterMonth] = useState(""); // "YYYY-MM"
 
+  // ✅ business category (reactive)
+  const [selectedCategory, setSelectedCategory] = useState(
+    JSON.parse(localStorage.getItem("business_category")) || null
+  );
+
+  // ✅ banner info (category-wise)
+  const [banner, setBanner] = useState(null);
+  const [bannerLoading, setBannerLoading] = useState(false);
+
+  // ✅ Print header tag (like your invoice top pill)
+  const DOC_TOP_TAG = ""; // adjust if needed
+
   // live total on the form
   const formTotalSalary = useMemo(
     () =>
@@ -41,6 +56,29 @@ export default function SalaryExpense() {
       toNumber(form.bonus),
     [form.base_amount, form.allowance, form.bonus]
   );
+
+  // ✅ Listen to business switch (same tab + other tabs)
+  useEffect(() => {
+    const readBusiness = () => {
+      setSelectedCategory(
+        JSON.parse(localStorage.getItem("business_category")) || null
+      );
+    };
+
+    const onStorage = (e) => {
+      if (e.key === "business_category") readBusiness();
+    };
+
+    const onBusinessChanged = () => readBusiness();
+
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("business_category_changed", onBusinessChanged);
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("business_category_changed", onBusinessChanged);
+    };
+  }, []);
 
   // ------------ API ------------
 
@@ -70,10 +108,35 @@ export default function SalaryExpense() {
     }
   };
 
+  // ✅ Fetch banner category-wise (same idea as Expense.jsx)
+  const fetchBanner = async (categoryId) => {
+    if (!categoryId) {
+      setBanner(null);
+      return;
+    }
+    try {
+      setBannerLoading(true);
+      const res = await AxiosInstance.get(`/business-categories/${categoryId}/`);
+      setBanner(res.data);
+    } catch (e) {
+      console.error("Failed to fetch banner:", e);
+      setBanner(null);
+    } finally {
+      setBannerLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadStaffs();
     loadSalaryExpenses();
   }, []);
+
+  // ✅ refetch banner when business changes
+  useEffect(() => {
+    const id = selectedCategory?.id || null;
+    fetchBanner(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory?.id]);
 
   // ------------ Handlers ------------
 
@@ -207,22 +270,18 @@ export default function SalaryExpense() {
   const escapeCsv = (value) => {
     if (value == null) return "";
     const stringValue = String(value);
-    if (stringValue.includes('"') || stringValue.includes(",") || stringValue.includes("\n")) {
+    if (
+      stringValue.includes('"') ||
+      stringValue.includes(",") ||
+      stringValue.includes("\n")
+    ) {
       return `"${stringValue.replace(/"/g, '""')}"`;
     }
     return stringValue;
   };
 
   const handleExportCsv = () => {
-    const headers = [
-      "Employee",
-      "Month",
-      "Basic",
-      "Allowance",
-      "Bonus",
-      "Total Salary",
-      "Note",
-    ];
+    const headers = ["Employee", "Month", "Basic", "Allowance", "Bonus", "Total Salary", "Note"];
 
     const rows = filteredItems.map((r) => {
       const rowTotal =
@@ -261,38 +320,183 @@ export default function SalaryExpense() {
     URL.revokeObjectURL(url);
   };
 
+  // ✅ PRINT / PDF (MATCH PURCHASE INVOICE STYLE)
   const handlePrint = () => {
-    const content = document.getElementById("payroll-sheet-print-area");
-    if (!content) return;
+    const now = new Date();
+    const printDate = now.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
 
-    const printWindow = window.open("", "_blank");
-    printWindow.document.write(`
+    const header = {
+      topTag: DOC_TOP_TAG,
+      title: banner?.banner_title || selectedCategory?.name || "Business Name",
+      address1: banner?.banner_address1 || "",
+      address2: banner?.banner_address2 || "",
+      mobile: banner?.banner_phone || "",
+    };
+
+    const rowsHtml =
+      filteredItems.length === 0
+        ? `<tr><td colspan="7" class="text-center">No data found</td></tr>`
+        : filteredItems
+            .map((r, idx) => {
+              const rowTotal =
+                r.total_salary != null
+                  ? toNumber(r.total_salary)
+                  : toNumber(r.base_amount) +
+                    toNumber(r.allowance) +
+                    toNumber(r.bonus);
+
+              return `
+                <tr>
+                  <td class="text-center">${idx + 1}</td>
+                  <td>${r.staff_name || `Staff #${r.staff}`}</td>
+                  <td class="text-center">${r.salary_month || "-"}</td>
+                  <td class="text-right">${toNumber(r.base_amount).toFixed(2)}</td>
+                  <td class="text-right">${toNumber(r.allowance).toFixed(2)}</td>
+                  <td class="text-right">${toNumber(r.bonus).toFixed(2)}</td>
+                  <td class="text-right"><b>${rowTotal.toFixed(2)}</b></td>
+                </tr>
+              `;
+            })
+            .join("");
+
+    const html = `
       <html>
-        <head>
-          <title>Payroll Sheet</title>
-          <style>
-            body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 16px; }
-            table { width: 100%; border-collapse: collapse; font-size: 12px; }
-            th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: right; }
-            th:nth-child(1), td:nth-child(1),
-            th:nth-child(2), td:nth-child(2),
-            th:nth-child(7), td:nth-child(7),
-            th:nth-child(8), td:nth-child(8) { text-align: left; }
-            thead { background-color: #f3f4f6; }
-            tfoot { background-color: #111827; color: white; }
-            h2 { margin-bottom: 12px; }
-          </style>
-        </head>
-        <body>
-          <h2>Payroll Sheet</h2>
-          ${content.innerHTML}
-        </body>
+      <head>
+        <title>Payroll Sheet</title>
+        <style>
+          @page { margin: 15mm; size: A4; }
+          body { margin: 0; font-family: Arial, sans-serif; font-size: 12px; color: #000; }
+
+          .topline { display:flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px; }
+          .topline-center { flex: 1; text-align: center; font-weight: 700; }
+          .topline-left { width: 180px; }
+          .topline-right { width: 180px; }
+
+          .header-wrap{
+            display: grid;
+            grid-template-columns: 120px 1fr 120px;
+            align-items: center;
+            column-gap: 10px;
+            margin-bottom: 10px;
+          }
+          .logo-box{ display:flex; justify-content:flex-start; align-items:center; }
+          .logo-img{ width: 110px; height: auto; object-fit: contain; }
+
+          .header-text{ text-align:center; }
+          .top-tag{
+            display:inline-block;
+            font-weight:700;
+            font-size: 13px;
+            padding: 2px 10px;
+            border: 1px solid #000;
+            border-radius: 14px;
+            margin-bottom: 6px;
+          }
+          .company-name{ font-size: 26px; font-weight: 800; }
+          .contact-info{ font-size: 12px; margin-top: 2px; line-height: 1.35; }
+
+          h2{ text-align:center; margin: 14px 0; }
+
+          table{ width: 100%; border-collapse: collapse; margin-top: 8px; }
+          th, td{ border: 1px solid #000; padding: 4px; font-size: 11px; }
+          th{ text-align: center; background: #f3f4f6; }
+
+          .text-center{ text-align:center; }
+          .text-right{ text-align:right; }
+
+          tfoot td{
+            font-weight: 700;
+            background: #111827;
+            color: #fff;
+          }
+
+          .footer-content{
+            display:flex;
+            justify-content: space-between;
+            font-size: 11px;
+            border-top: 1px solid #000;
+            padding-top: 8px;
+            margin-top: 14px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="topline">
+          <div class="topline-left">${printDate}</div>
+          <div class="topline-center">Payroll Sheet</div>
+          <div class="topline-right"></div>
+        </div>
+
+        <div class="header-wrap">
+          <div class="logo-box">
+            <img class="logo-img" src="${joyjatraLogo}" alt="Logo" />
+          </div>
+
+          <div class="header-text">
+            ${header.topTag ? `<div class="top-tag">${header.topTag}</div>` : ""}
+            <div class="company-name">${header.title || ""}</div>
+            ${header.address1 ? `<div class="contact-info">${header.address1}</div>` : ""}
+            ${header.address2 ? `<div class="contact-info">${header.address2}</div>` : ""}
+            ${header.mobile ? `<div class="contact-info">${header.mobile}</div>` : ""}
+          </div>
+
+          <div></div>
+        </div>
+
+        <h2>Payroll Sheet</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40px;">SL</th>
+              <th>Employee</th>
+              <th style="width:95px;">Month</th>
+              <th style="width:85px;">Basic</th>
+              <th style="width:90px;">Allowance</th>
+              <th style="width:70px;">Bonus</th>
+              <th style="width:95px;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3">Total</td>
+              <td class="text-right">৳ ${toNumber(totalBasic).toFixed(2)}</td>
+              <td class="text-right">৳ ${toNumber(totalAllowance).toFixed(2)}</td>
+              <td class="text-right">৳ ${toNumber(totalBonus).toFixed(2)}</td>
+              <td class="text-right">৳ ${toNumber(totalSalary).toFixed(2)}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div class="footer-content">
+          <div>
+            <div>*Keep this report for future reference.</div>
+            <div>*Save Trees, Save Generations.</div>
+          </div>
+          <div>Print: Admin, ${printDate}</div>
+        </div>
+
+        <script>
+          setTimeout(() => { window.print(); }, 200);
+        </script>
+      </body>
       </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+    `;
+
+    const win = window.open("", "_blank");
+    if (!win) return alert("Popup blocked. Please allow popups to print.");
+    win.document.write(html);
+    win.document.close();
   };
 
   // ------------ UI ------------
@@ -308,6 +512,17 @@ export default function SalaryExpense() {
           <p className="text-xs text-slate-500">
             Record monthly payroll with basic, allowance and bonus.
           </p>
+
+          {/* ✅ optional banner loading indicator */}
+          <div className="text-xs text-slate-500 mt-1">
+            Business:{" "}
+            <span className="font-semibold text-slate-700">
+              {selectedCategory?.name || "N/A"}
+            </span>
+            {bannerLoading ? (
+              <span className="ml-2 text-slate-400">(Loading banner...)</span>
+            ) : null}
+          </div>
         </div>
 
         <div className="flex gap-3 items-center">
@@ -422,9 +637,7 @@ export default function SalaryExpense() {
           </label>
           <div className="w-full px-3 py-2 rounded-lg border border-slate-100 text-sm bg-slate-50 flex items-center justify-between">
             <span className="text-slate-500 text-xs">Preview</span>
-            <span className="font-semibold">
-              {formatMoney(formTotalSalary)}
-            </span>
+            <span className="font-semibold">{formatMoney(formTotalSalary)}</span>
           </div>
         </div>
 
@@ -456,42 +669,26 @@ export default function SalaryExpense() {
             disabled={saving}
             className="px-4 py-2 rounded-full bg-green-600 text-white text-xs font-medium hover:bg-green-700 disabled:opacity-60"
           >
-            {saving
-              ? editingId
-                ? "Updating..."
-                : "Saving..."
-              : editingId
-              ? "Update Payroll"
-              : "Save Payroll"}
+            {saving ? (editingId ? "Updating..." : "Saving...") : editingId ? "Update Payroll" : "Save Payroll"}
           </button>
         </div>
       </form>
 
-      {/* Summary cards like payroll header */}
+      {/* Summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
         <SummaryCard label="Total Basic" value={formatMoney(totalBasic)} />
-        <SummaryCard
-          label="Total Allowance"
-          value={formatMoney(totalAllowance)}
-        />
+        <SummaryCard label="Total Allowance" value={formatMoney(totalAllowance)} />
         <SummaryCard label="Total Bonus" value={formatMoney(totalBonus)} />
-        <SummaryCard
-          label="Total Salary"
-          value={formatMoney(totalSalary)}
-          highlight
-        />
+        <SummaryCard label="Total Salary" value={formatMoney(totalSalary)} highlight />
       </div>
 
       {/* Payroll Sheet */}
       <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
           <div>
-            <h3 className="text-sm font-semibold text-slate-800">
-              Payroll Sheet
-            </h3>
+            <h3 className="text-sm font-semibold text-slate-800">Payroll Sheet</h3>
             <span className="text-[11px] text-slate-500">
-              {filteredItems.length} record
-              {filteredItems.length !== 1 ? "s" : ""}
+              {filteredItems.length} record{filteredItems.length !== 1 ? "s" : ""}
             </span>
           </div>
 
@@ -554,14 +751,9 @@ export default function SalaryExpense() {
         {loading ? (
           <p className="text-xs text-slate-500">Loading...</p>
         ) : filteredItems.length === 0 ? (
-          <p className="text-xs text-slate-500">
-            No salary expenses recorded yet.
-          </p>
+          <p className="text-xs text-slate-500">No salary expenses recorded yet.</p>
         ) : (
-          <div
-            id="payroll-sheet-print-area"
-            className="overflow-x-auto"
-          >
+          <div id="payroll-sheet-print-area" className="overflow-x-auto">
             <table className="min-w-full text-xs border border-slate-100">
               <thead>
                 <tr className="bg-slate-50 text-slate-500 border-b">
@@ -633,7 +825,7 @@ export default function SalaryExpense() {
                   );
                 })}
               </tbody>
-              {/* footer total row for payroll sheet */}
+
               <tfoot>
                 <tr className="border-t bg-slate-900 text-white">
                   <td className="py-2 px-2 font-semibold" colSpan={2}>
