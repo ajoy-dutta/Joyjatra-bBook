@@ -211,22 +211,8 @@ class AssetSerializer(serializers.ModelSerializer):
         
         
 class RequisitionSerializer(serializers.ModelSerializer):
-    business_category = serializers.PrimaryKeyRelatedField(
-        queryset=BusinessCategory.objects.all()
-    )
+    product_name = serializers.CharField(source="product.product_name", read_only=True)
 
     class Meta:
         model = Requisition
-        fields = [
-            "id",
-            "business_category",
-            "requisition_no",
-            "requisite_name",
-            "item_name",
-            "item_number",
-            "requisition_date",
-            "remarks",
-            "status",
-            "created_at",
-        ]
-        read_only_fields = ["requisition_no", "created_at"]
+        fields = "__all__"

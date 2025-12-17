@@ -1,5 +1,5 @@
 from rest_framework import viewsets, status, filters
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticatedOrReadOnly,IsAuthenticated
 from rest_framework.response import Response
 from .models import *
 from .serializers import *
@@ -209,21 +209,79 @@ class AssetViewSet(viewsets.ModelViewSet):
 
         return qs
     
+
+
+
 class RequisitionViewSet(viewsets.ModelViewSet):
     queryset = Requisition.objects.all().order_by("-id")
     serializer_class = RequisitionSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["requisition_no", "requisite_name", "item_name"]
+    search_fields = ["requisition_no", "requisite_name"]
     ordering_fields = ["id", "created_at", "requisition_date"]
 
     def get_queryset(self):
         qs = super().get_queryset()
         bc = self.request.query_params.get("business_category")
-        status = self.request.query_params.get("status")
+        status_q = self.request.query_params.get("status")
         if bc:
             qs = qs.filter(business_category_id=bc)
-        if status in ("true", "false"):
-            qs = qs.filter(status=(status == "true"))
+        if status_q in ("true", "false"):
+            qs = qs.filter(status=(status_q == "true"))
         return qs
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    def approve(self, request, pk=None):
+        """
+        POST /requisitions/{id}/approve/
+        Deduct stock and mark requisition approved.
+        """
+        try:
+            with transaction.atomic():
+                req = Requisition.objects.select_for_update().get(pk=pk)
+
+                if req.status:
+                    return Response(
+                        {"detail": "Already approved."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # ✅ IMPORTANT: requisition must have a product FK
+                if not getattr(req, "product_id", None):
+                    return Response(
+                        {"detail": "This requisition has no product selected. Please edit and select a product first."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                stock_row = Stock.objects.select_for_update().filter(
+                    business_category=req.business_category,
+                    product_id=req.product_id,
+                ).first()
+
+                if not stock_row:
+                    return Response(
+                        {"detail": "Stock entry not found for this product in this business category."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # ✅ If your stock field is not `quantity`, change it here
+                if stock_row.quantity < req.item_number:
+                    return Response(
+                        {"detail": f"Insufficient stock. Available: {stock_row.quantity}, Required: {req.item_number}"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                Stock.objects.filter(id=stock_row.id).update(
+                    quantity=F("quantity") - req.item_number
+                )
+
+                req.status = True
+                req.save(update_fields=["status"])
+
+                return Response(RequisitionSerializer(req).data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            # return real error message instead of silent 500
+            return Response(
+                {"detail": f"Approve failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

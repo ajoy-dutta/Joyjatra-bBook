@@ -94,22 +94,21 @@ class Asset(models.Model):
 
 class Requisition(models.Model):
     business_category = models.ForeignKey(
-        BusinessCategory,
-        on_delete=models.CASCADE,
-        related_name="requisitions",
+        BusinessCategory, on_delete=models.CASCADE, related_name="requisitions"
     )
 
     requisition_no = models.CharField(max_length=50, unique=True, blank=True)
 
-    requisite_name = models.CharField(max_length=255)     # Name of requisite
-    item_name = models.CharField(max_length=255)          # tissue, pen, raw material
-    item_number = models.PositiveIntegerField(default=1)  # quantity/number
+    requisite_name = models.CharField(max_length=255)
 
+    # ✅ connect requisition with inventory product
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="requisitions", blank =True, null=True)
+
+    item_number = models.PositiveIntegerField(default=1)
     requisition_date = models.DateField()
     remarks = models.TextField(blank=True, null=True)
 
-    status = models.BooleanField(default=False)  # ✅ boolean status
-
+    status = models.BooleanField(default=False)  # approved?
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
@@ -118,6 +117,3 @@ class Requisition(models.Model):
             next_id = (last.id + 1) if last else 1
             self.requisition_no = f"REQ-{next_id:06d}"
         super().save(*args, **kwargs)
-
-    def __str__(self):
-        return self.requisition_no
