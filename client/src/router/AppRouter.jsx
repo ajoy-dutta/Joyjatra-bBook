@@ -86,6 +86,12 @@ import AddStaff from "../pages/Staffs/AddStaff";
 import StaffList from "../pages/Staffs/StaffList";
 
 
+//requisitions  
+import RequisitionList from "../pages/stock/Requisitions/RequisitionList";
+import RequisitionCreate from "../pages/stock/Requisitions/RequisitionCreate";
+import RequisitionEdit from "../pages/stock/Requisitions/RequisitionEdit";
+
+
 
 
 export default function AppRouter() {
@@ -161,6 +167,9 @@ export default function AppRouter() {
         {/* Stock */}
         <Route path="/dashboard/stocks" element={<Stocks />} />
         <Route path="/dashboard/products" element={<Products />} />
+        <Route path="/stock/requisitions" element={<RequisitionList />} />
+        <Route path="/stock/requisitions/create" element={<RequisitionCreate />} />
+        <Route path="/stock/requisitions/:id/edit" element={<RequisitionEdit />} />
 
         {/* Expenses */}
         <Route path="/expenses" element={<ExpensePage />} />

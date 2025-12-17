@@ -39,7 +39,7 @@ export default function Stocks() {
   const [bannerLoading, setBannerLoading] = useState(false);
 
   // ✅ Print header tag (like your invoice top pill)
-  const DOC_TOP_TAG = "Cash Memo"; // adjust if needed (e.g. "Inventory Report")
+  const DOC_TOP_TAG = ""; // adjust if needed (e.g. "Inventory Report")
 
   // Fetch stocks from API
   useEffect(() => {

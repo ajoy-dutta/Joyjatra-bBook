@@ -50,6 +50,7 @@ export default function Sidebar() {
       items: [
         { label: "Inventory", path: "/dashboard/stocks" },
         { label: "Products", path: "/dashboard/products" },
+        { label: "Requisitions", path: "/stock/requisitions" },
       ],
     },
     {
