@@ -117,6 +117,7 @@ export default function Sidebar() {
           { label: "Invoice", path: "/purchases/invoices" },
           { label: "Payments", path: "/purchases/payments" },
           { label: "Bills", path: "/purchases/bills" },
+          { label: "Work Order", path: "/purchases/products-order" },
           { label: "Purchase Entry", path: "/purchases/purchase-entry" },
         ],
       });
