@@ -85,3 +85,39 @@ class Asset(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.code})"
+    
+    
+    
+    
+    
+
+
+class Requisition(models.Model):
+    business_category = models.ForeignKey(
+        BusinessCategory,
+        on_delete=models.CASCADE,
+        related_name="requisitions",
+    )
+
+    requisition_no = models.CharField(max_length=50, unique=True, blank=True)
+
+    requisite_name = models.CharField(max_length=255)     # Name of requisite
+    item_name = models.CharField(max_length=255)          # tissue, pen, raw material
+    item_number = models.PositiveIntegerField(default=1)  # quantity/number
+
+    requisition_date = models.DateField()
+    remarks = models.TextField(blank=True, null=True)
+
+    status = models.BooleanField(default=False)  # ✅ boolean status
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.requisition_no:
+            last = Requisition.objects.order_by("-id").first()
+            next_id = (last.id + 1) if last else 1
+            self.requisition_no = f"REQ-{next_id:06d}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.requisition_no

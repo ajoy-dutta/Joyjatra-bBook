@@ -204,3 +204,29 @@ class AssetSerializer(serializers.ModelSerializer):
             "damaged_qty",
             "created_at",
         ]
+        
+        
+        
+        
+        
+        
+class RequisitionSerializer(serializers.ModelSerializer):
+    business_category = serializers.PrimaryKeyRelatedField(
+        queryset=BusinessCategory.objects.all()
+    )
+
+    class Meta:
+        model = Requisition
+        fields = [
+            "id",
+            "business_category",
+            "requisition_no",
+            "requisite_name",
+            "item_name",
+            "item_number",
+            "requisition_date",
+            "remarks",
+            "status",
+            "created_at",
+        ]
+        read_only_fields = ["requisition_no", "created_at"]

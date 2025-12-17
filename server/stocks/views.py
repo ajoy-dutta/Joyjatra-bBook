@@ -208,3 +208,22 @@ class AssetViewSet(viewsets.ModelViewSet):
                 qs = qs.none()
 
         return qs
+    
+class RequisitionViewSet(viewsets.ModelViewSet):
+    queryset = Requisition.objects.all().order_by("-id")
+    serializer_class = RequisitionSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["requisition_no", "requisite_name", "item_name"]
+    ordering_fields = ["id", "created_at", "requisition_date"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        bc = self.request.query_params.get("business_category")
+        status = self.request.query_params.get("status")
+        if bc:
+            qs = qs.filter(business_category_id=bc)
+        if status in ("true", "false"):
+            qs = qs.filter(status=(status == "true"))
+        return qs
