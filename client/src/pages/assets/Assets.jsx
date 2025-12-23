@@ -24,6 +24,7 @@ export default function AssetsPage() {
       name: "",
       code: "",
       purchase_date: todayStr,
+      unit_price: "",
       total_qty: "",
       damaged_qty: "0",
     });
@@ -158,6 +159,8 @@ export default function AssetsPage() {
       name: asset.name,
       code: asset.code,
       purchase_date: asset.purchase_date || todayStr,
+      unit_price: asset.unit_price || "",
+      total_price: asset.total_price || "",
       total_qty: String(asset.total_qty),
       damaged_qty: String(asset.damaged_qty),
     });
@@ -423,6 +426,20 @@ export default function AssetsPage() {
             )}
           </div>
 
+          {/* Unit price */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+             Unit Price
+            </label>
+            <input
+              name="unit_price"
+              value={form.unit_price}
+              onChange={onChange}
+              type="number"
+              className="border border-gray-300 rounded px-3 py-1 w-full"
+            />
+          </div>
+
           {/* Purchase Date */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -471,6 +488,7 @@ export default function AssetsPage() {
           </div>
         </div>
 
+
         {/* Buttons */}
         <div className="flex gap-3 pt-2">
           <button
@@ -499,8 +517,10 @@ export default function AssetsPage() {
               <th className="py-2 px-2">SL</th>
               <th className="py-2 px-2">Name</th>
               <th className="py-2 px-2">Code</th>
-              <th className="py-2 px-2">Purchase Date</th>
+              <th className="py-2 px-2 ">Purchase Date</th>
+              <th className="py-2 px-2 text-right">Unit Price</th>
               <th className="py-2 px-2 text-right">Total Qty</th>
+              <th className="py-2 px-2 text-right">Total Price</th>
               <th className="py-2 px-2 text-right text-red-600">Damaged</th>
               <th className="py-2 px-2 text-right">Usable</th>
               <th className="py-2 px-2 text-right">Actions</th>
@@ -514,7 +534,9 @@ export default function AssetsPage() {
                 <td className="py-2 px-2">{a.name}</td>
                 <td className="py-2 px-2 text-xs font-mono">{a.code}</td>
                 <td className="py-2 px-2">{a.purchase_date}</td>
+                <td className="py-2 px-2 text-right">{a.unit_price}</td>
                 <td className="py-2 px-2 text-right">{a.total_qty}</td>
+                <td className="py-2 px-2 text-right">{a.total_price}</td>
                 <td className="py-2 px-2 text-right text-red-600">
                   {a.damaged_qty}
                 </td>

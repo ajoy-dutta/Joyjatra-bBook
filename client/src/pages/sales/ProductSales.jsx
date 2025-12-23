@@ -168,8 +168,12 @@ export default function CustomerProductSale() {
     const fetchInitial = async () => {
       try {
         const [custRes, prodRes] = await Promise.all([
-          AxiosInstance.get("customers/"),
-          AxiosInstance.get("products/"),
+          AxiosInstance.get("customers/",{
+            params: { business_category: selectedCategory.id },
+        }),
+          AxiosInstance.get("products/",{
+          params: { business_category: selectedCategory.id },
+        }),
         ]);
         setCustomers(custRes.data);
         setProductList(prodRes.data);
@@ -184,7 +188,9 @@ export default function CustomerProductSale() {
   // ---------- Fetch stocks ----------
   const fetchStocks = async () => {
     try {
-      const res = await AxiosInstance.get("stocks/");
+      const res = await AxiosInstance.get("stocks/",{
+          params: { business_category: selectedCategory.id },
+        });
       setStockList(res.data);
     } catch (err) {
       console.error(err);
@@ -402,21 +408,22 @@ export default function CustomerProductSale() {
     }
 
     const basePrice = parseFloat(saleMRP) || 0;
-    const perc = parseFloat(percentage) || 0;
+    const perc = parseFloat(percentage);
+    const manualPrice = parseFloat(price);
 
-    // price after applying percentage
-    const priceWithPerc = basePrice + (basePrice * perc) / 100;
-    const finalPrice = isNaN(priceWithPerc) ? 0 : priceWithPerc;
+    // Determine final price
+    let finalPrice = 0;
+    if (!isNaN(perc) && perc !== 0) {
+      finalPrice = basePrice + (basePrice * perc) / 100;
+      setPrice(finalPrice.toFixed(2));
+    } else if (!isNaN(manualPrice) ) {
+      finalPrice = manualPrice;
+    } 
+  
+    const tPrice = qty * finalPrice;
+    setTotalPrice(tPrice.toFixed(2));
 
-    setPrice(finalPrice.toFixed(2));
-
-    if (qty > 0) {
-      const tPrice = finalPrice * qty;
-      setTotalPrice(tPrice.toFixed(2));
-    } else {
-      setTotalPrice("0.00");
-    }
-  }, [percentage, saleQuantity, selectedProduct, currentStock, saleMRP]);
+  }, [percentage, saleQuantity, selectedProduct, currentStock, saleMRP, price]);
 
   // ---------- Add product to list ----------
   const addProduct = () => {

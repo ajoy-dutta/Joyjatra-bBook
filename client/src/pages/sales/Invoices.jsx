@@ -648,7 +648,6 @@ export default function SalesList() {
           <th>Sl No</th>
           <th>Product Name</th>
           <th>Quantity</th>
-          <th>MRP</th>
           <th>Price</th>
           <th>Total</th>
         </tr>
@@ -661,7 +660,6 @@ export default function SalesList() {
             <td class="text-center">${idx + 1}</td>
             <td>${item.product?.product_name || "N/A"}</td>
             <td class="text-center">${safeNumber(item.sale_quantity).toFixed(2)}</td>
-            <td class="text-center">${safeNumber(item.product?.product_mrp).toFixed(2)}</td>
             <td class="text-center">${safeNumber(item.sale_price).toFixed(2)}</td>
             <td class="text-center">${safeNumber(item.total_price).toFixed(2)}</td>
           </tr>
