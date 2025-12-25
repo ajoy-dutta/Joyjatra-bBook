@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
 });
 
 // Document Component
-export const AccountsPDFDocument = ({ incomeData, expenseData }) => {
+export const AccountsPDFDocument = ({ incomeData, expenseData, from_date, to_date }) => {
   const maxRows = Math.max(incomeData.length, expenseData.length);
 
   const incomeTotal = incomeData.reduce((acc, item) => acc + parseFloat(item.total_payable_amount || 0), 0);

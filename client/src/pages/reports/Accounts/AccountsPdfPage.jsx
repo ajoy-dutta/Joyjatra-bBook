@@ -61,7 +61,7 @@ const AccountsPdfPage = () => {
       {/* PDF Viewer */}
       <div style={{ height: "calc(100vh - 56px)" }}>
         <PDFViewer style={{ width: "100%", height: "100%" }}>
-          <AccountsPDFDocument incomeData={incomeData} expenseData={expenseData} />
+          <AccountsPDFDocument incomeData={incomeData} expenseData={expenseData} from_date={fromDate} to_date={toDate} />
         </PDFViewer>
       </div>
     </div>
