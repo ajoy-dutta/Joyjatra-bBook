@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import AxiosInstance from "../../components/AxiosInstance"; // adjust path if needed
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import AxiosInstance from "../../components/AxiosInstance";
+import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
+import joyjatraLogo from "../../assets/joyjatra_logo.jpeg"; // fallback logo
 
 /* -------- Helpers -------- */
 const money = (value) => {
@@ -38,6 +39,9 @@ const styles = StyleSheet.create({
   page: { padding: 35, fontSize: 9, fontFamily: "Helvetica" },
   center: { textAlign: "center" },
   bold: { fontWeight: "bold" },
+  headerWrapper: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+  logo: { width: 80, height: 80, objectFit: "contain" },
+  headerText: { flex: 1, textAlign: "center" },
   headerTitle: { fontSize: 14, fontWeight: "bold" },
   subHeader: { fontSize: 9, marginTop: 2 },
   voucherTitle: { marginTop: 10, fontSize: 11, fontWeight: "bold", textAlign: "center", textDecoration: "underline" },
@@ -56,16 +60,13 @@ export default function JournalVoucherPDF({ journal }) {
   const [banner, setBanner] = useState(null);
   const [bannerLoading, setBannerLoading] = useState(false);
 
-  // ✅ Get selected business category from localStorage
+  // selected business category
   const selectedCategory = JSON.parse(localStorage.getItem("business_category")) || null;
 
-  // Fetch banner whenever category changes
+  // fetch banner (title, address, phone, logo)
   useEffect(() => {
     const fetchBanner = async (categoryId) => {
-      if (!categoryId) {
-        setBanner(null);
-        return;
-      }
+      if (!categoryId) return setBanner(null);
       try {
         setBannerLoading(true);
         const res = await AxiosInstance.get(`/business-categories/${categoryId}/`);
@@ -81,6 +82,7 @@ export default function JournalVoucherPDF({ journal }) {
     fetchBanner(selectedCategory?.id || null);
   }, [selectedCategory?.id]);
 
+  const headerLogo = banner?.banner_logo || joyjatraLogo;
   const headerTitle = banner?.banner_title || selectedCategory?.name || "Business Name";
   const headerAddress1 = banner?.banner_address1 || "";
   const headerAddress2 = banner?.banner_address2 || "";
@@ -90,11 +92,15 @@ export default function JournalVoucherPDF({ journal }) {
     <Document>
       <Page size="A4" style={styles.page}>
         {/* ================= HEADER ================= */}
-        <View style={styles.center}>
-          <Text style={styles.headerTitle}>{headerTitle}</Text>
-          {headerAddress1 && <Text style={styles.subHeader}>{headerAddress1}</Text>}
-          {headerAddress2 && <Text style={styles.subHeader}>{headerAddress2}</Text>}
-          {headerMobile && <Text style={styles.subHeader}>Mobile: {headerMobile}</Text>}
+        <View style={styles.headerWrapper}>
+          <Image src={headerLogo} style={styles.logo} />
+          <View style={styles.headerText}>
+            <Text style={styles.headerTitle}>{headerTitle}</Text>
+            {headerAddress1 && <Text style={styles.subHeader}>{headerAddress1}</Text>}
+            {headerAddress2 && <Text style={styles.subHeader}>{headerAddress2}</Text>}
+            {headerMobile && <Text style={styles.subHeader}>Mobile: {headerMobile}</Text>}
+          </View>
+          <View style={{ width: 80 }} /> {/* empty space for alignment */}
         </View>
 
         <Text style={styles.voucherTitle}>Adjustment Journal Voucher</Text>
