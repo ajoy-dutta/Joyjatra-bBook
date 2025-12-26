@@ -20,6 +20,12 @@ export default function ReportsHome() {
       description: "Assets, liabilities and equity snapshot.",
       path: null,
     },
+    {
+      name: "Expense Report",
+      category: "Financial",
+      description: "general expense, purchase, slary etc. report.",
+      path:"/reports/expense-report/",
+    },
     
   ];
 

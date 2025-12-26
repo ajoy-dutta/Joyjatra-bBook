@@ -54,7 +54,6 @@ import SalaryExpense from "../pages/expenses/SalaryExpense";
 import PurchaseExpense from "../pages/expenses/PurchaseExpense";
 import ExpenseReport from "../pages/expenses/ExpenseReport";
 
-
 // Assets
 import AssetsPage from "../pages/assets/Assets";
 // import CurrentAssets from "../pages/assets/CurrentAssets";
@@ -66,9 +65,12 @@ import ProfitLossReport from "../pages/reports/ProfitLoss/ProfitLossReport";
 import ProfitLossPdfPage from "../pages/reports/ProfitLoss/ProfitLossPdfPage";
 import Account from "../pages/reports/Accounts/Account";
 import AccountsPdfPage from "../pages/reports/Accounts/AccountsPdfPage";
+import CombinedExpenseReport from "../pages/reports/Expenses/ExpenseReport";
+import CombinedExpensePdfPage from "../pages/reports/Expenses/CombinedExpensePdfPage";
+
 
 // Settings
-import BusinessCategory from "../pages/settings/businessCategory/page";
+import BusinessCategory from "../pages/settings/businessCategory/page"
 import InventoryCategory from "../pages/settings/InventoryCategory/page";
 import CostCategory from "../pages/settings/CostCategory/page";
 import SourceCategory from "../pages/settings/sourcecategory/page";
@@ -191,6 +193,10 @@ export default function AppRouter() {
         <Route path="/reports/profit-loss/pdf" element={<ProfitLossPdfPage />} />
         <Route path="/reports/accounts" element={<Account />} />
         <Route path="/reports/accounts/pdf" element={<AccountsPdfPage />} />
+        <Route path="/reports/expense-report/" element={<CombinedExpenseReport />} />
+        <Route path="/reports/combined-expense/pdf" element={<CombinedExpensePdfPage />} />
+
+        
         
 
         {/* Master / Settings */}
