@@ -5,12 +5,18 @@ import AxiosInstance from "../../../components/AxiosInstance";
 export default function CombinedExpenseReport() {
   const [data, setData] = useState([]);
   const [costCategories, setCostCategories] = useState([]);
-
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [costCategory, setCostCategory] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+
+  // =============================
+  // BUSINESS CATEGORY FROM LOCALSTORAGE
+  // =============================
+  const selectedBusiness = JSON.parse(localStorage.getItem("business_category")) || null;
+  const businessCategoryId = selectedBusiness?.id || null;
 
   // =============================
   // FETCH COST CATEGORIES
@@ -21,22 +27,36 @@ export default function CombinedExpenseReport() {
   }, []);
 
   const fetchCostCategories = async () => {
-    const res = await AxiosInstance.get("/cost-categories/");
-    setCostCategories(res.data || []);
+    try {
+      const res = await AxiosInstance.get("/cost-categories/");
+      setCostCategories(res.data || []);
+    } catch (err) {
+      console.error("Error fetching cost categories:", err);
+      setCostCategories([]);
+    }
   };
 
   // =============================
   // FETCH REPORT
   // =============================
   const fetchReport = async () => {
-    const params = {
-      from_date: fromDate || undefined,
-      to_date: toDate || undefined,
-      cost_category: costCategory || undefined,
-    };
+    setLoading(true);
+    try {
+      const params = {
+        from_date: fromDate || undefined,
+        to_date: toDate || undefined,
+        // use selected filter or business category from localStorage
+        cost_category: costCategory || businessCategoryId || undefined,
+      };
 
-    const res = await AxiosInstance.get("expense-report/", { params });
-    setData(res.data || []);
+      const res = await AxiosInstance.get("expense-report/", { params });
+      setData(res.data || []);
+    } catch (err) {
+      console.error("Error fetching expense report:", err);
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // =============================
@@ -44,15 +64,11 @@ export default function CombinedExpenseReport() {
   // =============================
   const groupedData = useMemo(() => {
     const groups = {};
-
     data.forEach((item) => {
       const category = item.cost_category || "Uncategorized";
-      if (!groups[category]) {
-        groups[category] = [];
-      }
+      if (!groups[category]) groups[category] = [];
       groups[category].push(item);
     });
-
     return groups;
   }, [data]);
 
@@ -75,7 +91,6 @@ export default function CombinedExpenseReport() {
 
       {/* ================= FILTER BAR ================= */}
       <div className="bg-white p-4 rounded shadow flex flex-wrap gap-4 items-end">
-
         <div>
           <label className="text-xs font-medium">From Date</label>
           <input
@@ -114,18 +129,19 @@ export default function CombinedExpenseReport() {
 
         <button
           onClick={fetchReport}
-          className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm"
+          disabled={loading}
+          className={`px-4 py-1.5 rounded text-sm text-white ${loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}
         >
-          Apply
+          {loading ? "Loading..." : "Apply"}
         </button>
 
         <button
           onClick={() =>
             navigate(
-              `/reports/combined-expense/pdf?from=${fromDate}&to=${toDate}&category=${costCategory}`
+              `/reports/combined-expense/pdf?from=${fromDate}&to=${toDate}&category=${businessCategoryId || costCategory}`
             )
           }
-          className="bg-gray-800 text-white px-4 py-1.5 rounded text-sm"
+          className="bg-gray-800 text-white px-4 py-1.5 rounded text-sm hover:bg-gray-900"
         >
           PDF
         </button>
@@ -134,7 +150,6 @@ export default function CombinedExpenseReport() {
       {/* ================= TABLE ================= */}
       <div className="bg-white rounded shadow overflow-x-auto">
         <table className="w-full text-sm border">
-
           <thead className="bg-gray-100">
             <tr>
               <th className="border p-2">Date</th>
@@ -149,18 +164,12 @@ export default function CombinedExpenseReport() {
           <tbody>
             {Object.entries(groupedData).map(([category, items]) => {
               const categoryTotal = getCategoryTotal(items);
-
               return (
                 <React.Fragment key={category}>
-
-                  {/* CATEGORY HEADER */}
                   <tr className="bg-gray-200 font-semibold">
-                    <td colSpan="6" className="border p-2">
-                      {category}
-                    </td>
+                    <td colSpan="6" className="border p-2">{category}</td>
                   </tr>
 
-                  {/* CATEGORY ENTRIES */}
                   {items.map((row, idx) => (
                     <tr key={idx}>
                       <td className="border p-2">{row.date}</td>
@@ -168,39 +177,25 @@ export default function CombinedExpenseReport() {
                       <td className="border p-2">{row.account_title}</td>
                       <td className="border p-2">{row.cost_category}</td>
                       <td className="border p-2">{row.description}</td>
-                      <td className="border p-2 text-right">
-                        {Number(row.amount).toFixed(2)}
-                      </td>
+                      <td className="border p-2 text-right">{Number(row.amount).toFixed(2)}</td>
                     </tr>
                   ))}
 
-                  {/* CATEGORY SUBTOTAL */}
                   <tr className="bg-yellow-100 font-semibold">
-                    <td colSpan="5" className="border p-2 text-right">
-                      Subtotal ({category})
-                    </td>
-                    <td className="border p-2 text-right">
-                      {categoryTotal.toFixed(2)}
-                    </td>
+                    <td colSpan="5" className="border p-2 text-right">Subtotal ({category})</td>
+                    <td className="border p-2 text-right">{categoryTotal.toFixed(2)}</td>
                   </tr>
-
                 </React.Fragment>
               );
             })}
           </tbody>
 
-          {/* ================= GRAND TOTAL ================= */}
           <tfoot className="bg-gray-300 font-bold">
             <tr>
-              <td colSpan="5" className="border p-2 text-right">
-                Grand Total
-              </td>
-              <td className="border p-2 text-right">
-                {grandTotal.toFixed(2)}
-              </td>
+              <td colSpan="5" className="border p-2 text-right">Grand Total</td>
+              <td className="border p-2 text-right">{grandTotal.toFixed(2)}</td>
             </tr>
           </tfoot>
-
         </table>
       </div>
     </div>

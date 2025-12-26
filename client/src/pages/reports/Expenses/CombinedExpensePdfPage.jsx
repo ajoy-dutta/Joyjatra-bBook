@@ -4,30 +4,41 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import AxiosInstance from "../../../components/AxiosInstance";
 import CombinedExpensePDF from "../../../components/vouchers/CombinedExpensePDF";
 
-
-
 export default function CombinedExpensePdfPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const fromDate = searchParams.get("from");
-  const toDate = searchParams.get("to");
-  const category = searchParams.get("category");
+  const fromDate = searchParams.get("from") || "";
+  const toDate = searchParams.get("to") || "";
+
+  // Fetch business category from localStorage
+  const selectedCategory = JSON.parse(localStorage.getItem("business_category")) || null;
+  const categoryName = selectedCategory?.name || "";
+  const categoryId = selectedCategory?.id || null;
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fromDate, toDate, categoryId]);
 
   const fetchData = async () => {
-    const res = await AxiosInstance.get("expense-report/", {
-      params: {
-        from_date: fromDate,
-        to_date: toDate,
-        cost_category: category
-      }
-    });
-    setData(res.data);
+    setLoading(true);
+    try {
+      const params = {
+        ...(fromDate && { from_date: fromDate }),
+        ...(toDate && { to_date: toDate }),
+        ...(categoryId && { cost_category: categoryId }),
+      };
+
+      const res = await AxiosInstance.get("expense-report/", { params });
+      setData(res.data || []);
+    } catch (err) {
+      console.error("Error fetching expense data:", err);
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,7 +47,7 @@ export default function CombinedExpensePdfPage() {
       <div className="bg-gray-700 p-3 flex justify-between items-center">
         <button
           onClick={() => navigate(-1)}
-          className="text-white text-sm"
+          className="text-white text-sm hover:underline"
         >
           ← Back
         </button>
@@ -47,25 +58,33 @@ export default function CombinedExpensePdfPage() {
               data={data}
               fromDate={fromDate}
               toDate={toDate}
-              categoryName={category}
+              categoryName={categoryName}
             />
           }
           fileName="combined_expense_report.pdf"
-          className="bg-white px-3 py-1 rounded text-sm"
+          className="bg-white px-3 py-1 rounded text-sm hover:bg-gray-200"
         >
-          Download PDF
+          {({ loading: pdfLoading }) =>
+            pdfLoading ? "Preparing PDF..." : "Download PDF"
+          }
         </PDFDownloadLink>
       </div>
 
       {/* PDF VIEW */}
-      <PDFViewer style={{ width: "100%", height: "100%" }}>
-        <CombinedExpensePDF
-          data={data}
-          fromDate={fromDate}
-          toDate={toDate}
-          categoryName={category}
-        />
-      </PDFViewer>
+      <div className="flex-1">
+        {loading ? (
+          <p className="text-center mt-4">Loading PDF...</p>
+        ) : (
+          <PDFViewer style={{ width: "100%", height: "100%" }}>
+            <CombinedExpensePDF
+              data={data}
+              fromDate={fromDate}
+              toDate={toDate}
+              categoryName={categoryName}
+            />
+          </PDFViewer>
+        )}
+      </div>
     </div>
   );
 }

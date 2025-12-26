@@ -1,18 +1,17 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Page,
   Text,
   View,
   Document,
   StyleSheet,
-  Font,
+  Image,
 } from "@react-pdf/renderer";
+import AxiosInstance from "../../components/AxiosInstance";
+import joyjatraLogo from "../../assets/joyjatra_logo.jpeg"; // fallback
 import { numberToWords } from "./utils.jsx";
 
-Font.register({
-  family: "Helvetica",
-});
-
+/* ================= STYLES ================= */
 const styles = StyleSheet.create({
   page: {
     padding: 24,
@@ -21,25 +20,43 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    marginBottom: 12,
-    textAlign: "center",
+    flexDirection: "row", // logo left, text right
+    alignItems: "center", // vertically center the text
+    marginBottom: 6,
+  },
+
+  logo: {
+    width: 70,
+    height: 70,
+    objectFit: "contain",
+    marginRight: 10, // space between logo and text
+  },
+
+  headerText: {
+    flex: 1,
+    justifyContent: "center", // vertical center inside flex space (works with multi-line text)
   },
 
   title: {
     fontSize: 14,
     fontWeight: "bold",
+    textAlign: "center", // horizontally center in flex space
+    marginTop: 0,
+    marginBottom: 2,
   },
 
   subTitle: {
-    marginTop: 4,
     fontSize: 9,
+    textAlign: "center", // horizontally center
+    marginTop: 0,
+    marginBottom: 0,
   },
 
   table: {
     width: "100%",
     borderWidth: 1,
     borderColor: "#ccc",
-    marginTop: 8,
+    marginTop: 6,
   },
 
   row: {
@@ -82,15 +99,50 @@ const styles = StyleSheet.create({
   },
 });
 
+/* ================= COMPONENT ================= */
 export default function CombinedExpensePDF({
   data,
   fromDate,
   toDate,
   categoryName,
 }) {
-  // ===========================
-  // GROUP DATA BY CATEGORY
-  // ===========================
+  const [banner, setBanner] = useState(null);
+
+  const selectedCategory =
+    JSON.parse(localStorage.getItem("business_category")) || null;
+
+  /* ===== FETCH BANNER (LOGO + INFO) ===== */
+  useEffect(() => {
+    const fetchBanner = async () => {
+      if (!selectedCategory?.id) return;
+
+      try {
+        const res = await AxiosInstance.get(
+          `/business-categories/${selectedCategory.id}/`
+        );
+        setBanner(res.data);
+      } catch (err) {
+        console.error("Banner fetch failed:", err);
+        setBanner(null);
+      }
+    };
+
+    fetchBanner();
+  }, [selectedCategory?.id]);
+
+  const headerLogo =
+    banner?.banner_logo
+      ? banner.banner_logo.startsWith("http")
+        ? banner.banner_logo
+        : `${import.meta.env.VITE_API_BASE_URL}${banner.banner_logo}`
+      : joyjatraLogo;
+
+  const headerTitle =
+    banner?.banner_title ||
+    selectedCategory?.name ||
+    "Business Name";
+
+  /* ================= GROUP DATA ================= */
   const groupedData = {};
   data.forEach((item) => {
     const cat = item.cost_category || "Uncategorized";
@@ -112,15 +164,20 @@ export default function CombinedExpensePDF({
 
         {/* ================= HEADER ================= */}
         <View style={styles.header}>
-          <Text style={styles.title}>Combined Expense Report</Text>
-          <Text style={styles.subTitle}>
-            From {fromDate || "Beginning"} to {toDate || "Till Date"}
-          </Text>
-          {categoryName && (
+          <Image src={headerLogo} style={styles.logo} />
+
+          <View style={styles.headerText}>
+            <Text style={styles.title}>{headerTitle}</Text>
+            <Text style={styles.subTitle}>Combined Expense Report</Text>
             <Text style={styles.subTitle}>
-              Cost Category: {categoryName}
+              From {fromDate || "Beginning"} to {toDate || "Till Date"}
             </Text>
-          )}
+            {categoryName && (
+              <Text style={styles.subTitle}>
+                Cost Category: {categoryName}
+              </Text>
+            )}
+          </View>
         </View>
 
         {/* ================= TABLE ================= */}
@@ -144,14 +201,12 @@ export default function CombinedExpensePDF({
             </Text>
           </View>
 
-          {/* CATEGORY WISE ROWS */}
+          {/* CATEGORY WISE DATA */}
           {Object.entries(groupedData).map(([category, items]) => {
             const categoryTotal = getCategoryTotal(items);
 
             return (
               <View key={category}>
-
-                {/* CATEGORY HEADING */}
                 <View style={styles.row}>
                   <Text
                     style={[
@@ -164,37 +219,21 @@ export default function CombinedExpensePDF({
                   </Text>
                 </View>
 
-                {/* ENTRIES */}
                 {items.map((row, idx) => (
                   <View style={styles.row} key={idx}>
-                    <Text style={[styles.cell, { width: "12%" }]}>
-                      {row.date}
-                    </Text>
-                    <Text style={[styles.cell, { width: "18%" }]}>
-                      {row.voucher_no}
-                    </Text>
-                    <Text style={[styles.cell, { width: "20%" }]}>
-                      {row.account_title}
-                    </Text>
-                    <Text style={[styles.cell, { width: "18%" }]}>
-                      {row.cost_category}
-                    </Text>
-                    <Text style={[styles.cell, { width: "22%" }]}>
-                      {row.description}
-                    </Text>
+                    <Text style={[styles.cell, { width: "12%" }]}>{row.date}</Text>
+                    <Text style={[styles.cell, { width: "18%" }]}>{row.voucher_no}</Text>
+                    <Text style={[styles.cell, { width: "20%" }]}>{row.account_title}</Text>
+                    <Text style={[styles.cell, { width: "18%" }]}>{row.cost_category}</Text>
+                    <Text style={[styles.cell, { width: "22%" }]}>{row.description}</Text>
                     <Text
-                      style={[
-                        styles.cell,
-                        { width: "10%" },
-                        styles.right,
-                      ]}
+                      style={[styles.cell, { width: "10%" }, styles.right]}
                     >
                       {Number(row.amount).toFixed(2)}
                     </Text>
                   </View>
                 ))}
 
-                {/* CATEGORY SUBTOTAL */}
                 <View style={styles.row}>
                   <Text
                     style={[
