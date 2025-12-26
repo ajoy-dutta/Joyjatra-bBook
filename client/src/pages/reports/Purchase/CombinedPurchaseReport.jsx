@@ -27,7 +27,8 @@ export default function CombinedPurchaseReport() {
           business_category: selectedCategory?.id || undefined,
         },
       });
-      setData(res.data);
+      setData(res.data.purchases || []);
+      console.log("Fetched data:", res.data);
     } finally {
       setLoading(false);
     }

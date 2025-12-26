@@ -70,7 +70,7 @@ class SalaryExpense(models.Model):
 
 class Purchase(models.Model):
     business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE, null=True, blank=True)
-    vendor = models.ForeignKey(Vendor,on_delete=models.CASCADE,related_name="purchases",null=True, blank=True)
+    vendor = models.ForeignKey(Vendor,on_delete=models.CASCADE,null=True, blank=True)
     purchase_date = models.DateField()
     invoice_no = models.CharField(max_length=100, blank=True, null=True)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)

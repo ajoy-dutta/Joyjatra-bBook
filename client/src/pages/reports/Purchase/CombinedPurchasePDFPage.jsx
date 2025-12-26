@@ -30,7 +30,7 @@ export default function CombinedPurchasePDFPage() {
             business_category: selectedCategory?.id || undefined,
           },
         });
-        setData(res.data);
+        setData(res.data.purchases || []);
       } catch (e) {
         console.error("Failed to fetch PDF data:", e);
       } finally {

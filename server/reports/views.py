@@ -17,74 +17,82 @@ from .utils import percent_change
 
 class CombinedPurchaseView(APIView):
     def get(self, request):
-
         business_category = request.query_params.get("business_category")
         product_name = request.query_params.get("product_name")
         from_date = request.query_params.get("from_date")
         to_date = request.query_params.get("to_date")
-        grouped_data = []
-
-
-        purchases = (
-            Purchase.objects
-            .select_related("vendor", "business_category")
-            .prefetch_related("products__product")
-        )
-
-        print("Initial Purchases:", purchases)
         
+        # Start with PurchaseQuerySet
+        purchases = Purchase.objects.select_related("vendor", "business_category") \
+                                   .prefetch_related("products__product") \
+                                   .order_by("-purchase_date")
+        
+        # Apply filters
         if business_category:
             purchases = purchases.filter(business_category__id=business_category)
-        if product_name:
-            purchases = purchases.filter(product_name__iexact=product_name)
+        
         if from_date:
             purchases = purchases.filter(purchase_date__gte=parse_date(from_date))
+        
         if to_date:
             purchases = purchases.filter(purchase_date__lte=parse_date(to_date))
-
+        
+        # Handle product_name filter differently
+        if product_name:
+            purchases = purchases.filter(
+                products__product__product_name__icontains=product_name
+            ).distinct()
+        
+        grouped_data = []
+        
         for purchase in purchases:
-
-            # All product names and part numbers
-            product_names = []
+            # Filter products based on product_name if provided
+            purchase_products = purchase.products.all()
+            
+            if product_name:
+                purchase_products = purchase_products.filter(
+                    product__product_name__icontains=product_name
+                )
+            
+            # Skip if no products after filtering
+            if not purchase_products.exists():
+                continue
+            
+            # Calculate totals for filtered products
             total_qty = 0
             total_amt = 0
-
-            for item in purchase.products.all():
-                # for Part Wise Filtering
-                if product_name:
-                    if item.product and item.product.product_name != product_name:
-                        continue
-                
-                print("Item Product:", item.product)
-                if item.product:
-                    name_part = f"{item.product.product_name}"
-                    product_names.append(name_part)
-                else:
-                    product_names.append("—")
-
+            product_names = []
+            
+            for item in purchase_products:
                 total_qty += item.purchase_quantity
                 total_amt += float(item.total_price)
-
-            if total_qty == 0:
-                continue
-
+                
+                if item.product:
+                    product_names.append(item.product.product_name)
+                else:
+                    product_names.append("—")
+            
+            # Create unique product name string
+            product_names_str = ", ".join(sorted(set(product_names)))
+            
             grouped_data.append({
                 "date": purchase.purchase_date,
                 "invoice_no": purchase.invoice_no,
-                "product_name": "|".join(product_names),
-                "vendor":  purchase.vendor.vendor_name,
+                "product_name": product_names_str,
+                "vendor": purchase.vendor.vendor_name if purchase.vendor else "—",
                 "quantity": total_qty,
                 "purchase_amount": round(total_amt, 2),
+                "total_amount": float(purchase.total_amount),
+                "discount": float(purchase.discount_amount),
+                "payable": float(purchase.total_payable_amount),
+                "invoice_id": purchase.id,
             })
-
-            print("Grouped Data", grouped_data)
-
-
-        # --- Sort by Date Descending ---
+        
+        # Sort by date descending
         grouped_data.sort(key=lambda x: x["date"], reverse=True)
-
-        serializer = CombinedPurchaseSerializer(grouped_data, many=True)
-        return Response(serializer.data)
+    
+        # Or return directly:
+        return Response({"purchases": grouped_data})
 
 
 
