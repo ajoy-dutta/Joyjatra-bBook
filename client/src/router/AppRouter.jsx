@@ -67,6 +67,8 @@ import Account from "../pages/reports/Accounts/Account";
 import AccountsPdfPage from "../pages/reports/Accounts/AccountsPdfPage";
 import CombinedExpenseReport from "../pages/reports/Expenses/ExpenseReport";
 import CombinedExpensePdfPage from "../pages/reports/Expenses/CombinedExpensePdfPage";
+import SalesReport from "../pages/reports/Sales/SalesReport";
+import SalesReportPDFPage from "../pages/reports/Sales/SalesReportPDFPage";
 
 
 // Settings
@@ -195,6 +197,11 @@ export default function AppRouter() {
         <Route path="/reports/accounts/pdf" element={<AccountsPdfPage />} />
         <Route path="/reports/expense-report/" element={<CombinedExpenseReport />} />
         <Route path="/reports/combined-expense/pdf" element={<CombinedExpensePdfPage />} />
+
+        <Route path="/reports/sales-report/" element={<SalesReport />} />
+        <Route path="/reports/sales-report/pdf" element={<SalesReportPDFPage />} />
+        
+       
 
         
         

@@ -26,7 +26,13 @@ export default function ReportsHome() {
       description: "general expense, purchase, slary etc. report.",
       path:"/reports/expense-report/",
     },
-    
+
+    {
+      name: "Sales Report",
+      category: "Financial",
+      description: "Detailed sales transactions and summaries.",
+      path:"/reports/sales-report/",
+    },
   ];
 
   return (

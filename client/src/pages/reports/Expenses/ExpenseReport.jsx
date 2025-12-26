@@ -92,7 +92,7 @@ export default function CombinedExpenseReport() {
       {/* ================= FILTER BAR ================= */}
       <div className="bg-white p-4 rounded shadow flex flex-wrap gap-4 items-end">
         <div>
-          <label className="text-xs font-medium">From Date</label>
+          <label className="text-sm font-medium mr-1">From Date</label>
           <input
             type="date"
             value={fromDate}
@@ -102,7 +102,7 @@ export default function CombinedExpenseReport() {
         </div>
 
         <div>
-          <label className="text-xs font-medium">To Date</label>
+          <label className="text-sm font-medium mr-1">To Date</label>
           <input
             type="date"
             value={toDate}
@@ -112,7 +112,7 @@ export default function CombinedExpenseReport() {
         </div>
 
         <div>
-          <label className="text-xs font-medium">Cost Category</label>
+          <label className="text-sm font-medium mr-1">Cost Category</label>
           <select
             value={costCategory}
             onChange={(e) => setCostCategory(e.target.value)}

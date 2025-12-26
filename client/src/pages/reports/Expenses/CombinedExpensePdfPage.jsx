@@ -46,8 +46,8 @@ export default function CombinedExpensePdfPage() {
       {/* TOP BAR */}
       <div className="bg-gray-700 p-3 flex justify-between items-center">
         <button
-          onClick={() => navigate(-1)}
-          className="text-white text-sm hover:underline"
+          onClick={() => navigate("/reports/expense-report/")}
+          className="text-white text-sm"
         >
           ← Back
         </button>
