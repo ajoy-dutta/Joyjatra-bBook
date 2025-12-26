@@ -17,7 +17,6 @@ class CustomerSerializer(serializers.ModelSerializer):
 
 
 class VendorSerializer(serializers.ModelSerializer):
-
     business_category = serializers.PrimaryKeyRelatedField(
         queryset=BusinessCategory.objects.all(),
         required=True

@@ -33,6 +33,13 @@ export default function ReportsHome() {
       description: "Detailed sales transactions and summaries.",
       path:"/reports/sales-report/",
     },
+
+    {
+      name: "Purchase Report",
+      category: "Financial",
+      description: "Detailed purchase transactions and summaries.",
+      path:"/reports/combined-purchase/",
+    },
   ];
 
   return (

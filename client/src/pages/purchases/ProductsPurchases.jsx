@@ -104,6 +104,10 @@ export default function ProductPurchase() {
   const [discountAmount, setDiscountAmount] = useState("");
   const [totalPayableAmount, setTotalPayableAmount] = useState(0);
 
+  const [selectedCategory, setSelectedCategory] = useState(
+      JSON.parse(localStorage.getItem("business_category")) || null
+    );
+
   // ---------- Payments ----------
   const [paymentModes, setPaymentModes] = useState([]);
   const [banks, setBanks] = useState([]);
@@ -122,9 +126,15 @@ export default function ProductPurchase() {
       try {
         const [vendorsRes, stocksRes, productsRes, pmRes, bankRes] =
           await Promise.all([
-            AxiosInstance.get("/vendors/"),
-            AxiosInstance.get("/stocks/"),
-            AxiosInstance.get("/products/"),
+            AxiosInstance.get("/vendors/",{
+              params: { business_category: selectedCategory?.id || undefined }
+            }),
+            AxiosInstance.get("/stocks/",{
+              params: { business_category: selectedCategory?.id || undefined }
+            }),
+            AxiosInstance.get("/products/",{
+              params: { business_category: selectedCategory?.id || undefined }
+            }),
             AxiosInstance.get("/payment-mode/"),
             AxiosInstance.get("/banks/"),
           ]);
@@ -393,6 +403,7 @@ export default function ProductPurchase() {
     }
 
     const payload = {
+      business_category: selectedCategory?.id || null,
       vendor_id: selectedVendor.value,
       purchase_date: purchaseDate,
       total_amount: parseFloat(totalAmount) || 0,

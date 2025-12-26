@@ -18,6 +18,7 @@ from .utils import percent_change
 class CombinedPurchaseView(APIView):
     def get(self, request):
 
+        business_category = request.query_params.get("business_category")
         product_name = request.query_params.get("product_name")
         from_date = request.query_params.get("from_date")
         to_date = request.query_params.get("to_date")
@@ -26,10 +27,14 @@ class CombinedPurchaseView(APIView):
 
         purchases = (
             Purchase.objects
-            .select_related("supplier")         
-            .prefetch_related("products__product") 
+            .select_related("vendor", "business_category")
+            .prefetch_related("products__product")
         )
 
+        print("Initial Purchases:", purchases)
+        
+        if business_category:
+            purchases = purchases.filter(business_category__id=business_category)
         if product_name:
             purchases = purchases.filter(product_name__iexact=product_name)
         if from_date:
@@ -213,7 +218,7 @@ class CombinedExpanseView(APIView):
                     "date": p.purchase_date,
                     "voucher_no": f"Payment for {p.invoice_no}",
                     "account_title": account_title_value,
-                    "cost_category": "Purchase",
+                    "cost_category": "Purchase Expense",
                     "description": f"Purchase payment ({pay.payment_mode})",
                     "amount": pay.paid_amount,
                     "transaction_type": pay.payment_mode,

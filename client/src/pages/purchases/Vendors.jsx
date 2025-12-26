@@ -33,7 +33,7 @@ export default function Vendors() {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
 
-   const [selectedCategory, setSelectedCategory] = useState(
+  const [selectedCategory, setSelectedCategory] = useState(
       JSON.parse(localStorage.getItem("business_category")) || null
     );
 
