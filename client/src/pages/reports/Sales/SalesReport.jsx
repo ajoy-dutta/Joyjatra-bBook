@@ -10,21 +10,33 @@ export default function SalesReport() {
 
   const navigate = useNavigate();
 
+  // =============================
+  // BUSINESS CATEGORY FROM LOCALSTORAGE
+  // =============================
+  const selectedBusiness = JSON.parse(localStorage.getItem("business_category")) || null;
+  const businessCategoryId = selectedBusiness?.id || null;
+
   const fetchReport = async () => {
-    const res = await AxiosInstance.get("/sale-report/", {
-      params: {
+    try {
+      const params = {
         from_date: fromDate || undefined,
         to_date: toDate || undefined,
-      },
-    });
+        ...(businessCategoryId && { business_category: businessCategoryId }),
+      };
 
-    setSales(res.data.sales);
-    setSummary(res.data.summary);
+      const res = await AxiosInstance.get("/sale-report/", { params });
+      setSales(res.data.sales);
+      setSummary(res.data.summary);
+    } catch (err) {
+      console.error("Error fetching sales report:", err);
+      setSales([]);
+      setSummary({});
+    }
   };
 
   useEffect(() => {
     fetchReport();
-  }, []);
+  }, []); // initial load
 
   return (
     <div className="p-6 space-y-4">
@@ -58,11 +70,11 @@ export default function SalesReport() {
         </button>
 
         <button
-          onClick={() =>
-            navigate(
-              `/reports/sales-report/pdf?from=${fromDate}&to=${toDate}`
-            )
-          }
+          onClick={() => {
+            let url = `/reports/sales-report/pdf?from=${fromDate}&to=${toDate}`;
+            if (businessCategoryId) url += `&business_category=${businessCategoryId}`;
+            window.open(url, "_blank");
+          }}
           className="bg-gray-800 text-white px-4 py-1.5 rounded text-sm"
         >
           PDF
@@ -96,9 +108,7 @@ export default function SalesReport() {
                   <td className="border p-2 text-right">
                     {Number(sale.total_amount).toFixed(2)}
                   </td>
-                  <td className="border p-2 text-right">
-                    {paid.toFixed(2)}
-                  </td>
+                  <td className="border p-2 text-right">{paid.toFixed(2)}</td>
                   <td className="border p-2 text-right">
                     {(sale.total_amount - paid).toFixed(2)}
                   </td>

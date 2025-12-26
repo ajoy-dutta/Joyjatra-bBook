@@ -4,8 +4,6 @@ import { PDFViewer, PDFDownloadLink } from "@react-pdf/renderer";
 import AxiosInstance from "../../../components/AxiosInstance";
 import SalesReportPDF from "../../../components/vouchers/SalesReportPDF";
 
-
-
 export default function SalesReportPDFPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -17,15 +15,23 @@ export default function SalesReportPDFPage() {
   const fromDate = searchParams.get("from");
   const toDate = searchParams.get("to");
 
+  // =============================
+  // BUSINESS CATEGORY FROM LOCALSTORAGE
+  // =============================
+  const selectedBusiness = JSON.parse(localStorage.getItem("business_category")) || null;
+  const businessCategoryId = selectedBusiness?.id || null;
+
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        const res = await AxiosInstance.get("/sale-report/", {
-          params: {
-            from_date: fromDate || undefined,
-            to_date: toDate || undefined,
-          },
-        });
+        const params = {
+          from_date: fromDate || undefined,
+          to_date: toDate || undefined,
+          ...(businessCategoryId && { business_category: businessCategoryId }),
+        };
+
+        const res = await AxiosInstance.get("/sale-report/", { params });
 
         setSales(res.data.sales);
         setSummary(res.data.summary);
@@ -37,7 +43,7 @@ export default function SalesReportPDFPage() {
     };
 
     fetchData();
-  }, [fromDate, toDate]);
+  }, [fromDate, toDate, businessCategoryId]);
 
   if (loading) {
     return <div className="p-6">Loading PDF...</div>;
