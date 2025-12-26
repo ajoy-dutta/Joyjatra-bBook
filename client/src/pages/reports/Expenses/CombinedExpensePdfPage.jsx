@@ -12,15 +12,16 @@ export default function CombinedExpensePdfPage() {
 
   const fromDate = searchParams.get("from") || "";
   const toDate = searchParams.get("to") || "";
+  const categoryName = searchParams.get("costCategory") || "";
 
   // Fetch business category from localStorage
   const selectedCategory = JSON.parse(localStorage.getItem("business_category")) || null;
-  const categoryName = selectedCategory?.name || "";
-  const categoryId = selectedCategory?.id || null;
+  const businessCategoryId = selectedCategory?.id || null;
+
 
   useEffect(() => {
     fetchData();
-  }, [fromDate, toDate, categoryId]);
+  }, [fromDate, toDate, categoryName]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -28,7 +29,8 @@ export default function CombinedExpensePdfPage() {
       const params = {
         ...(fromDate && { from_date: fromDate }),
         ...(toDate && { to_date: toDate }),
-        ...(categoryId && { cost_category: categoryId }),
+        ...(categoryName && { cost_category: categoryName }),
+        ...(businessCategoryId && { business_category: businessCategoryId }),
       };
 
       const res = await AxiosInstance.get("expense-report/", { params });

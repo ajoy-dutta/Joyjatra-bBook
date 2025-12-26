@@ -46,7 +46,8 @@ export default function CombinedExpenseReport() {
         from_date: fromDate || undefined,
         to_date: toDate || undefined,
         // use selected filter or business category from localStorage
-        cost_category: costCategory || businessCategoryId || undefined,
+        cost_category: costCategory || undefined,
+        business_category: businessCategoryId || undefined,
       };
 
       const res = await AxiosInstance.get("expense-report/", { params });
@@ -138,7 +139,7 @@ export default function CombinedExpenseReport() {
         <button
           onClick={() =>
             navigate(
-              `/reports/combined-expense/pdf?from=${fromDate}&to=${toDate}&category=${businessCategoryId || costCategory}`
+              `/reports/combined-expense/pdf?from=${fromDate}&to=${toDate}&costCategory=${costCategory}`
             )
           }
           className="bg-gray-800 text-white px-4 py-1.5 rounded text-sm hover:bg-gray-900"
