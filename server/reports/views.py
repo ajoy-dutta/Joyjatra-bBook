@@ -9,7 +9,7 @@ from sales.models import Sale
 from sales.serializers import SaleSerializer
 from purchase.models import Expense, SalaryExpense, Purchase
 from datetime import date
-from accounts.models import JournalEntryLine
+from accounts.models import OpeningBalance
 from .utils import percent_change
 
 
@@ -301,12 +301,12 @@ class ProfitLossReportView(APIView):
             sale_date__range=(prev_start, prev_end)
         ).aggregate(total=Sum("total_amount"))["total"] or Decimal("0")
 
-        other_income_current = JournalEntryLine.objects.filter(
+        other_income_current = OpeningBalance.objects.filter(
             journal_entry__date__range=(start, end),
             account__account_type="INCOME"
         ).aggregate(total=Sum("credit"))["total"] or Decimal("0")
 
-        other_income_prev = JournalEntryLine.objects.filter(
+        other_income_prev = OpeningBalance.objects.filter(
             journal_entry__date__range=(prev_start, prev_end),
             account__account_type="INCOME"
         ).aggregate(total=Sum("credit"))["total"] or Decimal("0")
@@ -377,12 +377,12 @@ class ProfitLossReportView(APIView):
         # ==========================
         # JOURNAL EXPENSE
         # ==========================
-        journal_exp_current = JournalEntryLine.objects.filter(
+        journal_exp_current = OpeningBalance.objects.filter(
             journal_entry__date__range=(start, end),
             account__account_type="EXPENSE"
         ).aggregate(total=Sum("debit"))["total"] or Decimal("0")
 
-        journal_exp_prev = JournalEntryLine.objects.filter(
+        journal_exp_prev = OpeningBalance.objects.filter(
             journal_entry__date__range=(prev_start, prev_end),
             account__account_type="EXPENSE"
         ).aggregate(total=Sum("debit"))["total"] or Decimal("0")

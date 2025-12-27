@@ -1,6 +1,6 @@
 from rest_framework.viewsets import ModelViewSet
-from .models import Account, JournalEntry
-from .serializers import AccountSerializer, JournalEntrySerializer
+from .models import Account, OpeningBalance
+from .serializers import AccountSerializer, OpeningBalanceSerializer
 
 
 
@@ -9,6 +9,6 @@ class AccountViewSet(ModelViewSet):
     serializer_class = AccountSerializer
 
 
-class JournalEntryViewSet(ModelViewSet):
-    queryset = JournalEntry.objects.all().order_by("-date")
-    serializer_class = JournalEntrySerializer
+class OpeningBalanceViewSet(ModelViewSet):
+    queryset = OpeningBalance.objects.all()
+    serializer_class = OpeningBalanceSerializer
