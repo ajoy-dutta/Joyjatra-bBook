@@ -6,4 +6,5 @@ urlpatterns = [
     path('purchase-report/', CombinedPurchaseView.as_view(), name="purchase-report"),
     path('expense-report/', CombinedExpanseView.as_view(), name="expense-report"),
     path('profit-loss/', ProfitLossReportView.as_view(), name="profit-loss" ),
+    path("assets-report/", AssetsReportView.as_view(), name="assets-report"),
 ]
