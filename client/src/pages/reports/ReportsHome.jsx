@@ -18,7 +18,7 @@ export default function ReportsHome() {
       name: "Balance Sheet",
       category: "Financial",
       description: "Assets, liabilities and equity snapshot.",
-      path: null,
+      path: "/reports/balance-sheet",
     },
     {
       name: "Expense Report",

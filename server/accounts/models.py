@@ -29,6 +29,13 @@ class Account(models.Model):
 
 
 class OpeningBalance(models.Model):
+    business_category = models.ForeignKey(
+        'master.BusinessCategory',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+    entry_type=models.CharField(max_length=10, blank=True, null=True)
     account = models.ForeignKey(
             Account,
             on_delete=models.PROTECT,

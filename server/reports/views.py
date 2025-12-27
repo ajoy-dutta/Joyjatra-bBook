@@ -448,3 +448,163 @@ class ProfitLossReportView(APIView):
         return Response(data)
 
 
+
+
+
+
+class BalanceSheetReportView(APIView):
+    def get(self, request):
+        try:
+            business_category = request.query_params.get("business_category")
+            as_on = request.query_params.get("as_on", date.today())
+
+        except Exception as e:
+            print("❌ ERROR reading request params:", str(e))
+            return Response({"error": "Invalid request parameters"}, status=400)
+
+        # =============================
+        # OPENING BALANCES
+        # =============================
+        try:
+            openings = OpeningBalance.objects.filter(
+                business_category_id=business_category,
+                as_of_date__lte=as_on
+            )
+
+            def opening_sum(entry_type):
+                total = (
+                    openings.filter(entry_type=entry_type)
+                    .aggregate(total=Sum("amount"))["total"]
+                    or Decimal("0")
+                )
+                print(f"{entry_type} Opening:", total)
+                return total
+
+            opening_cash = opening_sum("CASH")
+            opening_receivable = opening_sum("RECEIVABLE")
+            opening_payable = opening_sum("PAYABLE")
+            opening_capital = opening_sum("CAPITAL")
+
+        except Exception as e:
+            print("❌ ERROR in OPENING BALANCES:", str(e))
+            opening_cash = opening_receivable = opening_payable = opening_capital = Decimal("0")
+
+        # =============================
+        # INVENTORY VALUE
+        # =============================
+        try:
+            purchase_total = Purchase.objects.filter(
+                business_category_id=business_category
+            ).aggregate(total=Sum("total_payable_amount"))["total"] or Decimal("0")
+
+            sales_total = Sale.objects.filter(
+                business_category_id=business_category
+            ).aggregate(total=Sum("total_amount"))["total"] or Decimal("0")
+
+            inventory_value = purchase_total - sales_total
+
+        except Exception as e:
+            print("❌ ERROR in INVENTORY:", str(e))
+            inventory_value = Decimal("0")
+            purchase_total = sales_total = Decimal("0")
+
+        # =============================
+        # FIXED ASSETS
+        # =============================
+        try:
+            print("\n--- FIXED ASSETS ---")
+
+            fixed_assets = Asset.objects.filter(
+                business_category_id=business_category
+            ).aggregate(total=Sum("total_price"))["total"] or Decimal("0")
+
+        except Exception as e:
+            print("❌ ERROR in FIXED ASSETS:", str(e))
+            fixed_assets = Decimal("0")
+
+        # =============================
+        # PROFIT / LOSS
+        # =============================
+        try:
+            expense_total = Expense.objects.filter(
+                business_category_id=business_category
+            ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+
+            net_profit = sales_total - expense_total
+
+        except Exception as e:
+            print("❌ ERROR in PROFIT / LOSS:", str(e))
+            net_profit = Decimal("0")
+
+        # =============================
+        # ASSETS
+        # =============================
+        try:
+            total_assets = (
+                opening_cash +
+                opening_receivable +
+                inventory_value +
+                fixed_assets
+            )
+
+        except Exception as e:
+            print("❌ ERROR calculating TOTAL ASSETS:", str(e))
+            total_assets = Decimal("0")
+
+        # =============================
+        # LIABILITIES
+        # =============================
+        try:
+            total_liabilities = opening_payable
+           
+        except Exception as e:
+            print("❌ ERROR in LIABILITIES:", str(e))
+            total_liabilities = Decimal("0")
+
+        # =============================
+        # EQUITY
+        # =============================
+        try:
+            total_equity = opening_capital + net_profit
+            
+        except Exception as e:
+            print("❌ ERROR in EQUITY:", str(e))
+            total_equity = Decimal("0")
+
+        # =============================
+        # BALANCE CHECK
+        # =============================
+        try:
+            balanced = total_assets == (total_liabilities + total_equity)
+
+        except Exception as e:
+            print("❌ ERROR in BALANCE CHECK:", str(e))
+            balanced = False
+
+        # =============================
+        # RESPONSE
+        # =============================
+        return Response({
+            "as_on": as_on,
+
+            "assets": {
+                "cash": opening_cash,
+                "receivable": opening_receivable,
+                "inventory": inventory_value,
+                "fixed_assets": fixed_assets,
+                "total_assets": total_assets,
+            },
+
+            "liabilities": {
+                "payable": opening_payable,
+                "total_liabilities": total_liabilities,
+            },
+
+            "equity": {
+                "opening_capital": opening_capital,
+                "retained_earnings": net_profit,
+                "total_equity": total_equity,
+            },
+
+            "balanced": balanced
+        })
