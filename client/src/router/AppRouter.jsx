@@ -71,7 +71,8 @@ import SalesReport from "../pages/reports/Sales/SalesReport";
 import SalesReportPDFPage from "../pages/reports/Sales/SalesReportPDFPage";
 import CombinedPurchaseReport from "../pages/reports/Purchase/CombinedPurchaseReport";
 import CombinedPurchasePDFPage from "../pages/reports/Purchase/CombinedPurchasePDFPage";
-
+import AssetsReport from "../pages/reports/Assets/AssetsReport";
+import AssetsReportPdfPage from "../pages/reports/Assets/AssetsReportPdfPage";
 
 // Settings
 import BusinessCategory from "../pages/settings/businessCategory/page"
@@ -205,7 +206,8 @@ export default function AppRouter() {
 
         <Route path="/reports/combined-purchase/" element={<CombinedPurchaseReport />} />
         <Route path="/reports/combined-purchase/pdf" element={<CombinedPurchasePDFPage />}/>
-        
+        <Route path="/reports/assets" element={<AssetsReport />} />
+        <Route path="/reports/assets/pdf" element={<AssetsReportPdfPage />} />
        
 
         

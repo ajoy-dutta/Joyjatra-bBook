@@ -40,6 +40,12 @@ export default function ReportsHome() {
       description: "Detailed purchase transactions and summaries.",
       path:"/reports/combined-purchase/",
     },
+      {
+    name: "Assets Report",
+    category: "Financial",
+    description: "Detailed list of business assets.",
+    path: "/reports/assets",
+  },
   ];
 
   return (
