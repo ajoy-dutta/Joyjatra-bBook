@@ -16,23 +16,18 @@ export default function AssetsReport() {
       return;
     }
 
-    AxiosInstance.get("/reports/assets-report/", {
+    AxiosInstance.get("assets/", {
       params: {
         business_category: selectedCategory.id,
       },
     })
-      .then((res) => {
-        setAssets(res.data.assets || []);
-      })
-      .catch((err) => {
-        console.error("Assets fetch error:", err);
-        setAssets([]);
-      })
+      .then((res) => setAssets(res.data || []))
+      .catch(() => setAssets([]))
       .finally(() => setLoading(false));
   }, [selectedCategory?.id]);
 
   const totalValue = assets.reduce(
-    (sum, a) => sum + Number(a.value || 0),
+    (sum, a) => sum + Number(a.total_price || 0),
     0
   );
 
@@ -44,7 +39,7 @@ export default function AssetsReport() {
         <div>
           <h1 className="text-xl font-semibold">Assets Report</h1>
           <p className="text-sm text-slate-500">
-            Detailed overview of business assets.
+            Complete overview of business assets
           </p>
         </div>
 
@@ -57,21 +52,27 @@ export default function AssetsReport() {
       </div>
 
       {/* TABLE */}
-      <div className="bg-white rounded-xl border overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white rounded-xl border overflow-x-auto">
+        <table className="w-full text-sm border-collapse">
           <thead className="bg-slate-50 border-b">
             <tr>
-              <th className="px-4 py-2 text-left">Asset</th>
-              <th className="px-4 py-2 text-left">Category</th>
-              <th className="px-4 py-2 text-right">Quantity</th>
-              <th className="px-4 py-2 text-right">Value</th>
+              <th className="px-3 py-2 text-left">Asset Name</th>
+              <th className="px-3 py-2 text-left">Code</th>
+              <th className="px-3 py-2 text-left">Category</th>
+              <th className="px-3 py-2 text-left">Purchase Date</th>
+              <th className="px-3 py-2 text-right">Total Qty</th>
+              <th className="px-3 py-2 text-right">Damaged Qty</th>
+              <th className="px-3 py-2 text-right">Usable Qty</th>
+              <th className="px-3 py-2 text-right">Unit Price</th>
+              <th className="px-3 py-2 text-right">Total Value</th>
+              <th className="px-3 py-2 text-left">Created At</th>
             </tr>
           </thead>
 
           <tbody>
             {loading && (
               <tr>
-                <td colSpan="4" className="text-center py-6 text-slate-400">
+                <td colSpan="10" className="text-center py-6 text-slate-400">
                   Loading assets…
                 </td>
               </tr>
@@ -79,19 +80,29 @@ export default function AssetsReport() {
 
             {!loading && assets.length === 0 && (
               <tr>
-                <td colSpan="4" className="text-center py-6 text-slate-400">
+                <td colSpan="10" className="text-center py-6 text-slate-400">
                   No assets found
                 </td>
               </tr>
             )}
 
-            {assets.map((a, i) => (
-              <tr key={i} className="border-t">
-                <td className="px-4 py-2">{a.asset_name}</td>
-                <td className="px-4 py-2">{a.category}</td>
-                <td className="px-4 py-2 text-right">{a.quantity}</td>
-                <td className="px-4 py-2 text-right">
-                  {Number(a.value).toFixed(2)}
+            {assets.map((a) => (
+              <tr key={a.id} className="border-t hover:bg-slate-50">
+                <td className="px-3 py-2">{a.name}</td>
+                <td className="px-3 py-2">{a.code || "-"}</td>
+                <td className="px-3 py-2">{a.business_category_name}</td>
+                <td className="px-3 py-2">{a.purchase_date}</td>
+                <td className="px-3 py-2 text-right">{a.total_qty}</td>
+                <td className="px-3 py-2 text-right">{a.damaged_qty}</td>
+                <td className="px-3 py-2 text-right">{a.usable_qty}</td>
+                <td className="px-3 py-2 text-right">
+                  {Number(a.unit_price || 0).toFixed(2)}
+                </td>
+                <td className="px-3 py-2 text-right font-semibold">
+                  {Number(a.total_price || 0).toFixed(2)}
+                </td>
+                <td className="px-3 py-2">
+                  {new Date(a.created_at).toLocaleDateString()}
                 </td>
               </tr>
             ))}

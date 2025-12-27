@@ -448,28 +448,3 @@ class ProfitLossReportView(APIView):
         return Response(data)
 
 
-#Assets Report View
-
-class AssetsReportView(APIView):
-    def get(self, request):
-        business_category = request.query_params.get("business_category")
-
-        assets = Asset.objects.select_related(
-            "category",
-            "business_category"
-        )
-
-        if business_category:
-            assets = assets.filter(business_category_id=business_category)
-
-        data = [
-            {
-                "asset_name": a.asset_name,
-                "category": a.category.category_name if a.category else "",
-                "quantity": a.quantity or 0,
-                "value": a.asset_value or 0,
-            }
-            for a in assets
-        ]
-
-        return Response({"assets": data})

@@ -2,12 +2,14 @@ import React, { useEffect, useState } from "react";
 import { PDFViewer } from "@react-pdf/renderer";
 import AxiosInstance from "../../../components/AxiosInstance";
 import AssetsReportPDF from "../../../components/vouchers/AssetsReportPDF";
+import { useNavigate } from "react-router-dom";
 
 export default function AssetsReportPdfPage() {
   const [assets, setAssets] = useState([]);
   const [banner, setBanner] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const selectedCategory =
     JSON.parse(localStorage.getItem("business_category")) || null;
@@ -25,7 +27,7 @@ export default function AssetsReportPdfPage() {
         setError("");
 
         /* ✅ FIX 1: USE EXISTING ASSETS API */
-        const assetsRes = await AxiosInstance.get("/assets/", {
+        const assetsRes = await AxiosInstance.get("assets/", {
           params: { business_category: selectedCategory.id },
         });
 
@@ -77,15 +79,27 @@ export default function AssetsReportPdfPage() {
 
   /* ================= PDF VIEW ================= */
   return (
-    <div style={{ height: "100vh" }}>
-      <PDFViewer width="100%" height="100%">
-        <AssetsReportPDF
-          assets={assets}
-          banner={banner}
-          fromDate="Beginning"
-          toDate="Till Date"
-        />
-      </PDFViewer>
+    <div className="h-screen flex flex-col">
+      {/* HEADER */}
+      <div className="bg-gray-600 shadow p-3 flex justify-between items-center">
+        <h4 className="text-white">Assets Report PDF</h4>
+        <button
+          onClick={() => navigate("/reports/assets/")}
+          className="text-sm text-white hover:underline"
+        >
+          ← Back
+        </button>
+      </div>
+      <div style={{ height: "100vh" }}>
+        <PDFViewer width="100%" height="100%">
+          <AssetsReportPDF
+            assets={assets}
+            banner={banner}
+            fromDate="Beginning"
+            toDate="Till Date"
+          />
+        </PDFViewer>
+      </div>
     </div>
   );
 }
