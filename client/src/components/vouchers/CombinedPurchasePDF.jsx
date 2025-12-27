@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
   /* ================= HEADER ================= */
   headerWrapper: {
     position: "relative",
-    height: 60,
+    height: 85, // ⬅ increased to fit address + phone
     justifyContent: "center",
     marginBottom: 12,
   },
@@ -47,6 +47,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
+  contactText: {
+    marginTop: 2,
+    fontSize: 8,
+  },
+
   subTitle: {
     marginTop: 4,
     fontSize: 9,
@@ -58,7 +63,6 @@ const styles = StyleSheet.create({
     marginHorizontal: "auto",
     borderWidth: 1,
     borderColor: "#ccc",
-    borderStyle: "solid",
   },
 
   row: {
@@ -68,7 +72,6 @@ const styles = StyleSheet.create({
   cellHeader: {
     borderWidth: 1,
     borderColor: "#ccc",
-    borderStyle: "solid",
     padding: 4,
     fontWeight: "bold",
     backgroundColor: "#f3f3f3",
@@ -78,7 +81,6 @@ const styles = StyleSheet.create({
   cell: {
     borderWidth: 1,
     borderColor: "#ccc",
-    borderStyle: "solid",
     padding: 4,
     textAlign: "center",
   },
@@ -116,7 +118,7 @@ const styles = StyleSheet.create({
 });
 
 export default function CombinedPurchasePDF({
-  data,
+  data = [],
   fromDate,
   toDate,
   productName,
@@ -145,6 +147,11 @@ export default function CombinedPurchasePDF({
   const headerTitle =
     banner?.banner_title || selectedCategory?.name || "Business Name";
 
+  // ✅ SAME fields as ExpenseReport.jsx
+  const address1 = banner?.banner_address1 || "";
+  const address2 = banner?.banner_address2 || "";
+  const phone = banner?.banner_phone || "";
+
   const totalAmount = data.reduce(
     (sum, i) => sum + Number(i.purchase_amount || 0),
     0
@@ -158,15 +165,29 @@ export default function CombinedPurchasePDF({
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-
         {/* ============== HEADER ============== */}
         <View style={styles.headerWrapper}>
           <Image src={headerLogo} style={styles.headerLogo} />
+
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>{headerTitle}</Text>
+
+            {address1 !== "" && (
+              <Text style={styles.contactText}>{address1}</Text>
+            )}
+
+            {address2 !== "" && (
+              <Text style={styles.contactText}>{address2}</Text>
+            )}
+
+            {phone !== "" && (
+              <Text style={styles.contactText}>{phone}</Text>
+            )}
+
             <Text style={styles.subTitle}>
               From {fromDate || "Beginning"} to {toDate || "Till Date"}
             </Text>
+
             {productName && (
               <Text style={styles.subTitle}>Product: {productName}</Text>
             )}
@@ -180,25 +201,41 @@ export default function CombinedPurchasePDF({
             <Text style={[styles.cellHeader, { width: "18%" }]}>Invoice</Text>
             <Text style={[styles.cellHeader, { width: "25%" }]}>Product</Text>
             <Text style={[styles.cellHeader, { width: "20%" }]}>Vendor</Text>
-            <Text style={[styles.cellHeader, { width: "10%" }, styles.right]}>
+            <Text
+              style={[styles.cellHeader, { width: "10%" }, styles.right]}
+            >
               Qty
             </Text>
-            <Text style={[styles.cellHeader, { width: "15%" }, styles.right]}>
+            <Text
+              style={[styles.cellHeader, { width: "15%" }, styles.right]}
+            >
               Amount
             </Text>
           </View>
 
           {data.map((row, idx) => (
             <View style={styles.row} key={idx}>
-              <Text style={[styles.cell, { width: "12%" }]}>{row.date}</Text>
-              <Text style={[styles.cell, { width: "18%" }]}>{row.invoice_no}</Text>
-              <Text style={[styles.cell, { width: "25%" }]}>{row.product_name}</Text>
-              <Text style={[styles.cell, { width: "20%" }]}>{row.vendor}</Text>
-              <Text style={[styles.cell, { width: "10%" }, styles.right]}>
+              <Text style={[styles.cell, { width: "12%" }]}>
+                {row.date}
+              </Text>
+              <Text style={[styles.cell, { width: "18%" }]}>
+                {row.invoice_no}
+              </Text>
+              <Text style={[styles.cell, { width: "25%" }]}>
+                {row.product_name}
+              </Text>
+              <Text style={[styles.cell, { width: "20%" }]}>
+                {row.vendor}
+              </Text>
+              <Text
+                style={[styles.cell, { width: "10%" }, styles.right]}
+              >
                 {row.quantity}
               </Text>
-              <Text style={[styles.cell, { width: "15%" }, styles.right]}>
-                {Number(row.purchase_amount).toFixed(2)}
+              <Text
+                style={[styles.cell, { width: "15%" }, styles.right]}
+              >
+                {Number(row.purchase_amount || 0).toFixed(2)}
               </Text>
             </View>
           ))}
@@ -211,7 +248,9 @@ export default function CombinedPurchasePDF({
             { key: "Total Amount", value: totalAmount.toFixed(2) },
             {
               key: "In Words",
-              value: `${numberToWords(Math.round(totalAmount))} Taka Only`,
+              value: `${numberToWords(
+                Math.round(totalAmount)
+              )} Taka Only`,
             },
           ].map((item, idx) => (
             <View style={styles.summaryRow} key={idx}>
@@ -221,7 +260,6 @@ export default function CombinedPurchasePDF({
             </View>
           ))}
         </View>
-
       </Page>
     </Document>
   );
