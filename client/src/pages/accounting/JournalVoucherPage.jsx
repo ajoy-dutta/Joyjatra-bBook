@@ -5,7 +5,6 @@ import AxiosInstance from "../../components/AxiosInstance";
 import JournalVoucherPDF from "../../components/vouchers/JournalVoucherPDF";
 
 
-
 export default function JournalVoucherPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -15,7 +14,7 @@ export default function JournalVoucherPage() {
   useEffect(() => {
     const fetchJournal = async () => {
       try {
-        const res = await AxiosInstance.get(`journals/${id}/`);
+        const res = await AxiosInstance.get(`opening-balances/`);
         console.log("Journals", res.data)
         setJournal(res.data);
       } catch (err) {
@@ -50,7 +49,7 @@ export default function JournalVoucherPage() {
         {/* PDF */}
         <div style={{ height: "calc(100vh - 56px)" }}>
         <PDFViewer style={{ width: "100%", height: "100%" }}>
-            <JournalVoucherPDF journal={journal} />
+            <JournalVoucherPDF openingBalances={journal} />
         </PDFViewer>
         </div>
 

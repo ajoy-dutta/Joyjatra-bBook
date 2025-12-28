@@ -53,6 +53,7 @@ import ExpensePage from "../pages/expenses/Expense";
 import SalaryExpense from "../pages/expenses/SalaryExpense";
 import PurchaseExpense from "../pages/expenses/PurchaseExpense";
 import ExpenseReport from "../pages/expenses/ExpenseReport";
+import SalaryPayrollPdfPage from "../pages/expenses/SalaryPayrollPdfPage";
 
 // Assets
 import AssetsPage from "../pages/assets/Assets";
@@ -170,7 +171,7 @@ export default function AppRouter() {
         <Route path="/accounting/chart-of-accounts/new" element={<AccountForm />} />
         <Route path="/accounting/manual-journals" element={<ManualJournal />} />
         <Route path="/accounting/journal-list" element={<JournalList />} />
-        <Route path="/accounting/journal-voucher/:id" element={<JournalVoucherPage />}/>
+        <Route path="/accounting/journal-voucher/pdf" element={<JournalVoucherPage />}/>
         <Route path="/accounting/bank-reconciliation" element={<BankReconciliation/>} />
         <Route path="/accounting/bank-transactions"element={<BankTransactions />}/>
         <Route path="/accounting/bank-statement" element={<BankStatement />} />
@@ -187,6 +188,7 @@ export default function AppRouter() {
         <Route path="/expenses/salary" element={<SalaryExpense />} />
         <Route path="/expenses/purchase" element={<PurchaseExpense />} />
         <Route path="/expenses/report" element={<ExpenseReport />} />
+        <Route path="/expenses/salary/pdf" element={<SalaryPayrollPdfPage />}/>
 
         {/* Assets */}
        <Route path="/assets" element={<AssetsPage />} />

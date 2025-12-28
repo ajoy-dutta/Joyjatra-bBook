@@ -39,6 +39,22 @@ class SalaryExpenseViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
 
         business_category = self.request.query_params.get('business_category')
+        month = self.request.query_params.get('month')
+        Staff = self.request.query_params.get('staff')
+
+        if Staff:
+            try:
+              qs = qs.filter(staff_id=Staff)
+            except ValueError:
+              qs = qs.none()
+
+
+        if month:
+            try:
+              qs = qs.filter(expense_month=month)
+            except ValueError:
+                qs = qs.none()
+
         if business_category:
             try:
                 qs = qs.filter(business_category_id=business_category)

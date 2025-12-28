@@ -50,7 +50,10 @@ class SalaryExpenseSerializer(serializers.ModelSerializer):
     )
     staff_name = serializers.CharField(source="staff.name", read_only=True)
     total_salary = serializers.DecimalField(
-        max_digits=12, decimal_places=2, read_only=True, source="total_salary"
+        max_digits=12, 
+        decimal_places=2, 
+        read_only=True,
+        coerce_to_string=True  
     )
 
     class Meta:

@@ -60,7 +60,6 @@ export default function ChartOfAccounts() {
                 <th className="px-4 py-3">Code</th>
                 <th className="px-4 py-3">Account Name</th>
                 <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Parent</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
@@ -85,10 +84,6 @@ export default function ChartOfAccounts() {
                                      bg-gray-100 text-gray-700">
                       {acc.account_type}
                     </span>
-                  </td>
-
-                  <td className="px-4 py-3 text-gray-600">
-                    {acc.parent ? acc.parent : "—"}
                   </td>
 
                   <td className="px-4 py-3">

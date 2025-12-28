@@ -8,7 +8,6 @@ export default function AccountForm({ selected, onClose, onSaved }) {
     code: "",
     name: "",
     account_type: "ASSET",
-    parent: "",
     is_active: true,
   });
 

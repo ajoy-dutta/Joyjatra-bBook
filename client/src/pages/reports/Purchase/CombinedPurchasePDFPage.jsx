@@ -47,7 +47,7 @@ export default function CombinedPurchasePDFPage() {
     <div className="h-screen flex flex-col">
       {/* TOP BAR */}
       <div className="bg-gray-700 p-3 flex justify-between items-center">
-        <button onClick={() => navigate(-1)} className="text-white text-sm">
+        <button onClick={() => navigate("/reports/combined-purchase/")} className="text-white text-sm">
           ← Back
         </button>
 

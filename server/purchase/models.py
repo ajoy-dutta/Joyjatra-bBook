@@ -5,6 +5,7 @@ from stocks.models import Product
 from django.utils.timezone import now
 from django.utils.text import slugify
 from authentication.models import Staffs
+from decimal import Decimal
 
 
 class Expense(models.Model):
@@ -61,7 +62,10 @@ class SalaryExpense(models.Model):
 
     @property
     def total_salary(self):
-        return (self.base_amount or 0) + (self.allowance or 0) + (self.bonus or 0)
+        base = self.base_amount if self.base_amount is not None else Decimal('0')
+        allowance = self.allowance if self.allowance is not None else Decimal('0')
+        bonus = self.bonus if self.bonus is not None else Decimal('0')
+        return base + allowance + bonus
 
     def __str__(self):
         return f"{self.staff} - {self.salary_month}"

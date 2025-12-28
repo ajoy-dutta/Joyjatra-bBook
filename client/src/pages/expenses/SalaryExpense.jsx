@@ -1,8 +1,8 @@
 // client/src/pages/expenses/SalaryExpense.jsx
-
 import React, { useEffect, useState, useMemo } from "react";
 import AxiosInstance from "../../components/AxiosInstance";
 import { FaSearch, FaEdit, FaTrash } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 // ✅ logo fallback (same idea like PurchaseInvoices)
 import joyjatraLogo from "../../assets/joyjatra_logo.jpeg";
@@ -16,9 +16,18 @@ const EMPTY_FORM = {
   note: "",
 };
 
+
 const toNumber = (v) => {
   const n = parseFloat(v);
   return Number.isNaN(n) ? 0 : n;
+};
+
+
+const getCurrentMonth = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+  return `${year}-${month}`;
 };
 
 export default function SalaryExpense() {
@@ -31,10 +40,11 @@ export default function SalaryExpense() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   // Filters for payroll sheet
   const [filterStaff, setFilterStaff] = useState(""); // staff id
-  const [filterMonth, setFilterMonth] = useState(""); // "YYYY-MM"
+  const [filterMonth, setFilterMonth] = useState(getCurrentMonth()); // "YYYY-MM"
 
   // ✅ business category (reactive)
   const [selectedCategory, setSelectedCategory] = useState(
@@ -80,8 +90,8 @@ export default function SalaryExpense() {
     };
   }, []);
 
-  // ------------ API ------------
 
+  // ------------ API ------------
   const loadStaffs = async () => {
     try {
       const res = await AxiosInstance.get("staffs/"); // existing endpoint
@@ -167,6 +177,7 @@ export default function SalaryExpense() {
     setError("");
 
     const payload = {
+      business_category: selectedCategory?.id || null,
       staff: form.staff,
       salary_month: form.salary_month, // "YYYY-MM"
       base_amount: form.base_amount, // basic
@@ -174,6 +185,10 @@ export default function SalaryExpense() {
       bonus: form.bonus || 0,
       note: form.note,
     };
+
+
+    console.log("Payload being sent:", payload);
+    console.log("Selected Category:", selectedCategory);
 
     try {
       if (editingId) {
@@ -320,186 +335,13 @@ export default function SalaryExpense() {
     URL.revokeObjectURL(url);
   };
 
-  // ✅ PRINT / PDF (MATCH PURCHASE INVOICE STYLE)
+
+
   const handlePrint = () => {
-    const now = new Date();
-    const printDate = now.toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
+    navigate(`/expenses/salary/pdf?month=${filterMonth}&staff=${filterStaff}`);
+  }
 
-    const header = {
-      topTag: DOC_TOP_TAG,
-      title: banner?.banner_title || selectedCategory?.name || "Business Name",
-      address1: banner?.banner_address1 || "",
-      address2: banner?.banner_address2 || "",
-      mobile: banner?.banner_phone || "",
-    };
-
-    const rowsHtml =
-      filteredItems.length === 0
-        ? `<tr><td colspan="7" class="text-center">No data found</td></tr>`
-        : filteredItems
-            .map((r, idx) => {
-              const rowTotal =
-                r.total_salary != null
-                  ? toNumber(r.total_salary)
-                  : toNumber(r.base_amount) +
-                    toNumber(r.allowance) +
-                    toNumber(r.bonus);
-
-              return `
-                <tr>
-                  <td class="text-center">${idx + 1}</td>
-                  <td>${r.staff_name || `Staff #${r.staff}`}</td>
-                  <td class="text-center">${r.salary_month || "-"}</td>
-                  <td class="text-right">${toNumber(r.base_amount).toFixed(2)}</td>
-                  <td class="text-right">${toNumber(r.allowance).toFixed(2)}</td>
-                  <td class="text-right">${toNumber(r.bonus).toFixed(2)}</td>
-                  <td class="text-right"><b>${rowTotal.toFixed(2)}</b></td>
-                </tr>
-              `;
-            })
-            .join("");
-
-    const html = `
-      <html>
-      <head>
-        <title>Payroll Sheet</title>
-        <style>
-          @page { margin: 15mm; size: A4; }
-          body { margin: 0; font-family: Arial, sans-serif; font-size: 12px; color: #000; }
-
-          .topline { display:flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px; }
-          .topline-center { flex: 1; text-align: center; font-weight: 700; }
-          .topline-left { width: 180px; }
-          .topline-right { width: 180px; }
-
-          .header-wrap{
-            display: grid;
-            grid-template-columns: 120px 1fr 120px;
-            align-items: center;
-            column-gap: 10px;
-            margin-bottom: 10px;
-          }
-          .logo-box{ display:flex; justify-content:flex-start; align-items:center; }
-          .logo-img{ width: 110px; height: auto; object-fit: contain; }
-
-          .header-text{ text-align:center; }
-          .top-tag{
-            display:inline-block;
-            font-weight:700;
-            font-size: 13px;
-            padding: 2px 10px;
-            border: 1px solid #000;
-            border-radius: 14px;
-            margin-bottom: 6px;
-          }
-          .company-name{ font-size: 26px; font-weight: 800; }
-          .contact-info{ font-size: 12px; margin-top: 2px; line-height: 1.35; }
-
-          h2{ text-align:center; margin: 14px 0; }
-
-          table{ width: 100%; border-collapse: collapse; margin-top: 8px; }
-          th, td{ border: 1px solid #000; padding: 4px; font-size: 11px; }
-          th{ text-align: center; background: #f3f4f6; }
-
-          .text-center{ text-align:center; }
-          .text-right{ text-align:right; }
-
-          tfoot td{
-            font-weight: 700;
-            background: #111827;
-            color: #fff;
-          }
-
-          .footer-content{
-            display:flex;
-            justify-content: space-between;
-            font-size: 11px;
-            border-top: 1px solid #000;
-            padding-top: 8px;
-            margin-top: 14px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="topline">
-          <div class="topline-left">${printDate}</div>
-          <div class="topline-center">Payroll Sheet</div>
-          <div class="topline-right"></div>
-        </div>
-
-        <div class="header-wrap">
-          <div class="logo-box">
-            <img class="logo-img" src="${joyjatraLogo}" alt="Logo" />
-          </div>
-
-          <div class="header-text">
-            ${header.topTag ? `<div class="top-tag">${header.topTag}</div>` : ""}
-            <div class="company-name">${header.title || ""}</div>
-            ${header.address1 ? `<div class="contact-info">${header.address1}</div>` : ""}
-            ${header.address2 ? `<div class="contact-info">${header.address2}</div>` : ""}
-            ${header.mobile ? `<div class="contact-info">${header.mobile}</div>` : ""}
-          </div>
-
-          <div></div>
-        </div>
-
-        <h2>Payroll Sheet</h2>
-
-        <table>
-          <thead>
-            <tr>
-              <th style="width:40px;">SL</th>
-              <th>Employee</th>
-              <th style="width:95px;">Month</th>
-              <th style="width:85px;">Basic</th>
-              <th style="width:90px;">Allowance</th>
-              <th style="width:70px;">Bonus</th>
-              <th style="width:95px;">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="3">Total</td>
-              <td class="text-right">৳ ${toNumber(totalBasic).toFixed(2)}</td>
-              <td class="text-right">৳ ${toNumber(totalAllowance).toFixed(2)}</td>
-              <td class="text-right">৳ ${toNumber(totalBonus).toFixed(2)}</td>
-              <td class="text-right">৳ ${toNumber(totalSalary).toFixed(2)}</td>
-            </tr>
-          </tfoot>
-        </table>
-
-        <div class="footer-content">
-          <div>
-            <div>*Keep this report for future reference.</div>
-            <div>*Save Trees, Save Generations.</div>
-          </div>
-          <div>Print: Admin, ${printDate}</div>
-        </div>
-
-        <script>
-          setTimeout(() => { window.print(); }, 200);
-        </script>
-      </body>
-      </html>
-    `;
-
-    const win = window.open("", "_blank");
-    if (!win) return alert("Popup blocked. Please allow popups to print.");
-    win.document.write(html);
-    win.document.close();
-  };
-
-  // ------------ UI ------------
+ 
 
   return (
     <div className="space-y-6">
