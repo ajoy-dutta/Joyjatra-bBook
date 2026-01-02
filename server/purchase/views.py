@@ -11,6 +11,8 @@ from django.db import transaction
 from rest_framework.response import Response
 from decimal import Decimal, InvalidOperation
 from rest_framework import status
+from accounts.service import update_balance
+from django.db import transaction as db_transaction
 
 
 
@@ -18,58 +20,152 @@ class ExpenseViewSet(viewsets.ModelViewSet):
     queryset = Expense.objects.all().order_by("-expense_date")
     serializer_class = ExpenseSerializer
 
-
     def get_queryset(self):
         qs = super().get_queryset()
+        business_category = self.request.query_params.get("business_category")
 
-        business_category = self.request.query_params.get('business_category')
         if business_category:
-            try:
-                qs = qs.filter(business_category_id=business_category)
-            except ValueError:
-                qs = qs.none()
+            qs = qs.filter(business_category_id=business_category)
+
         return qs
+
+    @db_transaction.atomic
+    def perform_create(self, serializer):
+        expense = serializer.save()
+        mode_name = expense.payment_mode.name.upper()
+
+        print("Business Category", expense.business_category)
+        print("Payment mode", mode_name)
+        print("Amount", expense.amount)
+        print("bank", expense.bank)
+
+        update_balance(
+            business_category=expense.business_category,
+            payment_mode=mode_name,
+            amount=expense.amount,
+            is_credit=False,      # ❌ expense → money out
+            bank=expense.bank,
+        )
+
+        print("Function called")
+
+    @db_transaction.atomic
+    def perform_update(self, serializer):
+        old = self.get_object()
+        new = serializer.save()
+
+        # 🔁 reverse old expense
+        update_balance(
+            business_category=old.business_category,
+            payment_mode=old.payment_mode.name,
+            amount=old.amount,
+            is_credit=True,
+            bank=old.bank,
+        )
+
+        # ✅ apply new expense
+        update_balance(
+            business_category=new.business_category,
+            payment_mode=new.payment_mode.name,
+            amount=new.amount,
+            is_credit=False,
+            bank=new.bank,
+        )
+
+    @db_transaction.atomic
+    def perform_destroy(self, instance):
+        update_balance(
+            business_category=instance.business_category,
+            payment_mode=instance.payment_mode.name,
+            amount=instance.amount,
+            is_credit=True,      # refund money
+            bank=instance.bank,
+        )
+
+        super().perform_destroy(instance)
+
+
 
 
 class SalaryExpenseViewSet(viewsets.ModelViewSet):
     queryset = SalaryExpense.objects.all().order_by("-created_at")
     serializer_class = SalaryExpenseSerializer
-    
+
     def get_queryset(self):
         qs = super().get_queryset()
 
-        business_category = self.request.query_params.get('business_category')
-        month = self.request.query_params.get('month')
-        Staff = self.request.query_params.get('staff')
+        business_category = self.request.query_params.get("business_category")
+        month = self.request.query_params.get("month")
+        staff = self.request.query_params.get("staff")
 
-        if Staff:
-            try:
-              qs = qs.filter(staff_id=Staff)
-            except ValueError:
-              qs = qs.none()
-
+        if staff:
+            qs = qs.filter(staff_id=staff)
 
         if month:
-            try:
-              qs = qs.filter(expense_month=month)
-            except ValueError:
-                qs = qs.none()
+            qs = qs.filter(salary_month=month)
 
         if business_category:
-            try:
-                qs = qs.filter(business_category_id=business_category)
-            except ValueError:
-                qs = qs.none()
+            qs = qs.filter(business_category_id=business_category)
 
         return qs
 
+    @db_transaction.atomic
+    def perform_create(self, serializer):
+        salary = serializer.save()
 
+        update_balance(
+            business_category=salary.business_category,
+            payment_mode=salary.payment_mode.name,
+            amount=salary.total_salary,
+            is_credit=False,   # salary → money out
+            bank=salary.bank,
+        )
+
+    @db_transaction.atomic
+    def perform_update(self, serializer):
+        old_instance = self.get_object()  # fetch existing salary before update
+        old_amount = old_instance.total_salary
+        old_payment_mode = old_instance.payment_mode.name if old_instance.payment_mode else None
+        old_bank = old_instance.bank
+
+        # Revert old balance
+        if old_payment_mode:
+            update_balance(
+                business_category=old_instance.business_category,
+                payment_mode=old_payment_mode,
+                amount=old_amount,
+                is_credit=True,   # refund old amount
+                bank=old_bank,
+            )
+
+        # Save new data
+        salary = serializer.save()
+
+        # Apply new balance
+        if salary.payment_mode:
+            update_balance(
+                business_category=salary.business_category,
+                payment_mode=salary.payment_mode.name,
+                amount=salary.total_salary,
+                is_credit=False,  # new salary → money out
+                bank=salary.bank,
+            )
+
+    @db_transaction.atomic
     def perform_destroy(self, instance):
-        with db_transaction.atomic():
-            bt = instance.bank_transaction
-            super().perform_destroy(instance)
-            if bt:
-                bt.delete()
+        if instance.payment_mode:
+            update_balance(
+                business_category=instance.business_category,
+                payment_mode=instance.payment_mode.name,
+                amount=instance.total_salary,
+                is_credit=True,    # refund
+                bank=instance.bank,
+            )
+        super().perform_destroy(instance)
+
+
+
+
 
 
 class PurchaseViewSet(viewsets.ModelViewSet):

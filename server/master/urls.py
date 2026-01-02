@@ -15,8 +15,6 @@ router.register('bank-categories', BankCategoryMasterViewSet)
 router.register('banks', BankMasterViewSet)
 router.register('account-categories', AccountCategoryViewSet)
 router.register('inventory-categories', InventoryCategoryViewSet)
-router.register('bank-accounts', BankAccountViewSet)
-router.register(r"bank-transactions", BankTransactionViewSet, basename="bank-transaction")
 
 
 urlpatterns = [

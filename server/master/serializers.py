@@ -74,51 +74,6 @@ class AccountCategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class BankAccountSerializer(serializers.ModelSerializer):
-    bankName_name = serializers.CharField(source="bankName.name", read_only=True)
-    accountCategory_name = serializers.CharField(source="accountCategory.name", read_only=True)
-
-    class Meta:
-        model = BankAccount
-        fields = [
-            "id",
-            "accountCategory",
-            "accountCategory_name",
-            "bankName",
-            "bankName_name",
-            "accountName",
-            "accountNo",
-            "bankAddress",
-            "bankContact",
-            "bankMail",
-            "opening_balance",
-            "current_balance",
-        ]
-
-
-class BankTransactionSerializer(serializers.ModelSerializer):
-    bank_account_detail = BankAccountSerializer(
-        source="bank_account", read_only=True
-    )
-
-    class Meta:
-        model = BankTransaction
-        fields = [
-            "id",
-            "bank_account",
-            "bank_account_detail",
-            "date",
-            "transaction_type",
-            "amount",
-            "narration",
-            "reference_no",
-            "running_balance",
-            "created_at",
-        ]
-        read_only_fields = ["running_balance", "created_at"]
-
-
-
 class InventoryCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = InventoryCategory

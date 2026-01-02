@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "stocks.apps.StocksConfig",
     'reports',
     'accounts',
+    'income',
 ]
 
 

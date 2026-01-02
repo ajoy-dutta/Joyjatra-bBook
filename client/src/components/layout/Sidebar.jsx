@@ -47,6 +47,20 @@ export default function Sidebar() {
         { label: "Requisitions", path: "/stock/requisitions" },
       ],
     },
+
+    {
+      title: "Incomes",
+      icon: (
+        <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-slate-800/80 text-slate-100">
+          ৳
+        </span>
+      ),
+      items: [
+        { label: "Income", path: "/income/incomes" },
+        { label: "Income Sources", path: "/income/categories" },
+      ],
+    },
+
     {
       title: "Expenses",
       icon: (
@@ -61,6 +75,7 @@ export default function Sidebar() {
         { label: "Expense Report", path: "/expenses/report" },
       ],
     },
+
     {
       title: "Assets",
       icon: "🏢",

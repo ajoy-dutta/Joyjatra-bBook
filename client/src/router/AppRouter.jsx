@@ -55,6 +55,12 @@ import PurchaseExpense from "../pages/expenses/PurchaseExpense";
 import ExpenseReport from "../pages/expenses/ExpenseReport";
 import SalaryPayrollPdfPage from "../pages/expenses/SalaryPayrollPdfPage";
 
+
+//Incomes
+import Income from "../pages/Income/Income";
+import IncomeCategory from "../pages/Income/IncomeCategory";
+
+
 // Assets
 import AssetsPage from "../pages/assets/Assets";
 // import CurrentAssets from "../pages/assets/CurrentAssets";
@@ -189,6 +195,12 @@ export default function AppRouter() {
         <Route path="/expenses/purchase" element={<PurchaseExpense />} />
         <Route path="/expenses/report" element={<ExpenseReport />} />
         <Route path="/expenses/salary/pdf" element={<SalaryPayrollPdfPage />}/>
+
+
+        {/* Incomes */}
+        <Route path="/income/incomes" element={<Income />} />
+        <Route path="/income/categories" element={<IncomeCategory />} />
+        
 
         {/* Assets */}
        <Route path="/assets" element={<AssetsPage />} />

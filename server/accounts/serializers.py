@@ -1,13 +1,5 @@
 from rest_framework import serializers
-from .models import Account, OpeningBalance
-
-
-
-class AccountSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Account
-        fields = "__all__"
-
+from .models import OpeningBalance
 
 
 class OpeningBalanceSerializer(serializers.ModelSerializer):

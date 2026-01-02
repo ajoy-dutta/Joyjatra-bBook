@@ -1,5 +1,5 @@
 from django.db import models
-from master.models import BusinessCategory,CostCategory, PaymentMode, BankAccount, BankTransaction
+from master.models import BusinessCategory,CostCategory, PaymentMode, BankMaster
 from people.models import Vendor
 from stocks.models import Product
 from django.utils.timezone import now
@@ -24,19 +24,12 @@ class Expense(models.Model):
         blank=True,
         related_name="general_expenses",
     )
-    bank_account = models.ForeignKey(
-        BankAccount,
+    bank = models.ForeignKey(
+        BankMaster,
         on_delete=models.PROTECT,
         null=True,
         blank=True,
         related_name="general_expenses",
-    )
-    bank_transaction = models.OneToOneField(
-        BankTransaction,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="general_expense",
     )
 
     def __str__(self):
@@ -56,6 +49,22 @@ class SalaryExpense(models.Model):
     base_amount = models.DecimalField(max_digits=12, decimal_places=2)
     allowance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     bonus = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    # NEW FIELDS
+    payment_mode = models.ForeignKey(
+        PaymentMode,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="salary_expenses",
+    )
+    bank = models.ForeignKey(
+        BankMaster,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="salary_expenses",
+    )
 
     note = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

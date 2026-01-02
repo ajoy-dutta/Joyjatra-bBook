@@ -1,12 +1,6 @@
 from rest_framework.viewsets import ModelViewSet
-from .models import Account, OpeningBalance
-from .serializers import AccountSerializer, OpeningBalanceSerializer
-
-
-
-class AccountViewSet(ModelViewSet):
-    queryset = Account.objects.filter(is_active=True)
-    serializer_class = AccountSerializer
+from .models import OpeningBalance
+from .serializers import OpeningBalanceSerializer
 
 
 class OpeningBalanceViewSet(ModelViewSet):

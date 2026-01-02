@@ -10,6 +10,18 @@ class BusinessCategoryViewSet(viewsets.ModelViewSet):
     queryset = BusinessCategory.objects.all()
     serializer_class = BusinessCategorySerializer
 
+
+    def get_queryset(self):
+        queryset = BusinessCategory.objects.all()
+
+        category_id = self.request.query_params.get("category_id")
+        if category_id:
+            queryset = queryset.filter(id=category_id)
+
+        return queryset
+
+
+
     
 class CostCategoryViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
@@ -59,34 +71,18 @@ class BankCategoryMasterViewSet(viewsets.ModelViewSet):
     serializer_class = BankCategoryMasterSerializer
 
 
+
 class BankMasterViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     queryset = BankMaster.objects.all()
     serializer_class = BankMasterSerializer
 
 
+
 class AccountCategoryViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     queryset = AccountCategory.objects.all()
     serializer_class = AccountCategorySerializer
-
-
-class BankAccountViewSet(viewsets.ModelViewSet):
-    queryset = BankAccount.objects.all().order_by("accountName")
-    serializer_class = BankAccountSerializer
-    permission_classes = [IsAuthenticated]
-
-
-class BankTransactionViewSet(viewsets.ModelViewSet):
-    queryset = BankTransaction.objects.all().order_by("-date", "-id")
-    serializer_class = BankTransactionSerializer
-    permission_classes = [IsAuthenticated]
-
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["narration", "reference_no", "bank_account__accountName"]
-    ordering_fields = ["date", "created_at", "amount"]
-
-
 
 
 
