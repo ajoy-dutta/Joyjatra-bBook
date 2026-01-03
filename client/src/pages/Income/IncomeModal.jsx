@@ -14,6 +14,8 @@ initialData = null,
     date: "",
     amount: "",
     received_by: "",
+    payment_method:"",
+    bank:"",
     note: "",
   });
 
@@ -25,6 +27,8 @@ initialData = null,
         date: initialData.date,
         amount: initialData.amount,
         received_by: initialData.received_by,
+        payment_method: initialData.payment_method,
+        bank: initialData.bank,
         note: initialData.note || "",
       });
     } else {

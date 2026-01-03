@@ -323,15 +323,20 @@ export default function ProductPurchase() {
     setPaymentData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const selectedPaymentModeLabel = paymentData.paymentMode;
-  const isCheque = selectedPaymentModeLabel === "Cheque";
-  const isBank = selectedPaymentModeLabel === "Bank";
+  const selectedPaymentMode = paymentModes.find(
+    (pm) => pm.value === paymentData.paymentMode
+  );
+
+  const isCheque = selectedPaymentMode?.label === "Cheque";
+  const isBank = selectedPaymentMode?.label === "Bank";
 
   const handleAddPayment = () => {
     if (!paymentData.paymentMode || !paymentData.paidAmount) {
       toast.error("Payment Mode and Paid Amount are required");
       return;
     }
+
+    console.log("PaymentData",paymentData)
 
     setPayments((prev) => [...prev, paymentData]);
 
@@ -419,8 +424,8 @@ export default function ProductPurchase() {
         expiry_date: p.expiryDate,
       })),
       payments: payments.map((p) => ({
-        payment_mode: p.paymentMode, // label: "Cash", "Bank", "Cheque"
-        bank_name: p.bankName || null,
+        payment_mode: p.paymentMode,
+        bank: p.bankName || null,
         account_no: p.accountNo || null,
         cheque_no: p.chequeNo || null,
         paid_amount: parseFloat(p.paidAmount),
@@ -831,19 +836,18 @@ export default function ProductPurchase() {
             <label className="block text-xs mb-1 font-medium uppercase tracking-wide text-slate-500">
               Payment Mode *
             </label>
+
             <Select
               options={paymentModes}
               value={
-                paymentData.paymentMode
-                  ? paymentModes.find(
-                      (opt) => opt.label === paymentData.paymentMode
-                    ) || null
-                  : null
+                paymentModes.find(
+                  (opt) => opt.value === paymentData.paymentMode
+                ) || null
               }
               onChange={(selected) =>
                 handlePaymentChange(
                   "paymentMode",
-                  selected ? selected.label : ""
+                  selected ? selected.value : null
                 )
               }
               placeholder="Select..."
@@ -853,18 +857,25 @@ export default function ProductPurchase() {
             />
           </div>
 
+
           {/* Bank Name */}
           <div>
             <label className="block text-xs mb-1 font-medium uppercase tracking-wide text-slate-500">
               Bank Name
             </label>
+
             <Select
               options={banks}
               value={
-                banks.find((opt) => opt.value === paymentData.bankName) || null
+                banks.find(
+                  (opt) => opt.value === paymentData.bankName
+                ) || null
               }
               onChange={(selected) =>
-                handlePaymentChange("bankName", selected ? selected.value : "")
+                handlePaymentChange(
+                  "bankName",
+                  selected ? selected.value : null
+                )
               }
               placeholder="Select"
               isClearable
@@ -874,6 +885,7 @@ export default function ProductPurchase() {
               onKeyDown={handleKeyDown}
             />
           </div>
+
 
           {/* Account No */}
           <div>
@@ -936,7 +948,10 @@ export default function ProductPurchase() {
           <div className="flex items-end">
             <button
               type="button"
-              onClick={handleAddPayment}
+              onClick={(e) => {
+                e.preventDefault();
+                handleAddPayment();
+              }}
               className="w-full md:w-auto px-4 py-2 bg-slate-900 text-sm text-white rounded-lg hover:bg-slate-800 shadow-sm"
               onKeyDown={handleKeyDown}
             >
@@ -979,7 +994,8 @@ export default function ProductPurchase() {
                       {idx + 1}
                     </td>
                     <td className="border border-slate-100 px-2 py-1">
-                      {pay.paymentMode}
+                      {paymentModes.find((mode) => mode.value === pay.paymentMode)
+                        ?.label || "N/A"}
                     </td>
                     <td className="border border-slate-100 px-2 py-1">
                       {banks.find((bank) => bank.value === pay.bankName)

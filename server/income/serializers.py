@@ -33,6 +33,8 @@ class IncomeSerializer(serializers.ModelSerializer):
             "date",
             "amount",
             "received_by",
+            "payment_mode",
+            "bank",
             "note",
             "created_at",
         ]

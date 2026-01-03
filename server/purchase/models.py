@@ -144,8 +144,20 @@ class PurchaseProduct(models.Model):
 
 class PurchasePayment(models.Model):
     purchase = models.ForeignKey(Purchase, related_name='payments', on_delete=models.CASCADE)
-    payment_mode = models.CharField(max_length=100)
-    bank_name = models.CharField(max_length=255, blank=True, null=True)
+    payment_mode = models.ForeignKey(
+        PaymentMode,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="purchase_expenses",
+    )
+    bank = models.ForeignKey(
+        BankMaster,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="purchase_expenses",
+    )
     account_no = models.CharField(max_length=100, blank=True, null=True)
     cheque_no = models.CharField(max_length=100, blank=True, null=True)
     paid_amount = models.DecimalField(max_digits=12, decimal_places=2)

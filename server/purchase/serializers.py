@@ -4,6 +4,8 @@ from stocks.serializers import ProductSerializer
 from people.serializers import VendorSerializer
 from people.models import Vendor
 from master.serializers import *
+from django.db import transaction
+from accounts.service import update_balance
 
 
 class ExpenseSerializer(serializers.ModelSerializer):
@@ -141,13 +143,15 @@ class PurchasePaymentSerializer(serializers.ModelSerializer):
             "id",
             "purchase_id",   # use this in the frontend payload
             "payment_mode",
-            "bank_name",
+            "bank",
             "account_no",
             "cheque_no",
             "paid_amount",
             "payment_date",
         ]
         read_only_fields = ["payment_date"]
+
+
 
 # ----------------------------
 # Supplier Purchase Serializer
@@ -199,35 +203,98 @@ class PurchaseSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['created_at']
 
+
     def create(self, validated_data):
-        products_data = validated_data.pop('products', [])
-        payments_data = validated_data.pop('payments', [])
+        products_data = validated_data.pop("products", [])
+        payments_data = validated_data.pop("payments", [])
 
-        # creates Purchase with vendor, purchase_date, totals, etc.
-        purchase = Purchase.objects.create(**validated_data)
+        with transaction.atomic():
+            purchase = Purchase.objects.create(**validated_data)
 
-        # create line items (now also with mfg/expiry if provided)
-        for product in products_data:
-            PurchaseProduct.objects.create(purchase=purchase, **product)
+            # 2️⃣ Create products
+            for product in products_data:
+                PurchaseProduct.objects.create(
+                    purchase=purchase,
+                    **product
+                )
 
-        # create payments (if any)
-        for payment in payments_data:
-            PurchasePayment.objects.create(purchase=purchase, **payment)
+            # 3️⃣ Create payments + update balance
+            for payment in payments_data:
+                payment_obj = PurchasePayment.objects.create(
+                    purchase=purchase,
+                    **payment
+                )
+
+                print("Business Category", purchase.business_category)
+                print("Payment mode", payment_obj.payment_mode.name.upper())
+                print("Amount", payment_obj.paid_amount)
+                print("bank", payment_obj.bank)
+
+
+                update_balance(
+                    business_category=purchase.business_category,
+                    payment_mode=payment_obj.payment_mode.name.upper(),
+                    amount=payment_obj.paid_amount,
+                    is_credit=False, 
+                    bank=payment_obj.bank,
+                )
 
         return purchase
 
+
+
     def update(self, instance, validated_data):
-        # update simple fields; not touching nested products/payments here
-        instance.vendor = validated_data.get('vendor', instance.vendor)
-        instance.purchase_date = validated_data.get('purchase_date', instance.purchase_date)
-        instance.invoice_no = validated_data.get('invoice_no', instance.invoice_no)
-        instance.total_amount = validated_data.get('total_amount', instance.total_amount)
-        instance.discount_amount = validated_data.get('discount_amount', instance.discount_amount)
-        instance.total_payable_amount = validated_data.get(
-            'total_payable_amount',
-            instance.total_payable_amount
-        )
-        instance.save()
+        products_data = validated_data.pop("products", [])
+        payments_data = validated_data.pop("payments", [])
+
+        with transaction.atomic():
+            # 1️⃣ Update main purchase fields
+            instance.vendor = validated_data.get('vendor', instance.vendor)
+            instance.purchase_date = validated_data.get('purchase_date', instance.purchase_date)
+            instance.invoice_no = validated_data.get('invoice_no', instance.invoice_no)
+            instance.total_amount = validated_data.get('total_amount', instance.total_amount)
+            instance.discount_amount = validated_data.get('discount_amount', instance.discount_amount)
+            instance.total_payable_amount = validated_data.get('total_payable_amount', instance.total_payable_amount)
+            instance.save()
+
+            # 2️⃣ Update or create products
+            # We'll clear old products and recreate for simplicity
+            if products_data:
+                instance.products.all().delete()
+                for product in products_data:
+                    PurchaseProduct.objects.create(
+                        purchase=instance,
+                        **product
+                    )
+
+            # 3️⃣ Update payments
+            if payments_data:
+                # refund old payments first (increase balance back)
+                for old_payment in instance.payments.all():
+                    update_balance(
+                        business_category=instance.business_category,
+                        payment_mode=old_payment.payment_mode.name.upper(),
+                        amount=Decimal(old_payment.paid_amount),
+                        is_credit=True,  # refund
+                        bank=old_payment.bank,
+                    )
+                # remove old payment records
+                instance.payments.all().delete()
+
+                # create new payments and update balance
+                for payment in payments_data:
+                    payment_obj = PurchasePayment.objects.create(
+                        purchase=instance,
+                        **payment
+                    )
+                    update_balance(
+                        business_category=instance.business_category,
+                        payment_mode=payment_obj.payment_mode.name.upper(),
+                        amount=Decimal(payment_obj.paid_amount),
+                        is_credit=False,
+                        bank=payment_obj.bank,
+                    )
+
         return instance
     
 

@@ -47,8 +47,6 @@ class ExpenseViewSet(viewsets.ModelViewSet):
             bank=expense.bank,
         )
 
-        print("Function called")
-
     @db_transaction.atomic
     def perform_update(self, serializer):
         old = self.get_object()
@@ -57,7 +55,7 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         # 🔁 reverse old expense
         update_balance(
             business_category=old.business_category,
-            payment_mode=old.payment_mode.name,
+            payment_mode=old.payment_mode.name.upper(),
             amount=old.amount,
             is_credit=True,
             bank=old.bank,
@@ -66,7 +64,7 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         # ✅ apply new expense
         update_balance(
             business_category=new.business_category,
-            payment_mode=new.payment_mode.name,
+            payment_mode=new.payment_mode.name.upper(),
             amount=new.amount,
             is_credit=False,
             bank=new.bank,
@@ -76,13 +74,14 @@ class ExpenseViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         update_balance(
             business_category=instance.business_category,
-            payment_mode=instance.payment_mode.name,
+            payment_mode=instance.payment_mode.name.upper(),
             amount=instance.amount,
-            is_credit=True,      # refund money
+            is_credit=True,   
             bank=instance.bank,
         )
 
         super().perform_destroy(instance)
+
 
 
 
@@ -115,7 +114,7 @@ class SalaryExpenseViewSet(viewsets.ModelViewSet):
 
         update_balance(
             business_category=salary.business_category,
-            payment_mode=salary.payment_mode.name,
+            payment_mode=salary.payment_mode.name.upper(),
             amount=salary.total_salary,
             is_credit=False,   # salary → money out
             bank=salary.bank,
@@ -125,7 +124,7 @@ class SalaryExpenseViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         old_instance = self.get_object()  # fetch existing salary before update
         old_amount = old_instance.total_salary
-        old_payment_mode = old_instance.payment_mode.name if old_instance.payment_mode else None
+        old_payment_mode = old_instance.payment_mode.name.upper() if old_instance.payment_mode else None
         old_bank = old_instance.bank
 
         # Revert old balance
@@ -145,7 +144,7 @@ class SalaryExpenseViewSet(viewsets.ModelViewSet):
         if salary.payment_mode:
             update_balance(
                 business_category=salary.business_category,
-                payment_mode=salary.payment_mode.name,
+                payment_mode=salary.payment_mode.name.upper(),
                 amount=salary.total_salary,
                 is_credit=False,  # new salary → money out
                 bank=salary.bank,
@@ -156,7 +155,7 @@ class SalaryExpenseViewSet(viewsets.ModelViewSet):
         if instance.payment_mode:
             update_balance(
                 business_category=instance.business_category,
-                payment_mode=instance.payment_mode.name,
+                payment_mode=instance.payment_mode.name.upper(),
                 amount=instance.total_salary,
                 is_credit=True,    # refund
                 bank=instance.bank,

@@ -106,7 +106,7 @@ class BankAccount(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.bankName} - {self.accountName}"
+        return f"{self.bank.name} - {self.accountName}"
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
