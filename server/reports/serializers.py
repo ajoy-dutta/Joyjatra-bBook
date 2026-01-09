@@ -13,6 +13,19 @@ class CombinedPurchaseSerializer(serializers.Serializer):
 
 
 
+
+class CombinedIncomeSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    income_source = serializers.CharField()
+    description = serializers.CharField(allow_blank=True)
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2)
+    
+    class Meta:
+        fields = ['date', 'income_source', 'description', 'amount']
+
+
+
+
 class CombinedExpenseSerializer(serializers.Serializer):
     date = serializers.DateField()
     voucher_no = serializers.CharField()
@@ -20,8 +33,6 @@ class CombinedExpenseSerializer(serializers.Serializer):
     cost_category = serializers.CharField()
     amount = serializers.DecimalField(max_digits=12, decimal_places=2)
     description = serializers.CharField()
-    transaction_type = serializers.CharField()
-
 
 
 

@@ -10,6 +10,7 @@ from stocks.models import Asset
 
 from sales.serializers import SaleSerializer
 from purchase.models import Expense, SalaryExpense, Purchase
+from income.models import Income
 from datetime import date
 from accounts.models import OpeningBalance
 from .utils import percent_change
@@ -145,130 +146,257 @@ class SaleReportView(APIView):
 
 
 
+class CombinedIncomeView(APIView):
+    def get(self, request):
+        try:
+            grouped_data = []
+            
+            # ==========================
+            #   GET FILTER PARAMETERS
+            # ==========================
+            business_category = request.query_params.get("business_category")
+            from_date = request.query_params.get("from_date")
+            to_date = request.query_params.get("to_date")
+            category = request.query_params.get("category")
+            customer = request.query_params.get("customer")
+            invoice_no = request.query_params.get("invoice_no")
+
+            # ==========================
+            #   SALES WITH PAYMENTS (Aggregated payments per sale)
+            # ==========================
+            sales_with_payments = Sale.objects.select_related(
+                'customer',
+                'business_category'
+            ).annotate(
+                total_paid=Sum('payments__paid_amount')
+            ).filter(total_paid__gt=0).order_by("-sale_date")
+
+
+            if business_category:
+                sales_with_payments = sales_with_payments.filter(business_category__id=business_category)
+
+            if from_date:
+                sales_with_payments = sales_with_payments.filter(sale_date__gte=parse_date(from_date))
+
+            if to_date:
+                sales_with_payments = sales_with_payments.filter(sale_date__lte=parse_date(to_date))
+
+            if customer:
+                sales_with_payments = sales_with_payments.filter(customer__customer_name__icontains=customer)
+
+            if invoice_no:
+                sales_with_payments = sales_with_payments.filter(invoice_no__icontains=invoice_no)
+
+            
+            for sale in sales_with_payments:
+                if sale.total_paid:
+                    grouped_data.append({
+                        "date": sale.sale_date,
+                        "income_source": "Sale Income",
+                        "description": f"Invoice {sale.invoice_no} - {sale.customer.customer_name}",
+                        "amount": sale.total_paid
+                    })
+
+            # ==========================
+            #   INCOME (Other Income)
+            # ==========================
+            incomes = Income.objects.select_related(
+                'category',
+                'payment_mode',
+                'bank'
+            ).all().order_by("-date")
+
+            if business_category:
+                incomes = incomes.filter(business_category__id=business_category)
+
+            if from_date:
+                incomes = incomes.filter(date__gte=parse_date(from_date))
+
+            if to_date:
+                incomes = incomes.filter(date__lte=parse_date(to_date))
+
+            if category:
+                incomes = incomes.filter(category__name__icontains=category)
+
+            for income in incomes:
+                payment_mode_info = f" ({income.payment_mode.name})" if income.payment_mode else ""
+                bank_info = f" - {income.bank.name}" if income.bank else ""
+                
+                grouped_data.append({
+                    "date": income.date,
+                    "income_source": income.category.name,
+                    "description": f"{income.note or f'Received by {income.received_by}'}{payment_mode_info}",
+                    "amount": income.amount
+                })
+
+            # ==========================
+            #   SORT FINAL DATA
+            # ==========================
+            grouped_data.sort(key=lambda x: x["date"], reverse=True)
+            serializer = CombinedIncomeSerializer(grouped_data, many=True)
+            return Response(serializer.data)
+
+
+            
+        except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"Error in CombinedIncomeView: {str(e)}")
+            print(error_details)
+            
+            return Response(
+                {
+                    "error": "Internal server error",
+                    "message": str(e),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 
 class CombinedExpanseView(APIView):
     def get(self, request):
-        grouped_data = []
+        try:
+            grouped_data = []
 
-        # ==========================
-        #   GET FILTER PARAMETERS
-        # ==========================
-        business_category = request.query_params.get("business_category")
-        from_date = request.query_params.get("from_date")
-        to_date = request.query_params.get("to_date")
-        cost_category = request.query_params.get("cost_category")
-        account_title = request.query_params.get("account_title")
-        receipt_no = request.query_params.get("receipt_no")
+            # ==========================
+            #   GET FILTER PARAMETERS
+            # ==========================
+            business_category = request.query_params.get("business_category")
+            from_date = request.query_params.get("from_date")
+            to_date = request.query_params.get("to_date")
+            cost_category = request.query_params.get("cost_category")
+            account_title = request.query_params.get("account_title")
+            receipt_no = request.query_params.get("receipt_no")
 
-        # ==========================
-        #   EXPENSES
-        # ==========================
-        expenses = Expense.objects.all().order_by("-expense_date")
-        print(expenses)
+            # ==========================
+            #   EXPENSES
+            # ==========================
+            expenses = Expense.objects.all().order_by("-expense_date")
+            # print(expenses)
 
-        if business_category:
-            expenses = expenses.filter(business_category__id=business_category)
+            if business_category:
+                expenses = expenses.filter(business_category__id=business_category)
 
-        if from_date:
-            expenses = expenses.filter(expense_date__gte=parse_date(from_date))
+            if from_date:
+                expenses = expenses.filter(expense_date__gte=parse_date(from_date))
 
-        if to_date:
-            expenses = expenses.filter(expense_date__lte=parse_date(to_date))
+            if to_date:
+                expenses = expenses.filter(expense_date__lte=parse_date(to_date))
 
-        if cost_category and cost_category.lower() != "all":
-            expenses = expenses.filter(cost_category__id=cost_category)
+            if cost_category and cost_category.lower() != "all":
+                expenses = expenses.filter(cost_category__id=cost_category)
 
-        if account_title:
-            expenses = expenses.filter(recorded_by__icontains=account_title)
+            if account_title:
+                expenses = expenses.filter(recorded_by__icontains=account_title)
 
-        if receipt_no:
-            expenses = expenses.filter(id__icontains=receipt_no)
+            if receipt_no:
+                expenses = expenses.filter(id__icontains=receipt_no)
 
-        for ex in expenses:
-            grouped_data.append({
-                "date": ex.expense_date,
-                "voucher_no": f"EXP-{ex.id}",
-                "account_title": ex.recorded_by or "",
-                "cost_category": ex.cost_category.category_name,
-                "description": ex.note,
-                "amount": ex.amount
-            })
-
-        print("Grouped Data after Expenses:", grouped_data)
-
-        # ==========================
-        #   PURCHASE PAYMENTS
-        # ==========================
-        purchases = Purchase.objects.select_related("vendor").prefetch_related("payments").all()
-
-        if business_category:
-            purchases = purchases.filter(business_category__id=business_category)
-
-        if from_date:
-            purchases = purchases.filter(purchase_date__gte=parse_date(from_date))
-
-        if to_date:
-            purchases = purchases.filter(purchase_date__lte=parse_date(to_date))
-
-        if account_title:
-            purchases = purchases.filter(payments__payment_mode__icontains=account_title)
-
-        if receipt_no:
-            purchases = purchases.filter(invoice_no__icontains=receipt_no)
-
-        for p in purchases:
-            for pay in p.payments.all():
-
-                account_title_value = (
-                    "Cash Purchase" if pay.payment_mode == "Cash"
-                    else p.vendor.vendor_name if p.vendor else ""
-                )
-
+            for ex in expenses:
                 grouped_data.append({
-                    "date": p.purchase_date,
-                    "voucher_no": f"Payment for {p.invoice_no}",
-                    "account_title": account_title_value,
-                    "cost_category": "Purchase Expense",
-                    "description": f"Purchase payment ({pay.payment_mode})",
-                    "amount": pay.paid_amount,
-                    "transaction_type": pay.payment_mode,
+                    "date": ex.expense_date,
+                    "voucher_no": f"EXP-{ex.id}",
+                    "account_title": ex.recorded_by or "",
+                    "cost_category": ex.cost_category.category_name,
+                    "description": ex.note,
+                    "amount": ex.amount
                 })
 
-        # ==========================
-        #   SALARY EXPENSE
-        # ==========================
-        salaries = SalaryExpense.objects.select_related("staff").all()
+            # print("Grouped Data after Expenses:", grouped_data)
+
+            # ==========================
+            #   PURCHASE PAYMENTS
+            # ==========================
+            purchases = Purchase.objects.select_related("vendor").prefetch_related("payments").all()
+
+            if business_category:
+                purchases = purchases.filter(business_category__id=business_category)
+
+            if from_date:
+                purchases = purchases.filter(purchase_date__gte=parse_date(from_date))
+
+            if to_date:
+                purchases = purchases.filter(purchase_date__lte=parse_date(to_date))
+
+            if account_title:
+                purchases = purchases.filter(payments__payment_mode__icontains=account_title)
+
+            if receipt_no:
+                purchases = purchases.filter(invoice_no__icontains=receipt_no)
+
+            for p in purchases:
+                for pay in p.payments.all():
+
+                    account_title_value = (
+                        "Cash Purchase" if pay.payment_mode == "Cash"
+                        else p.vendor.vendor_name if p.vendor else ""
+                    )
+
+                    grouped_data.append({
+                        "date": p.purchase_date,
+                        "voucher_no": f"Payment for {p.invoice_no}",
+                        "account_title": account_title_value,
+                        "cost_category": "Purchase Expense",
+                        "description": f"Purchase payment ({pay.payment_mode})",
+                        "amount": pay.paid_amount,
+                    })
+
+            # ==========================
+            #   SALARY EXPENSE
+            # ==========================
+            salaries = SalaryExpense.objects.select_related("staff").all()
 
 
-        if business_category:            
-            salaries = salaries.filter(business_category__id=business_category)
+            if business_category:            
+                salaries = salaries.filter(business_category__id=business_category)
 
-        if from_date:
-            salaries = salaries.filter(created_at__date__gte=parse_date(from_date))
+            if from_date:
+                salaries = salaries.filter(created_at__date__gte=parse_date(from_date))
 
-        if to_date:
-            salaries = salaries.filter(created_at__date__lte=parse_date(to_date))
+            if to_date:
+                salaries = salaries.filter(created_at__date__lte=parse_date(to_date))
 
-        if account_title:
-            salaries = salaries.filter(staff__name__icontains=account_title)
+            if account_title:
+                salaries = salaries.filter(staff__name__icontains=account_title)
 
-        for s in salaries:
-            grouped_data.append({
-                "date": s.created_at.date(),
-                "voucher_no": f"SAL-{s.id}",
-                "account_title": s.staff.name,
-                "cost_category": "Salary Expense",
-                "description": s.note or "",
-                "amount": s.total_salary,
-                "transaction_type": "Salary",
-            })
+            for s in salaries:
+                grouped_data.append({
+                    "date": s.created_at.date(),
+                    "voucher_no": f"SAL-{s.id}",
+                    "account_title": s.staff.name,
+                    "cost_category": "Salary Expense",
+                    "description": s.note or "",
+                    "amount": s.total_salary,
+                })
 
-        # ==========================
-        #   SORT FINAL DATA
-        # ==========================
-        grouped_data.sort(key=lambda x: x["date"], reverse=True)
+            # print("Grouped Data after Expenses:", grouped_data)
 
-        return Response(grouped_data)
+            # ==========================
+            #   SORT FINAL DATA
+            # ==========================
+            grouped_data.sort(key=lambda x: x["date"], reverse=True)
+            serializer = CombinedExpenseSerializer(grouped_data, many=True)
+           
+            # print(serializer.data)
+            return Response(serializer.data)
+
+
+        except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"Error in CombinedExpanseView: {str(e)}")
+            print(error_details)
+            
+            return Response(
+                {
+                    "error": "Internal server error",
+                    "message": str(e),
+                    "details": error_details
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
 
 
 

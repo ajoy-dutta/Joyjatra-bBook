@@ -17,7 +17,11 @@ from django.db import transaction as db_transaction
 
 
 class ExpenseViewSet(viewsets.ModelViewSet):
-    queryset = Expense.objects.all().order_by("-expense_date")
+    queryset = Expense.objects.select_related(
+        "cost_category",
+        "payment_mode",
+        "bank",
+    ).order_by("-expense_date")
     serializer_class = ExpenseSerializer
 
     def get_queryset(self):
@@ -87,7 +91,11 @@ class ExpenseViewSet(viewsets.ModelViewSet):
 
 
 class SalaryExpenseViewSet(viewsets.ModelViewSet):
-    queryset = SalaryExpense.objects.all().order_by("-created_at")
+    queryset = SalaryExpense.objects.select_related(
+        "staff",
+        "payment_mode",
+        "bank",
+    ).order_by("-created_at")
     serializer_class = SalaryExpenseSerializer
 
     def get_queryset(self):

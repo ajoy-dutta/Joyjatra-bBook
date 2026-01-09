@@ -27,11 +27,19 @@ class IncomeCategoryViewSet(ModelViewSet):
 
 
 class IncomeViewSet(ModelViewSet):
-    queryset = Income.objects.select_related("category").order_by("-date")
+    queryset = Income.objects.select_related(
+        "category",           
+        "payment_mode",       
+        "bank",                 
+    ).order_by("-date")
     serializer_class = IncomeSerializer
 
     def get_queryset(self):
-        qs = Income.objects.select_related("category").order_by("-date")
+        qs = Income.objects.select_related(
+            "category",           
+            "payment_mode",       
+            "bank",                 
+        ).order_by("-date")
 
         business_category = self.request.query_params.get("business_category")
         category = self.request.query_params.get("category")

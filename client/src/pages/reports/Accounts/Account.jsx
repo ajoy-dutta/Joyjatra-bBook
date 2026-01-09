@@ -26,16 +26,19 @@ export default function Account() {
         };
 
         const [incomeRes, expenseRes] = await Promise.all([
-          AxiosInstance.get("/sale-report/", { params }),
+          AxiosInstance.get("/income-report/", { params }),
           AxiosInstance.get("/expense-report/", { params }),
         ]);
 
         setIncomeData(
-          Array.isArray(incomeRes.data.sales) ? incomeRes.data.sales : []
+          Array.isArray(incomeRes.data) ? incomeRes.data : []
         );
         setExpenseData(
           Array.isArray(expenseRes.data) ? expenseRes.data : []
         );
+
+        console.log("Expense Data:", expenseRes.data);
+        console.log("Income Data:", incomeRes.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -49,7 +52,7 @@ export default function Account() {
   if (loading) return <p>Loading...</p>;
 
   const incomeTotal = incomeData.reduce(
-    (acc, item) => acc + parseFloat(item.total_payable_amount || 0),
+    (acc, item) => acc + parseFloat(item.amount || 0),
     0
   );
   const expenseTotal = expenseData.reduce(
@@ -145,11 +148,11 @@ export default function Account() {
 
             return (
               <tr key={index}>
-                <td className="border px-2 py-1">{income?.sale_date || ""}</td>
-                <td className="border px-2 py-1">Product Sale</td>
-                <td className="border px-2 py-1">{income?.customer?.customer_name || ""}</td>
+                <td className="border px-2 py-1">{income?.date || ""}</td>
+                <td className="border px-2 py-1">{income?.income_source || ""}</td>
+                <td className="border px-2 py-1">{income?.description || ""}</td>
                 <td className="border px-2 py-1 text-right">
-                  {income ? parseFloat(income.total_payable_amount).toFixed(2) : ""}
+                  {income ? parseFloat(income.amount).toFixed(2) : ""}
                 </td>
 
                 <td className="border px-2 py-1">{expense?.date || ""}</td>
