@@ -19,8 +19,8 @@ class ExpenseSerializer(serializers.ModelSerializer):
     payment_mode_name = serializers.CharField(
         source="payment_mode.name", read_only=True
     )
-    bank_account_name = serializers.CharField(
-        source="bank.accountName", read_only=True
+    bank_name = serializers.CharField(
+        source="bank.name", read_only=True
     )
 
     class Meta:
@@ -37,7 +37,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
             "payment_mode",
             "payment_mode_name",
             "bank",
-            "bank_account_name",
+            "bank_name",
         ]
         extra_kwargs = {
             "payment_mode": {"required": False, "allow_null": True},
@@ -59,6 +59,12 @@ class SalaryExpenseSerializer(serializers.ModelSerializer):
         read_only=True,
         coerce_to_string=True  
     )
+    payment_mode_name = serializers.CharField(
+        source="payment_mode.name", read_only=True
+    )
+    bank_name = serializers.CharField(
+        source="bank.name", read_only=True
+    )
 
     class Meta:
         model = SalaryExpense
@@ -72,7 +78,9 @@ class SalaryExpenseSerializer(serializers.ModelSerializer):
             "allowance",
             "bonus",
             "payment_mode",
+            "payment_mode_name",
             "bank",
+            "bank_name",
             "note",
             "created_at",
             "total_salary",

@@ -575,14 +575,9 @@ export default function CustomerProductSale() {
         })),
 
         payments: payments.map((payment) => {
-          const modeObj = paymentModes.find(
-            (m) => m.value === payment.paymentMode
-          );
-          const paymentModeLabel = modeObj ? modeObj.label : null;
-
           return {
-            payment_mode: paymentModeLabel,
-            bank_name_id: payment.bankName || null,
+            payment_mode: payment.paymentMode,
+            bank: payment.bankName || null,
             account_no: payment.accountNo || null,
             cheque_no: payment.chequeNo || null,
             paid_amount: parseFloat(payment.paidAmount) || 0,
@@ -591,7 +586,10 @@ export default function CustomerProductSale() {
         }),
       };
 
-      // console.log("Submitting payload:", JSON.stringify(payload, null, 2));
+
+      // console.log("payload",payload)
+
+      console.log("Submitting payload:", JSON.stringify(payload, null, 2));
 
       await AxiosInstance.post("sales/", payload);
       toast.success("Sale created successfully!");

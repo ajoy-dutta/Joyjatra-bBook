@@ -32,6 +32,8 @@ export default function Sidebar() {
       items: [
         { label: "Manual Journals", path: "/accounting/manual-journals" },
         { label: "Chart of Accounts", path: "/accounting/chart-of-accounts" },
+        { label: "Cash Account", path: "/accounting/cash-account" },
+        { label: "Bank Accounts", path: "/accounting/bank-accounts" },
         { label: "Cash Reconciliation", path: "/accounting/cash-reconciliation" },
         { label: "Bank Reconciliation", path: "/accounting/bank-reconciliation" },
         { label: "Bank Transaction", path: "/accounting/bank-transactions" },

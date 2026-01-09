@@ -8,6 +8,7 @@ class IncomeCategorySerializer(serializers.ModelSerializer):
         queryset=BusinessCategory.objects.all(),
         required=True
     )
+    
     class Meta:
         model = IncomeCategory
         fields = "__all__"
@@ -22,6 +23,12 @@ class IncomeSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(
         source="category.name", read_only=True
     )
+    payment_mode_name = serializers.CharField(
+        source="payment_mode.name", read_only=True
+    )
+    bank_name = serializers.CharField(
+        source="bank.name", read_only=True
+    )
 
     class Meta:
         model = Income
@@ -34,7 +41,9 @@ class IncomeSerializer(serializers.ModelSerializer):
             "amount",
             "received_by",
             "payment_mode",
+            "payment_mode_name",
             "bank",
+            "bank_name",
             "note",
             "created_at",
         ]

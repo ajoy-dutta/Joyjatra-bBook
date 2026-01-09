@@ -3,6 +3,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import AxiosInstance from "../../components/AxiosInstance";
 import { FaSearch, FaEdit, FaTrash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import Select from "react-select";
 
 // ✅ logo fallback (same idea like PurchaseInvoices)
 import joyjatraLogo from "../../assets/joyjatra_logo.jpeg";
@@ -13,6 +14,8 @@ const EMPTY_FORM = {
   base_amount: "",
   allowance: "",
   bonus: "",
+  payment_mode: null,
+  bank: null,
   note: "",
 };
 
@@ -31,8 +34,111 @@ const getCurrentMonth = () => {
 };
 
 export default function SalaryExpense() {
+  // ---------- Custom Select Styles ----------
+  const customSelectStyles = {
+    control: (base, state) => ({
+      ...base,
+      minHeight: "30px",
+      height: "30px",
+      fontSize: "0.875rem",
+      border: "1px solid #000000",
+      borderRadius: "0.275rem",
+      borderColor: state.isFocused ? "#000000" : "#d1d5db",
+      boxShadow: state.isFocused ? "0 0 0 1px #000000" : "none",
+      paddingTop: "0px",
+      paddingBottom: "0px",
+      display: "flex",
+      alignItems: "center",
+    }),
+    valueContainer: (base) => ({
+      ...base,
+      height: "30px",
+      padding: "0 6px",
+      display: "flex",
+      alignItems: "center",
+      flexWrap: "nowrap",
+    }),
+    placeholder: (base) => ({
+      ...base,
+      fontSize: "0.875rem",
+      color: "#9ca3af",
+      margin: "0",
+      position: "absolute",
+      top: "50%",
+      transform: "translateY(-50%)",
+    }),
+    singleValue: (base) => ({
+      ...base,
+      fontSize: "0.875rem",
+      color: "#000000",
+      margin: "0",
+      position: "absolute",
+      top: "50%",
+      transform: "translateY(-50%)",
+    }),
+    input: (base) => ({
+      ...base,
+      fontSize: "0.875rem",
+      margin: "0",
+      padding: "0",
+      color: "#000000",
+      position: "absolute",
+      top: "50%",
+      transform: "translateY(-50%)",
+    }),
+    indicatorsContainer: (base) => ({
+      ...base,
+      height: "30px",
+      display: "flex",
+      alignItems: "center",
+    }),
+    indicatorSeparator: (base) => ({
+      ...base,
+      backgroundColor: "#d1d5db",
+      height: "16px",
+      marginTop: "auto",
+      marginBottom: "auto",
+    }),
+    dropdownIndicator: (base) => ({
+      ...base,
+      color: "#6b7280",
+      padding: "4px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      "&:hover": { color: "#000000" },
+    }),
+    clearIndicator: (base) => ({
+      ...base,
+      color: "#6b7280",
+      padding: "4px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      "&:hover": { color: "#000000" },
+    }),
+    option: (base, state) => ({
+      ...base,
+      fontSize: "0.875rem",
+      backgroundColor: state.isSelected
+        ? "#000000"
+        : state.isFocused
+          ? "#f3f4f6"
+          : "white",
+      color: state.isSelected ? "white" : "#000000",
+      "&:hover": {
+        backgroundColor: state.isSelected ? "#000000" : "#f3f4f6",
+      },
+    }),
+    menu: (base) => ({ ...base, fontSize: "0.875rem" }),
+    menuList: (base) => ({ ...base, fontSize: "0.875rem" }),
+  };
+
   const [staffs, setStaffs] = useState([]);
   const [items, setItems] = useState([]);
+  const [paymentModes, setPaymentModes] = useState([]);
+  const [bankAccounts, setBankAccounts] = useState([]);
+  const [banks, setBanks] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
 
@@ -91,6 +197,44 @@ export default function SalaryExpense() {
   }, []);
 
 
+  // ---------- Fetch payment modes & banks ----------
+  useEffect(() => {
+    const fetchPaymentData = async () => {
+      try {
+        const [pmRes, bankRes] = await Promise.all([
+          AxiosInstance.get("payment-mode/"),
+          AxiosInstance.get("banks/"),
+        ]);
+        setPaymentModes(
+          pmRes.data.map((pm) => ({
+            value: pm.id,
+            label: pm.name,
+          }))
+        );
+        setBanks(
+          bankRes.data.map((bank) => ({
+            value: bank.id,
+            label: bank.name,
+          }))
+        );
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load payment data");
+      }
+    };
+    fetchPaymentData();
+  }, []);
+
+
+  const selectedPaymentModeObj = paymentModes.find(
+    (pm) => pm.value === form.payment_mode
+  );
+  const selectedPaymentModeLabel = selectedPaymentModeObj?.label;
+
+  const isCheque = selectedPaymentModeLabel === "Cheque";
+  const isBank = selectedPaymentModeLabel === "Bank";
+
+
   // ------------ API ------------
   const loadStaffs = async () => {
     try {
@@ -110,6 +254,8 @@ export default function SalaryExpense() {
 
       const res = await AxiosInstance.get("salary-expenses/", { params });
       setItems(res.data || []);
+
+      console.log("Salary Expenses", res.data);
     } catch (e) {
       console.error("Failed to load salary expenses", e);
       setError("Failed to load salary expenses");
@@ -155,6 +301,14 @@ export default function SalaryExpense() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+
+  const handleSelectChange = (field, value) => {
+    setForm((prev) => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearch(value);
@@ -165,6 +319,42 @@ export default function SalaryExpense() {
     setForm(EMPTY_FORM);
     setEditingId(null);
   };
+
+
+   // ---------- Enter key navigation ----------
+  const handleKeyDown = (e) => {
+    if (e.key !== "Enter") return;
+
+    const selectMenuOpen = document.querySelector(".react-select__menu");
+    if (selectMenuOpen) return;
+
+    e.preventDefault();
+
+    const allFocusable = Array.from(
+      document.querySelectorAll(
+        `input:not([type="hidden"]),
+         select,
+         textarea,
+         button,
+         [tabindex]:not([tabindex="-1"])`
+      )
+    ).filter(
+      (el) =>
+        el.offsetParent !== null &&
+        !el.disabled &&
+        !(el.readOnly === true || el.getAttribute("readonly") !== null)
+    );
+
+    const currentIndex = allFocusable.indexOf(e.target);
+    if (currentIndex !== -1) {
+      for (let i = currentIndex + 1; i < allFocusable.length; i++) {
+        const nextEl = allFocusable[i];
+        nextEl.focus();
+        break;
+      }
+    }
+  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -183,12 +373,10 @@ export default function SalaryExpense() {
       base_amount: form.base_amount, // basic
       allowance: form.allowance || 0,
       bonus: form.bonus || 0,
+      payment_mode: form.payment_mode,
+      bank: form.bank,
       note: form.note,
     };
-
-
-    console.log("Payload being sent:", payload);
-    console.log("Selected Category:", selectedCategory);
 
     try {
       if (editingId) {
@@ -214,6 +402,8 @@ export default function SalaryExpense() {
       base_amount: item.base_amount || "",
       allowance: item.allowance || "",
       bonus: item.bonus || "",
+      payment_mode: item.payment_mode || null,
+      bank: item.bank || null,
       note: item.note || "",
     });
   };
@@ -230,7 +420,6 @@ export default function SalaryExpense() {
   };
 
   // ------------ Payroll sheet filtering ------------
-
   const filteredItems = useMemo(
     () =>
       items.filter((r) => {
@@ -344,42 +533,9 @@ export default function SalaryExpense() {
  
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-800">
-            Salary Expenses / Payroll
-          </h2>
-          <p className="text-xs text-slate-500">
-            Record monthly payroll with basic, allowance and bonus.
-          </p>
-
-          {/* ✅ optional banner loading indicator */}
-          <div className="text-xs text-slate-500 mt-1">
-            Business:{" "}
-            <span className="font-semibold text-slate-700">
-              {selectedCategory?.name || "N/A"}
-            </span>
-            {bannerLoading ? (
-              <span className="ml-2 text-slate-400">(Loading banner...)</span>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="flex gap-3 items-center">
-          <div className="relative w-64">
-            <FaSearch className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-            <input
-              type="text"
-              value={search}
-              onChange={handleSearchChange}
-              placeholder="Search by staff or month..."
-              className="w-full pl-9 pr-3 py-2 rounded-full border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30 bg-white"
-            />
-          </div>
-        </div>
-      </div>
+      <h2 className="text-lg font-semibold border-b text-slate-800 pb-1">Salary Expenses / Payroll</h2>
 
       {/* Error */}
       {error && (
@@ -391,10 +547,10 @@ export default function SalaryExpense() {
       {/* Form */}
       <form
         onSubmit={handleSubmit}
-        className="grid grid-cols-1 lg:grid-cols-5 gap-3 bg-white border border-slate-200 rounded-xl p-4 items-end shadow-sm"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 bg-white border border-slate-200 rounded-xl p-4 items-end shadow-sm"
       >
         {/* Staff */}
-        <div className="lg:col-span-2">
+        <div className="col-span-1">
           <label className="block text-xs font-semibold text-slate-700 mb-1">
             Employee *
           </label>
@@ -402,7 +558,8 @@ export default function SalaryExpense() {
             name="staff"
             value={form.staff}
             onChange={handleChange}
-            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring focus:ring-blue-500/30"
+            onKeyDown={handleKeyDown}
+            className="w-full px-3 py-2 rounded-lg border text-sm focus:ring-1 focus:ring-black bg-white"
           >
             <option value="">Select employee</option>
             {staffs.map((s) => (
@@ -423,7 +580,8 @@ export default function SalaryExpense() {
             name="salary_month"
             value={form.salary_month}
             onChange={handleChange}
-            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30 bg-white"
+            onKeyDown={handleKeyDown}
+            className="w-full px-3 py-2 rounded-lg border text-sm focus:ring-1 focus:ring-black bg-white"
           />
         </div>
 
@@ -438,7 +596,8 @@ export default function SalaryExpense() {
             step="0.01"
             value={form.base_amount}
             onChange={handleChange}
-            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30 bg-white"
+            onKeyDown={handleKeyDown}
+            className="w-full px-3 py-2 rounded-lg border text-sm focus:ring-1 focus:ring-black bg-white"
           />
         </div>
 
@@ -453,7 +612,8 @@ export default function SalaryExpense() {
             step="0.01"
             value={form.allowance}
             onChange={handleChange}
-            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30 bg-white"
+            onKeyDown={handleKeyDown}
+            className="w-full px-3 py-2 rounded-lg border text-sm focus:ring-1 focus:ring-black bg-white"
           />
         </div>
 
@@ -468,7 +628,8 @@ export default function SalaryExpense() {
             step="0.01"
             value={form.bonus}
             onChange={handleChange}
-            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30 bg-white"
+            onKeyDown={handleKeyDown}
+            className="w-full px-3 py-2 rounded-lg border text-sm focus:ring-1 focus:ring-black bg-white"
           />
         </div>
 
@@ -483,8 +644,56 @@ export default function SalaryExpense() {
           </div>
         </div>
 
+        {/* Payment Mode */}
+        <div>
+          <label className="block text-sm mb-1 font-medium">
+            Payment Mode <span className="text-red-500">*</span>
+          </label>
+          <Select
+            options={paymentModes}
+            value={
+              paymentModes.find(
+                (pm) => pm.value === Number(form.payment_mode)
+              ) || null
+            }
+            onChange={(selected) =>
+              handleSelectChange(
+                "payment_mode",
+                selected ? selected.value : null
+              )
+            }
+            placeholder="Select"
+            styles={customSelectStyles}
+            onKeyDown={handleKeyDown}
+          />
+        </div>
+
+        {/* Bank Name */}
+        <div>
+          <label className="block text-sm mb-1 font-medium">
+            Bank Name
+          </label>
+          <Select
+            options={banks}
+            value={
+              banks.find((opt) => opt.value === form.bank) || null
+            }
+            onChange={(selected) =>
+              handleSelectChange(
+                "bank",
+                selected ? selected.value : null
+              )
+            }
+            placeholder="Select"
+            isClearable
+            isDisabled={!isBank}
+            styles={customSelectStyles}
+            onKeyDown={handleKeyDown}
+          />
+        </div>
+
         {/* Note */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-2">
           <label className="block text-xs font-semibold text-slate-700 mb-1">
             Note
           </label>
@@ -492,20 +701,14 @@ export default function SalaryExpense() {
             name="note"
             value={form.note}
             onChange={handleChange}
+            onKeyDown={handleKeyDown}
             placeholder="Bonus reason, overtime, deductions, etc."
-            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring focus:ring-blue-500/30 bg-white"
+            className="w-full px-3 py-3 rounded-lg border text-sm focus:ring-1 focus:ring-black bg-white"
           />
         </div>
 
         {/* Buttons */}
-        <div className="lg:col-span-2 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={resetForm}
-            className="px-3 py-2 rounded-full border border-slate-300 text-xs text-slate-700 hover:bg-slate-50"
-          >
-            Clear
-          </button>
+        <div className="lg:col-span-2 flex justify-start gap-2">
           <button
             type="submit"
             disabled={saving}
@@ -513,6 +716,14 @@ export default function SalaryExpense() {
           >
             {saving ? (editingId ? "Updating..." : "Saving...") : editingId ? "Update Payroll" : "Save Payroll"}
           </button>
+          <button
+            type="button"
+            onClick={resetForm}
+            className="px-3 py-2 rounded-full border border-slate-300 text-xs text-slate-700 hover:bg-slate-50"
+          >
+            Clear
+          </button>
+          
         </div>
       </form>
 
@@ -540,7 +751,7 @@ export default function SalaryExpense() {
             <select
               value={filterStaff}
               onChange={(e) => setFilterStaff(e.target.value)}
-              className="px-2 py-1 text-xs rounded-full border border-slate-200 bg-white"
+              className="px-2 py-1 text-sm rounded-full border border-slate-200 bg-white"
             >
               <option value="">All employees</option>
               {staffs.map((s) => (
@@ -555,7 +766,7 @@ export default function SalaryExpense() {
               type="month"
               value={filterMonth}
               onChange={(e) => setFilterMonth(e.target.value)}
-              className="px-2 py-1 text-xs rounded-full border border-slate-200 bg-white"
+              className="px-2 py-1 text-sm rounded-full border border-slate-200 bg-white"
             />
 
             {/* Clear filters */}
@@ -565,7 +776,7 @@ export default function SalaryExpense() {
                 setFilterStaff("");
                 setFilterMonth("");
               }}
-              className="px-2 py-1 text-xs rounded-full border border-slate-300 text-slate-700 hover:bg-slate-50"
+              className="px-2 py-1 text-sm rounded-full border border-slate-300 text-slate-700 hover:bg-slate-50"
             >
               Clear filter
             </button>
@@ -574,7 +785,7 @@ export default function SalaryExpense() {
             <button
               type="button"
               onClick={handleExportCsv}
-              className="px-3 py-1 text-xs rounded-full border border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+              className="px-3 py-1 text-sm rounded-full border border-emerald-600 text-emerald-700 hover:bg-emerald-50"
             >
               Export Excel (CSV)
             </button>
@@ -583,7 +794,7 @@ export default function SalaryExpense() {
             <button
               type="button"
               onClick={handlePrint}
-              className="px-3 py-1 text-xs rounded-full border border-indigo-600 text-indigo-700 hover:bg-indigo-50"
+              className="px-3 py-1 text-sm rounded-full border border-indigo-600 text-indigo-700 hover:bg-indigo-50"
             >
               Print / PDF
             </button>
@@ -605,8 +816,10 @@ export default function SalaryExpense() {
                   <th className="py-2 px-2 text-right">Allowance</th>
                   <th className="py-2 px-2 text-right">Bonus</th>
                   <th className="py-2 px-2 text-right">Total Salary</th>
+                  <th className="py-2 px-2 text-left">Payment</th>
+                  <th className="py-2 px-2 text-left">Bank</th>
                   <th className="py-2 px-2 text-left">Note</th>
-                  <th className="py-2 px-2 text-right">Actions</th>
+                  <th className="py-2 px-2 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -626,7 +839,7 @@ export default function SalaryExpense() {
                         (idx % 2 === 0 ? "bg-white" : "bg-slate-50/40")
                       }
                     >
-                      <td className="py-2 px-2">
+                      <td className="py-2 px-2 text-left">
                         {r.staff_name || `Staff #${r.staff}`}
                       </td>
                       <td className="py-2 px-2">{r.salary_month}</td>
@@ -642,10 +855,16 @@ export default function SalaryExpense() {
                       <td className="py-2 px-2 text-right font-semibold">
                         {formatMoney(rowTotal)}
                       </td>
-                      <td className="py-2 px-2 max-w-xs truncate">
+                      <td className="py-2 px-2 text-left font-semibold">
+                        {r.payment_mode_name || <span className="text-slate-400">—</span>}
+                      </td>
+                      <td className="py-2 px-2 text-left font-semibold">
+                        {r.bank_name || <span className="text-slate-400">—</span>}
+                      </td>
+                      <td className="py-2 px-2 text-left max-w-xs truncate">
                         {r.note || <span className="text-slate-400">—</span>}
                       </td>
-                      <td className="py-2 px-2 text-right space-x-2 whitespace-nowrap">
+                      <td className="py-2 px-2 text-center space-x-2 whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => handleEdit(r)}

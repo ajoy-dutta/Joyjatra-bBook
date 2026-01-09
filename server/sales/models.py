@@ -38,14 +38,14 @@ class SaleProduct(models.Model):
 
     sale_quantity = models.PositiveIntegerField()
     sale_price = models.DecimalField(max_digits=12, decimal_places=2)
-    percentage = models.DecimalField(max_digits=5, decimal_places=2)
+    percentage = models.DecimalField(max_digits=5, decimal_places=2,blank=True,null=True)
     sale_price_with_percentage = models.DecimalField(max_digits=12, decimal_places=2)
     total_price = models.DecimalField(max_digits=12, decimal_places=2)
-    returned_quantity = models.PositiveIntegerField(default=0)
+    returned_quantity = models.PositiveIntegerField(default=0,blank=True,null=True)
 
     def __str__(self):
         # Assuming Product has product_code
-        return f"{self.product.product_code} ({self.sale.invoice_no})"
+        return f"{self.product.product_name} ({self.sale.invoice_no})"
 
 
 class SaleReturn(models.Model):
@@ -60,8 +60,14 @@ class SaleReturn(models.Model):
 
 class SalePayment(models.Model):
     sale = models.ForeignKey(Sale, related_name='payments', on_delete=models.CASCADE)
-    payment_mode = models.CharField(max_length=50, blank=True, null=True)
-    bank_name = models.ForeignKey(BankMaster, on_delete=models.CASCADE, blank=True, null=True)
+    payment_mode = models.ForeignKey(
+        PaymentMode,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sales_payment_mode",
+    )
+    bank = models.ForeignKey(BankMaster, on_delete=models.CASCADE, blank=True, null=True)
     account_no = models.CharField(max_length=100, blank=True, null=True)
     cheque_no = models.CharField(max_length=100, blank=True, null=True)
     paid_amount = models.DecimalField(max_digits=12, decimal_places=2)
@@ -69,4 +75,4 @@ class SalePayment(models.Model):
     payment_date = models.DateTimeField(auto_now_add=True,blank=True,null=True)
 
     def __str__(self):
-        return f"Payment for {self.sale.invoice_no} - {self.payment_mode}"
+        return f"Payment for {self.sale.invoice_no} - {self.payment_mode.name}"

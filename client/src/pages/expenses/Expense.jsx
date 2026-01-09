@@ -2,24 +2,128 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import AxiosInstance from "../../components/AxiosInstance";
+import Select from "react-select";
 
 // ✅ logo fallback (same idea like PurchaseInvoices)
 import joyjatraLogo from "../../assets/joyjatra_logo.jpeg";
+
 
 const EMPTY_FORM = {
   cost_category: "",
   amount: "",
   expense_date: "",
-  payment_mode: "",
-  bank_account: "",
+  payment_mode: null,
+  bank: null,
   note: "",
   recorded_by: "",
 };
 
 export default function ExpensePage() {
+  // ---------- Custom Select Styles ----------
+  const customSelectStyles = {
+    control: (base, state) => ({
+      ...base,
+      minHeight: "30px",
+      height: "30px",
+      fontSize: "0.875rem",
+      border: "1px solid #000000",
+      borderRadius: "0.275rem",
+      borderColor: state.isFocused ? "#000000" : "#d1d5db",
+      boxShadow: state.isFocused ? "0 0 0 1px #000000" : "none",
+      paddingTop: "0px",
+      paddingBottom: "0px",
+      display: "flex",
+      alignItems: "center",
+    }),
+    valueContainer: (base) => ({
+      ...base,
+      height: "30px",
+      padding: "0 6px",
+      display: "flex",
+      alignItems: "center",
+      flexWrap: "nowrap",
+    }),
+    placeholder: (base) => ({
+      ...base,
+      fontSize: "0.875rem",
+      color: "#9ca3af",
+      margin: "0",
+      position: "absolute",
+      top: "50%",
+      transform: "translateY(-50%)",
+    }),
+    singleValue: (base) => ({
+      ...base,
+      fontSize: "0.875rem",
+      color: "#000000",
+      margin: "0",
+      position: "absolute",
+      top: "50%",
+      transform: "translateY(-50%)",
+    }),
+    input: (base) => ({
+      ...base,
+      fontSize: "0.875rem",
+      margin: "0",
+      padding: "0",
+      color: "#000000",
+      position: "absolute",
+      top: "50%",
+      transform: "translateY(-50%)",
+    }),
+    indicatorsContainer: (base) => ({
+      ...base,
+      height: "30px",
+      display: "flex",
+      alignItems: "center",
+    }),
+    indicatorSeparator: (base) => ({
+      ...base,
+      backgroundColor: "#d1d5db",
+      height: "16px",
+      marginTop: "auto",
+      marginBottom: "auto",
+    }),
+    dropdownIndicator: (base) => ({
+      ...base,
+      color: "#6b7280",
+      padding: "4px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      "&:hover": { color: "#000000" },
+    }),
+    clearIndicator: (base) => ({
+      ...base,
+      color: "#6b7280",
+      padding: "4px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      "&:hover": { color: "#000000" },
+    }),
+    option: (base, state) => ({
+      ...base,
+      fontSize: "0.875rem",
+      backgroundColor: state.isSelected
+        ? "#000000"
+        : state.isFocused
+          ? "#f3f4f6"
+          : "white",
+      color: state.isSelected ? "white" : "#000000",
+      "&:hover": {
+        backgroundColor: state.isSelected ? "#000000" : "#f3f4f6",
+      },
+    }),
+    menu: (base) => ({ ...base, fontSize: "0.875rem" }),
+    menuList: (base) => ({ ...base, fontSize: "0.875rem" }),
+  };
+
+
   const [categories, setCategories] = useState([]);
   const [paymentModes, setPaymentModes] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
+  const [banks, setBanks] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
 
@@ -38,9 +142,9 @@ export default function ExpensePage() {
   // Filters
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
-  const [filterPaymentMode, setFilterPaymentMode] = useState("");
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
+
 
   // ✅ Print header tag (like your invoice top pill)
   const DOC_TOP_TAG = ""; // or "ক্যাশ মেমো"
@@ -50,29 +154,8 @@ export default function ExpensePage() {
     return Number.isNaN(n) ? 0 : n;
   };
 
-  // ✅ Listen to business switch (same tab + other tabs)
-  useEffect(() => {
-    const readBusiness = () => {
-      setSelectedCategory(JSON.parse(localStorage.getItem("business_category")) || null);
-    };
-
-    const onStorage = (e) => {
-      if (e.key === "business_category") readBusiness();
-    };
-
-    const onBusinessChanged = () => readBusiness();
-
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("business_category_changed", onBusinessChanged);
-
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("business_category_changed", onBusinessChanged);
-    };
-  }, []);
-
+ 
   // ---------------- LOAD MASTER DATA ----------------
-
   const loadCategories = async () => {
     try {
       const res = await AxiosInstance.get("cost-categories/");
@@ -82,23 +165,51 @@ export default function ExpensePage() {
     }
   };
 
-  const loadPaymentModes = async () => {
-    try {
-      const res = await AxiosInstance.get("payment-mode/");
-      setPaymentModes(res.data || []);
-    } catch (e) {
-      console.error("Failed to load payment modes", e);
-    }
-  };
+  // ---------- Fetch payment modes & banks ----------
+  useEffect(() => {
+    const fetchPaymentData = async () => {
+      try {
+        const [pmRes, bankRes] = await Promise.all([
+          AxiosInstance.get("payment-mode/"),
+          AxiosInstance.get("banks/"),
+        ]);
+        setPaymentModes(
+          pmRes.data.map((pm) => ({
+            value: pm.id,
+            label: pm.name,
+          }))
+        );
+        setBanks(
+          bankRes.data.map((bank) => ({
+            value: bank.id,
+            label: bank.name,
+          }))
+        );
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load payment data");
+      }
+    };
+    fetchPaymentData();
+  }, []);
 
-  const loadBankAccounts = async () => {
-    try {
-      const res = await AxiosInstance.get("bank-accounts/");
-      setBankAccounts(res.data || []);
-    } catch (e) {
-      console.error("Failed to load bank accounts", e);
-    }
-  };
+
+  const selectedPaymentModeObj = paymentModes.find(
+    (pm) => pm.value === form.payment_mode
+  );
+  const selectedPaymentModeLabel = selectedPaymentModeObj?.label;
+
+  const isCheque = selectedPaymentModeLabel === "Cheque";
+  const isBank = selectedPaymentModeLabel === "Bank";
+
+  // const loadBankAccounts = async () => {
+  //   try {
+  //     const res = await AxiosInstance.get("bank-accounts/");
+  //     setBankAccounts(res.data || []);
+  //   } catch (e) {
+  //     console.error("Failed to load bank accounts", e);
+  //   }
+  // };
 
   const fetchBanner = async (categoryId) => {
     if (!categoryId) {
@@ -107,7 +218,9 @@ export default function ExpensePage() {
     }
     try {
       setBannerLoading(true);
-      const res = await AxiosInstance.get(`/business-categories/${categoryId}/`);
+      const res = await AxiosInstance.get("business-categories/", {
+        params: { business_category: categoryId || null },
+      });
       setBanner(res.data);
     } catch (e) {
       console.error("Failed to fetch banner:", e);
@@ -126,6 +239,8 @@ export default function ExpensePage() {
       const raw = res.data;
       const rows = Array.isArray(raw) ? raw : raw?.results || [];
       setExpenses(rows);
+
+      console.log("Expenses", rows);
     } catch (e) {
       console.error("Failed to load expenses", e);
     } finally {
@@ -136,8 +251,7 @@ export default function ExpensePage() {
   // initial master load once
   useEffect(() => {
     loadCategories();
-    loadPaymentModes();
-    loadBankAccounts();
+    // loadBankAccounts();
   }, []);
 
   // ✅ refetch banner + expenses when business changes
@@ -145,7 +259,6 @@ export default function ExpensePage() {
     const id = selectedCategory?.id || null;
     fetchBanner(id);
     loadExpenses(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory?.id]);
 
   // ---------------- FORM HANDLERS ----------------
@@ -154,6 +267,49 @@ export default function ExpensePage() {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
+
+  const handleSelectChange = (field, value) => {
+    setForm((prev) => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+
+  // ---------- Enter key navigation ----------
+  const handleKeyDown = (e) => {
+    if (e.key !== "Enter") return;
+
+    const selectMenuOpen = document.querySelector(".react-select__menu");
+    if (selectMenuOpen) return;
+
+    e.preventDefault();
+
+    const allFocusable = Array.from(
+      document.querySelectorAll(
+        `input:not([type="hidden"]),
+         select,
+         textarea,
+         button,
+         [tabindex]:not([tabindex="-1"])`
+      )
+    ).filter(
+      (el) =>
+        el.offsetParent !== null &&
+        !el.disabled &&
+        !(el.readOnly === true || el.getAttribute("readonly") !== null)
+    );
+
+    const currentIndex = allFocusable.indexOf(e.target);
+    if (currentIndex !== -1) {
+      for (let i = currentIndex + 1; i < allFocusable.length; i++) {
+        const nextEl = allFocusable[i];
+        nextEl.focus();
+        break;
+      }
+    }
+  };
+
 
   const resetForm = () => setForm(EMPTY_FORM);
 
@@ -170,14 +326,14 @@ export default function ExpensePage() {
     }
 
     const payload = {
-      business_category:selectedCategory.id,
+      business_category: selectedCategory.id,
       cost_category: form.cost_category,
       amount: form.amount,
       expense_date: form.expense_date,
       note: form.note,
       recorded_by: form.recorded_by,
       payment_mode: form.payment_mode || null,
-      bank_account: form.bank_account || null,
+      bank: form.bank || null,
     };
 
     setSaving(true);
@@ -218,8 +374,6 @@ export default function ExpensePage() {
           " " +
           (e.note || "") +
           " " +
-          (e.payment_mode_name || "") +
-          " " +
           (e.bank_account_name || "")
         ).toLowerCase();
         if (!text.includes(s)) return false;
@@ -227,14 +381,12 @@ export default function ExpensePage() {
 
       if (filterCategory && String(e.cost_category) !== String(filterCategory)) return false;
 
-      if (filterPaymentMode && String(e.payment_mode) !== String(filterPaymentMode)) return false;
-
       if (filterDateFrom && e.expense_date < filterDateFrom) return false;
       if (filterDateTo && e.expense_date > filterDateTo) return false;
 
       return true;
     });
-  }, [expenses, search, filterCategory, filterPaymentMode, filterDateFrom, filterDateTo]);
+  }, [expenses, search, filterCategory, filterDateFrom, filterDateTo]);
 
   const totalAmount = useMemo(
     () => filteredExpenses.reduce((sum, e) => sum + safeNumber(e.amount), 0),
@@ -245,13 +397,13 @@ export default function ExpensePage() {
 
   const exportCSV = () => {
     const rows = [
-      ["Date", "Category", "Amount", "Payment Method", "Bank Account", "Note", "Recorded By"],
+      ["Date", "Category", "Amount", "Payment Method", "Bank", "Note", "Recorded By"],
       ...filteredExpenses.map((e) => [
         e.expense_date,
         e.cost_category_name,
         e.amount,
         e.payment_mode_name || "",
-        e.bank_account_name || "",
+        e.bank_name || "",
         e.note || "",
         e.recorded_by || "",
       ]),
@@ -292,22 +444,22 @@ export default function ExpensePage() {
       filteredExpenses.length === 0
         ? `<tr><td colspan="9" class="text-center">No expenses found</td></tr>`
         : filteredExpenses
-            .map(
-              (e, idx) => `
+          .map(
+            (e, idx) => `
                 <tr>
                   <td class="text-center">${idx + 1}</td>
                   <td class="text-center">${e.expense_date || "-"}</td>
                   <td>${e.cost_category_name || "-"}</td>
                   <td class="text-right">${safeNumber(e.amount).toFixed(2)}</td>
                   <td class="text-center">${e.payment_mode_name || "-"}</td>
-                  <td class="text-center">${e.bank_account_name || "-"}</td>
+                  <td class="text-center">${e.bank_name || "-"}</td>
                   <td>${e.note || "-"}</td>
                   <td class="text-center">${e.recorded_by || "-"}</td>
                   <td class="text-center">-</td>
                 </tr>
               `
-            )
-            .join("");
+          )
+          .join("");
 
     const html = `
       <html>
@@ -440,121 +592,163 @@ export default function ExpensePage() {
   // ---------------- RENDER ----------------
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-gray-800 border-b pb-2">Expenses</h2>
-
-      <div className="text-xs text-slate-500">
-        Business:{" "}
-        <span className="font-semibold text-slate-700">
-          {selectedCategory?.name || "N/A"}
-        </span>
-        {bannerLoading ? <span className="ml-2 text-slate-400">(Loading banner...)</span> : null}
-      </div>
-
+    <div className="space-y-4">
+      <h2 className="text-lg font-semibold text-gray-800 border-b pb-1">General Expenses</h2>
       {/* FORM */}
-      <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-4 bg-white p-4 rounded border">
-        <div>
-          <label className="block text-sm font-semibold">Category *</label>
-          <select
-            name="cost_category"
-            value={form.cost_category}
-            onChange={onChange}
-            className="border rounded px-3 py-1 w-64"
+      <form
+        onSubmit={onSubmit}
+        className="bg-white px-6 py-4 rounded-lg border shadow-sm"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+          {/* Category */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Category <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="cost_category"
+              value={form.cost_category}
+              onChange={onChange}
+              onKeyDown={handleKeyDown}
+              className="w-full h-[34px] border rounded px-3 text-sm focus:ring-1 focus:ring-black"
+            >
+              <option value="">-- Select --</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.category_name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Amount */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Amount <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              name="amount"
+              value={form.amount}
+              onChange={onChange}
+              onKeyDown={handleKeyDown}
+              className="w-full h-[34px] border rounded px-3 text-sm focus:ring-1 focus:ring-black"
+            />
+          </div>
+
+          {/* Date */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Date <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              name="expense_date"
+              value={form.expense_date}
+              onChange={onChange}
+              onKeyDown={handleKeyDown}
+              className="w-full h-[34px] border rounded px-3 text-sm focus:ring-1 focus:ring-black"
+            />
+          </div>
+
+          {/* Payment Mode */}
+          <div>
+            <label className="block text-sm mb-1 font-medium">
+              Payment Mode <span className="text-red-500">*</span>
+            </label>
+            <Select
+              options={paymentModes}
+              value={
+                paymentModes.find(
+                  (pm) => pm.value === Number(form.payment_mode)
+                ) || null
+              }
+              onChange={(selected) =>
+                handleSelectChange(
+                  "payment_mode",
+                  selected ? selected.value : null
+                )
+              }
+              placeholder="Select"
+              styles={customSelectStyles}
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+
+          {/* Bank Name */}
+          <div>
+            <label className="block text-sm mb-1 font-medium">
+              Bank Name
+            </label>
+            <Select
+              options={banks}
+              value={
+                banks.find((opt) => opt.value === form.bank) || null
+              }
+              onChange={(selected) =>
+                handleSelectChange(
+                  "bank",
+                  selected ? selected.value : null
+                )
+              }
+              placeholder="Select"
+              isClearable
+              isDisabled={!isBank}
+              styles={customSelectStyles}
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+
+          {/* Recorded By */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Recorded By <span className="text-red-500">*</span>
+            </label>
+            <input
+              name="recorded_by"
+              value={form.recorded_by}
+              onChange={onChange}
+              onKeyDown={handleKeyDown}
+              className="w-full h-[34px] border rounded px-3 text-sm focus:ring-1 focus:ring-black"
+            />
+          </div>
+
+          {/* Note – full width */}
+          <div className="md:col-span-1 lg:col-span-2">
+            <label className="block text-sm font-medium mb-1">
+              Note
+            </label>
+            <input
+              name="note"
+              value={form.note}
+              onChange={onChange}
+              onKeyDown={handleKeyDown}
+              className="w-full border rounded px-3 py-4 text-sm focus:ring-1 focus:ring-black"
+            />
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-center gap-3 mt-6">
+          <button
+            type="submit"
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded text-sm font-medium disabled:opacity-60"
+            disabled={saving}
           >
-            <option value="">-- Select --</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.category_name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold">Amount *</label>
-          <input
-            type="number"
-            name="amount"
-            value={form.amount}
-            onChange={onChange}
-            className="border rounded px-3 py-1 w-32"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold">Date *</label>
-          <input
-            type="date"
-            name="expense_date"
-            value={form.expense_date}
-            onChange={onChange}
-            className="border rounded px-3 py-1 w-40"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold">Payment Method</label>
-          <select
-            name="payment_mode"
-            value={form.payment_mode}
-            onChange={onChange}
-            className="border rounded px-3 py-1 w-48"
-          >
-            <option value="">-- Select --</option>
-            {paymentModes.map((pm) => (
-              <option key={pm.id} value={pm.id}>
-                {pm.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold">Bank Account</label>
-          <select
-            name="bank_account"
-            value={form.bank_account}
-            onChange={onChange}
-            className="border rounded px-3 py-1 w-56"
-          >
-            <option value="">-- Select --</option>
-            {bankAccounts.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.accountName}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold">Note</label>
-          <input
-            name="note"
-            value={form.note}
-            onChange={onChange}
-            className="border rounded px-3 py-1 w-64"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold">Recorded By *</label>
-          <input
-            name="recorded_by"
-            value={form.recorded_by}
-            onChange={onChange}
-            className="border rounded px-3 py-1 w-56"
-          />
-        </div>
-
-        <div className="flex gap-3">
-          <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded" disabled={saving}>
             {saving ? "Saving..." : "Save"}
           </button>
-          <button type="button" className="bg-red-600 text-white px-4 py-2 rounded" onClick={resetForm}>
+
+          <button
+            type="button"
+            className="bg-gray-200 hover:bg-gray-300 text-black px-6 py-2 rounded text-sm font-medium"
+            onClick={resetForm}
+          >
             Reset
           </button>
         </div>
       </form>
+
 
       {/* FILTERS */}
       <div className="bg-white p-4 rounded border flex flex-wrap gap-4 text-sm items-end">
@@ -575,19 +769,6 @@ export default function ExpensePage() {
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.category_name}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={filterPaymentMode}
-          onChange={(e) => setFilterPaymentMode(e.target.value)}
-          className="border rounded px-3 py-1"
-        >
-          <option value="">All Payment Methods</option>
-          {paymentModes.map((pm) => (
-            <option key={pm.id} value={pm.id}>
-              {pm.name}
             </option>
           ))}
         </select>
@@ -616,7 +797,6 @@ export default function ExpensePage() {
           onClick={() => {
             setSearch("");
             setFilterCategory("");
-            setFilterPaymentMode("");
             setFilterDateFrom("");
             setFilterDateTo("");
           }}
@@ -661,7 +841,7 @@ export default function ExpensePage() {
                   <td className="py-2 px-2">{e.cost_category_name}</td>
                   <td className="py-2 px-2 text-right">৳ {safeNumber(e.amount).toFixed(2)}</td>
                   <td className="py-2 px-2">{e.payment_mode_name || "-"}</td>
-                  <td className="py-2 px-2">{e.bank_account_name || "-"}</td>
+                  <td className="py-2 px-2">{e.bank_name || "-"}</td>
                   <td className="py-2 px-2">{e.note || "-"}</td>
                   <td className="py-2 px-2">{e.recorded_by || "-"}</td>
                   <td className="py-2 px-2 text-right">

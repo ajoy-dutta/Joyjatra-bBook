@@ -25,8 +25,8 @@ def update_stock_on_sale(sender, instance, created, **kwargs):
 
     if stock.current_stock_quantity < qty:
         raise ValueError("Not enough stock available for sale")
-
-    stock.sale_quantity += qty
+    
+    stock.sale_quantity = (stock.sale_quantity or 0) + qty
     stock.current_stock_quantity -= qty
 
     # update stock valuation (optional)

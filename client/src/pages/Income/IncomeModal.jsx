@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
+import AxiosInstance from "../../components/AxiosInstance";
 
 export default function IncomeModal({
-isOpen,
-onClose,
-selectedCategory,
-onSubmit,
-categories,
-initialData = null,
+  isOpen,
+  onClose,
+  selectedCategory,
+  onSubmit,
+  categories,
+  initialData = null,
 }) {
   const [formData, setFormData] = useState({
     business_category: selectedCategory.id,
@@ -14,10 +15,33 @@ initialData = null,
     date: "",
     amount: "",
     received_by: "",
-    payment_method:"",
-    bank:"",
+    payment_mode: "",
+    bank: "",
     note: "",
   });
+
+  // ✅ NEW STATE
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [banks, setBanks] = useState([]);
+
+  // ✅ FETCH PAYMENT METHODS & BANKS
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [pmRes, bankRes] = await Promise.all([
+          AxiosInstance.get("payment-mode/"),
+          AxiosInstance.get("banks/"),
+        ]);
+
+        setPaymentMethods(pmRes.data || []);
+        setBanks(bankRes.data || []);
+      } catch (err) {
+        console.error("Failed to load payment data", err);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (initialData) {
@@ -27,8 +51,8 @@ initialData = null,
         date: initialData.date,
         amount: initialData.amount,
         received_by: initialData.received_by,
-        payment_method: initialData.payment_method,
-        bank: initialData.bank,
+        payment_mode: initialData.payment_mode || "",
+        bank: initialData.bank || "",
         note: initialData.note || "",
       });
     } else {
@@ -38,6 +62,8 @@ initialData = null,
         date: "",
         amount: "",
         received_by: "",
+        payment_mode: "",
+        bank: "",
         note: "",
       });
     }
@@ -57,6 +83,7 @@ initialData = null,
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg w-full max-w-lg shadow-lg">
+
         {/* Header */}
         <div className="flex justify-between items-center px-4 py-3 border-b">
           <h3 className="text-lg font-semibold">
@@ -67,6 +94,7 @@ initialData = null,
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-4 space-y-3">
+
           <select
             name="category"
             value={formData.category}
@@ -111,6 +139,38 @@ initialData = null,
             required
           />
 
+          {/* ✅ Payment Method */}
+          <select
+            name="payment_mode"
+            value={formData.payment_mode}
+            onChange={handleChange}
+            className="w-full border p-2 rounded"
+            required
+          >
+            <option value="">Select Payment Method</option>
+            {paymentMethods.map((pm) => (
+              <option key={pm.id} value={pm.id}>
+                {pm.name}
+              </option>
+            ))}
+          </select>
+
+          {/* ✅ Bank */}
+          <select
+            name="bank"
+            value={formData.bank}
+            onChange={handleChange}
+            className="w-full border p-2 rounded"
+            disabled={!formData.payment_mode}
+          >
+            <option value="">Select Bank</option>
+            {banks.map((bank) => (
+              <option key={bank.id} value={bank.id}>
+                {bank.name}
+              </option>
+            ))}
+          </select>
+
           <textarea
             name="note"
             placeholder="Note"
@@ -136,6 +196,7 @@ initialData = null,
             </button>
           </div>
         </form>
+
       </div>
     </div>
   );

@@ -47,6 +47,7 @@ export default function Income() {
         },
     });
     setIncomes(res.data);
+    console.log("Incomes", res.data);
   };
 
   
@@ -86,16 +87,16 @@ export default function Income() {
   }, []);
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="px-6 py-2 max-w-6xl mx-auto space-y-4">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-800">Income</h2>
+          <h2 className="text-xl font-semibold text-gray-800">Income</h2>
           <p className="text-sm text-gray-500">Manage income entries and vouchers</p>
         </div>
         <button
           onClick={handleAdd}
-          className="bg-blue-600 hover:bg-blue-700 transition text-white px-5 py-2.5 rounded-lg font-medium"
+          className="bg-blue-600 hover:bg-blue-700 transition text-sm text-white px-4 py-2.5 rounded-lg font-medium"
         >
           + Add Income
         </button>
@@ -104,16 +105,16 @@ export default function Income() {
       {/* ================= FILTERS ================= */}
       <form
         onSubmit={handleFilterSubmit}
-        className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-end"
+        className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-end"
       >
         {/* Category */}
         <div className="flex flex-col">
-          <label className="text-gray-600 text-sm mb-1">Category</label>
+          <label className="text-gray-600 text-sm mb-1 font-medium">Category</label>
           <select
             name="category"
             value={filters.category}
             onChange={handleFilterChange}
-            className="border p-2 rounded w-48"
+            className="border px-2 py-1 rounded w-48"
           >
             <option value="">All</option>
             {categories.map((cat) => (
@@ -126,38 +127,38 @@ export default function Income() {
 
         {/* From Date */}
         <div className="flex flex-col">
-          <label className="text-gray-600 text-sm mb-1">From Date</label>
+          <label className="text-gray-600 text-sm mb-1 font-medium">From Date</label>
           <input
             type="date"
             name="fromDate"
             value={filters.fromDate}
             onChange={handleFilterChange}
-            className="border p-2 rounded w-40"
+            className="border px-2 py-1 rounded w-40"
           />
         </div>
 
         {/* To Date */}
         <div className="flex flex-col">
-          <label className="text-gray-600 text-sm mb-1">To Date</label>
+          <label className="text-gray-600 text-sm mb-1 font-medium">To Date</label>
           <input
             type="date"
             name="toDate"
             value={filters.toDate}
             onChange={handleFilterChange}
-            className="border p-2 rounded w-40"
+            className="border px-2 py-1 rounded w-40"
           />
         </div>
 
         <button
           type="submit"
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded-lg"
         >
           Filter
         </button>
 
         <button
             type="button"
-            className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg"
+            className="bg-gray-200 hover:bg-gray-300 px-4 py-1 rounded-lg"
             onClick={() => {
                 const resetFilters = { category: "", fromDate: "", toDate: "" };
                 setFilters(resetFilters);
@@ -175,30 +176,34 @@ export default function Income() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-gray-600">
-                <th className="px-5 py-3 text-left">Date</th>
-                <th className="px-5 py-3 text-left">Category</th>
-                <th className="px-5 py-3 text-right">Amount</th>
-                <th className="px-5 py-3 text-left">Received By</th>
-                <th className="px-5 py-3 text-left">Note</th>
-                <th className="px-5 py-3 text-center">Actions</th>
+                <th className="px-2 py-1 text-left">Date</th>
+                <th className="px-2 py-1 text-left">Category</th>
+                <th className="px-2 py-1 text-center">Amount</th>
+                <th className="px-2 py-1 text-left">Received By</th>
+                <th className="px-2 py-1 text-left">Payment</th>
+                <th className="px-2 py-1 text-left">Bank</th>
+                <th className="px-2 py-1 text-left">Note</th>
+                <th className="px-2 py-1 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
               {incomes.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-5 py-6 text-center text-gray-400">
+                  <td colSpan="6" className="px-2 py-6 text-center text-gray-400">
                     No income records found
                   </td>
                 </tr>
               ) : (
                 incomes.map((inc) => (
                   <tr key={inc.id} className="border-t hover:bg-gray-50 transition">
-                    <td className="px-5 py-3">{inc.date}</td>
-                    <td className="px-5 py-3 font-medium">{inc.category_name}</td>
-                    <td className="px-5 py-3 text-right font-semibold">৳ {inc.amount}</td>
-                    <td className="px-5 py-3">{inc.received_by}</td>
-                    <td className="px-5 py-3 text-gray-500">{inc.note || "-"}</td>
-                    <td className="px-5 py-3 text-center">
+                    <td className="px-2 py-1">{inc.date}</td>
+                    <td className="px-2 py-1 font-medium">{inc.category_name}</td>
+                    <td className="px-2 py-1 text-center font-semibold">৳ {inc.amount}</td>
+                    <td className="px-2 py-1">{inc.received_by}</td>
+                    <td className="px-2 py-1">{inc.payment_mode_name}</td>
+                    <td className="px-2 py-1">{inc.bank_name}</td>
+                    <td className="px-2 py-1 text-gray-500">{inc.note || "-"}</td>
+                    <td className="px-2 py-1 text-center">
                       <div className="flex items-center justify-center gap-3">
                         <button
                           onClick={() => handleEdit(inc)}
