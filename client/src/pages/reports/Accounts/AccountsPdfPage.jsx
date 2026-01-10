@@ -30,11 +30,11 @@ const AccountsPdfPage = () => {
       };
 
       const [incomeRes, expenseRes] = await Promise.all([
-        AxiosInstance.get("/sale-report/", { params }),
+        AxiosInstance.get("/income-report/", { params }),
         AxiosInstance.get("/expense-report/", { params }),
       ]);
 
-      setIncomeData(Array.isArray(incomeRes.data.sales) ? incomeRes.data.sales : []);
+      setIncomeData(Array.isArray(incomeRes.data) ? incomeRes.data : []);
       setExpenseData(Array.isArray(expenseRes.data) ? expenseRes.data : []);
     } catch (error) {
       console.error("Error fetching data:", error);

@@ -87,7 +87,7 @@ export default function Account() {
               type="date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
-              className="w-40 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-40 px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -100,7 +100,7 @@ export default function Account() {
               type="date"
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
-              className="w-40 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-40 px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -110,7 +110,7 @@ export default function Account() {
               setFromDate("");
               setToDate("");
             }}
-            className="h-[38px] px-4 text-sm font-medium rounded-md bg-gray-100 text-gray-700 border hover:bg-gray-200 transition"
+            className="py-0 mt-5 px-4 text-sm font-medium rounded-md bg-gray-100 text-gray-700 border hover:bg-gray-200 transition"
           >
             Reset
           </button>
@@ -135,8 +135,8 @@ export default function Account() {
             <th className="border px-2 py-1 text-right">Amount</th>
 
             <th className="border px-2 py-1">Expense Date</th>
-            <th className="border px-2 py-1">Voucher</th>
-            <th className="border px-2 py-1">Source / Description</th>
+            <th className="border px-2 py-1">Source</th>
+            <th className="border px-2 py-1">Description</th>
             <th className="border px-2 py-1 text-right">Amount</th>
           </tr>
         </thead>
@@ -156,8 +156,8 @@ export default function Account() {
                 </td>
 
                 <td className="border px-2 py-1">{expense?.date || ""}</td>
-                <td className="border px-2 py-1">{expense?.voucher_no || ""}</td>
-                <td className="border px-2 py-1">{expense?.cost_category || expense?.description || ""}</td>
+                <td className="border px-2 py-1">{expense?.cost_category || ""}</td>
+                <td className="border px-2 py-1">{expense?.description || ""}</td>
                 <td className="border px-2 py-1 text-right">
                   {expense ? parseFloat(expense.amount).toFixed(2) : ""}
                 </td>

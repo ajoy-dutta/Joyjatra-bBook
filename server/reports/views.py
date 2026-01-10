@@ -400,9 +400,10 @@ class CombinedExpanseView(APIView):
 
 
 
-
-
-
+def percent_change(current, previous):
+    if previous == 0:
+        return 100 if current > 0 else 0
+    return round(((current - previous) / previous) * 100, 2)
 
 
 
@@ -421,28 +422,76 @@ class ProfitLossReportView(APIView):
         prev_end = date(prev_year, 12, 31)
 
         # ==========================
-        # INCOME
+        # SALES (INCOME)
         # ==========================
-        sales_current = Sale.objects.filter(
-            sale_date__range=(start, end)
-        ).aggregate(total=Sum("total_amount"))["total"] or Decimal("0")
+        sales_current = (
+            Sale.objects.filter(sale_date__range=(start, end))
+            .aggregate(total=Sum("total_amount"))["total"]
+            or Decimal("0")
+        )
 
-        sales_prev = Sale.objects.filter(
-            sale_date__range=(prev_start, prev_end)
-        ).aggregate(total=Sum("total_amount"))["total"] or Decimal("0")
+        sales_prev = (
+            Sale.objects.filter(sale_date__range=(prev_start, prev_end))
+            .aggregate(total=Sum("total_amount"))["total"]
+            or Decimal("0")
+        )
 
-        other_income_current = OpeningBalance.objects.filter(
-            journal_entry__date__range=(start, end),
-            account__account_type="INCOME"
-        ).aggregate(total=Sum("credit"))["total"] or Decimal("0")
+        # ==========================
+        # INCOME (CATEGORY WISE)
+        # ==========================
+        income_current_qs = (
+            Income.objects.filter(date__range=(start, end))
+            .values("category__name")
+            .annotate(total=Sum("amount"))
+        )
 
-        other_income_prev = OpeningBalance.objects.filter(
-            journal_entry__date__range=(prev_start, prev_end),
-            account__account_type="INCOME"
-        ).aggregate(total=Sum("credit"))["total"] or Decimal("0")
+        income_prev_qs = (
+            Income.objects.filter(date__range=(prev_start, prev_end))
+            .values("category__name")
+            .annotate(total=Sum("amount"))
+        )
+
+        prev_income_map = {
+            i["category__name"]: i["total"]
+            for i in income_prev_qs
+        }
+
+        income_rows = []
+        other_income_current = Decimal("0")
+        other_income_prev = Decimal("0")
+
+        for row in income_current_qs:
+            name = row["category__name"]
+            current_total = row["total"] or Decimal("0")
+            prev_total = prev_income_map.get(name, Decimal("0"))
+
+            income_rows.append({
+                "item": name,
+                "current_year": current_total,
+                "previous_year": prev_total,
+                "percent_change": percent_change(current_total, prev_total),
+            })
+
+            other_income_current += current_total
+            other_income_prev += prev_total
 
         total_income_current = sales_current + other_income_current
         total_income_prev = sales_prev + other_income_prev
+
+        # ==========================
+        # PURCHASE (COGS / EXPENSE)
+        # ==========================
+        purchase_current = (
+            Purchase.objects.filter(purchase_date__range=(start, end))
+            .aggregate(total=Sum("total_payable_amount"))["total"]
+            or Decimal("0")
+        )
+
+        purchase_prev = (
+            Purchase.objects.filter(purchase_date__range=(prev_start, prev_end))
+            .aggregate(total=Sum("total_payable_amount"))["total"]
+            or Decimal("0")
+        )
 
         # ==========================
         # EXPENSES (CATEGORY WISE)
@@ -459,7 +508,7 @@ class ProfitLossReportView(APIView):
             .annotate(total=Sum("amount"))
         )
 
-        prev_map = {
+        prev_expense_map = {
             e["cost_category__category_name"]: e["total"]
             for e in expense_prev_qs
         }
@@ -468,10 +517,22 @@ class ProfitLossReportView(APIView):
         total_expense_current = Decimal("0")
         total_expense_prev = Decimal("0")
 
+        # ---- Purchase first (important in P&L) ----
+        expense_rows.append({
+            "item": "Purchase / Cost of Goods Sold",
+            "current_year": purchase_current,
+            "previous_year": purchase_prev,
+            "percent_change": percent_change(purchase_current, purchase_prev),
+        })
+
+        total_expense_current += purchase_current
+        total_expense_prev += purchase_prev
+
+        # ---- Other Expenses ----
         for row in expense_current_qs:
             name = row["cost_category__category_name"]
             current_total = row["total"] or Decimal("0")
-            prev_total = prev_map.get(name, Decimal("0"))
+            prev_total = prev_expense_map.get(name, Decimal("0"))
 
             expense_rows.append({
                 "item": name,
@@ -486,13 +547,17 @@ class ProfitLossReportView(APIView):
         # ==========================
         # SALARY EXPENSE
         # ==========================
-        salary_current = SalaryExpense.objects.filter(
-            created_at__date__range=(start, end)
-        ).aggregate(total=Sum("base_amount"))["total"] or Decimal("0")
+        salary_current = (
+            SalaryExpense.objects.filter(created_at__date__range=(start, end))
+            .aggregate(total=Sum("base_amount"))["total"]
+            or Decimal("0")
+        )
 
-        salary_prev = SalaryExpense.objects.filter(
-            created_at__date__range=(prev_start, prev_end)
-        ).aggregate(total=Sum("base_amount"))["total"] or Decimal("0")
+        salary_prev = (
+            SalaryExpense.objects.filter(created_at__date__range=(prev_start, prev_end))
+            .aggregate(total=Sum("base_amount"))["total"]
+            or Decimal("0")
+        )
 
         expense_rows.append({
             "item": "Salary Expense",
@@ -505,30 +570,7 @@ class ProfitLossReportView(APIView):
         total_expense_prev += salary_prev
 
         # ==========================
-        # JOURNAL EXPENSE
-        # ==========================
-        journal_exp_current = OpeningBalance.objects.filter(
-            journal_entry__date__range=(start, end),
-            account__account_type="EXPENSE"
-        ).aggregate(total=Sum("debit"))["total"] or Decimal("0")
-
-        journal_exp_prev = OpeningBalance.objects.filter(
-            journal_entry__date__range=(prev_start, prev_end),
-            account__account_type="EXPENSE"
-        ).aggregate(total=Sum("debit"))["total"] or Decimal("0")
-
-        expense_rows.append({
-            "item": "Journal Expenses",
-            "current_year": journal_exp_current,
-            "previous_year": journal_exp_prev,
-            "percent_change": percent_change(journal_exp_current, journal_exp_prev),
-        })
-
-        total_expense_current += journal_exp_current
-        total_expense_prev += journal_exp_prev
-
-        # ==========================
-        # PROFIT
+        # PROFIT / LOSS
         # ==========================
         net_profit_current = total_income_current - total_expense_current
         net_profit_prev = total_income_prev - total_expense_prev
@@ -545,12 +587,7 @@ class ProfitLossReportView(APIView):
                     "previous_year": sales_prev,
                     "percent_change": percent_change(sales_current, sales_prev),
                 },
-                {
-                    "item": "Other Income",
-                    "current_year": other_income_current,
-                    "previous_year": other_income_prev,
-                    "percent_change": percent_change(other_income_current, other_income_prev),
-                },
+                *income_rows,
             ],
             "expenses": expense_rows,
             "gross_profit": {
@@ -574,8 +611,6 @@ class ProfitLossReportView(APIView):
         }
 
         return Response(data)
-
-
 
 
 

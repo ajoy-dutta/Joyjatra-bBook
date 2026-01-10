@@ -182,8 +182,8 @@ export const AccountsPDFDocument = ({
             <View style={[styles.tableCol, { width: styles.colWidths.incomeAmount }]}><Text style={styles.textRight}>Amount</Text></View>
 
             <View style={[styles.tableCol, { width: styles.colWidths.expenseDate }]}><Text>Expense Date</Text></View>
-            <View style={[styles.tableCol, { width: styles.colWidths.expenseVoucher }]}><Text>Voucher</Text></View>
-            <View style={[styles.tableCol, { width: styles.colWidths.expenseDesc }]}><Text>Source / Description</Text></View>
+            <View style={[styles.tableCol, { width: styles.colWidths.expenseVoucher }]}><Text>Source</Text></View>
+            <View style={[styles.tableCol, { width: styles.colWidths.expenseDesc }]}><Text>Description</Text></View>
             <View style={[styles.tableCol, { width: styles.colWidths.expenseAmount }]}><Text style={styles.textRight}>Amount</Text></View>
           </View>
 
@@ -194,14 +194,14 @@ export const AccountsPDFDocument = ({
 
             return (
               <View key={index} style={styles.tableRow}>
-                <View style={[styles.tableCol, { width: styles.colWidths.incomeDate }]}><Text>{income?.sale_date || ""}</Text></View>
-                <View style={[styles.tableCol, { width: styles.colWidths.incomeSource }]}><Text>Product Sale</Text></View>
-                <View style={[styles.tableCol, { width: styles.colWidths.incomeDesc }]}><Text>{income?.customer?.customer_name || ""}</Text></View>
-                <View style={[styles.tableCol, { width: styles.colWidths.incomeAmount }]}><Text style={styles.textRight}>{income ? Number(income.total_payable_amount).toFixed(2) : ""}</Text></View>
+                <View style={[styles.tableCol, { width: styles.colWidths.incomeDate }]}><Text>{income?.date || ""}</Text></View>
+                <View style={[styles.tableCol, { width: styles.colWidths.incomeSource }]}><Text>{income?.income_source || ""}</Text></View>
+                <View style={[styles.tableCol, { width: styles.colWidths.incomeDesc }]}><Text>{income?.description || ""}</Text></View>
+                <View style={[styles.tableCol, { width: styles.colWidths.incomeAmount }]}><Text style={styles.textRight}>{income ? Number(income.amount).toFixed(2) : ""}</Text></View>
 
                 <View style={[styles.tableCol, { width: styles.colWidths.expenseDate }]}><Text>{expense?.date || ""}</Text></View>
-                <View style={[styles.tableCol, { width: styles.colWidths.expenseVoucher }]}><Text>{expense?.voucher_no || ""}</Text></View>
-                <View style={[styles.tableCol, { width: styles.colWidths.expenseDesc }]}><Text>{expense?.cost_category || expense?.description || ""}</Text></View>
+                <View style={[styles.tableCol, { width: styles.colWidths.expenseVoucher }]}><Text>{expense?.cost_category || ""}</Text></View>
+                <View style={[styles.tableCol, { width: styles.colWidths.expenseDesc }]}><Text>{expense?.description || ""}</Text></View>
                 <View style={[styles.tableCol, { width: styles.colWidths.expenseAmount }]}><Text style={styles.textRight}>{expense ? Number(expense.amount).toFixed(2) : ""}</Text></View>
               </View>
             );
