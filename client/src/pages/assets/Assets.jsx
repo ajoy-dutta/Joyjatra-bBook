@@ -19,49 +19,42 @@ export default function AssetsPage() {
     JSON.parse(localStorage.getItem("business_category")) || null
   );
 
-  const getEmptyForm =(category)=> ({
-      business_category: category,
-      name: "",
-      code: "",
-      purchase_date: todayStr,
-      unit_price: "",
-      total_qty: "",
-      damaged_qty: "0",
-    });
-  
+
+  const getEmptyForm = (category) => ({
+    business_category: category,
+    name: "",
+    code: "",
+    model: "",
+    brand: "",
+    purchase_date: todayStr,
+    unit_price: "",
+    total_qty: "",
+    damaged_qty: "0",
+  });
+
   const [assets, setAssets] = useState([]);
   const [form, setForm] = useState(getEmptyForm(selectedCategory?.id || null));
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
-
-  // control whether we keep updating code from name
-  const [autoCode, setAutoCode] = useState(true);
-
   // combobox state
   const [nameQuery, setNameQuery] = useState("");
-  const [codeQuery, setCodeQuery] = useState("");
 
   const filteredByName =
     nameQuery === ""
       ? assets
       : assets.filter((a) =>
-          a.name.toLowerCase().includes(nameQuery.toLowerCase())
-        );
+        a.name.toLowerCase().includes(nameQuery.toLowerCase())
+      );
 
-  const filteredByCode =
-    codeQuery === ""
-      ? assets
-      : assets.filter((a) =>
-          a.code.toLowerCase().includes(codeQuery.toLowerCase())
-        );
+  
 
   // =============================
   // Load Assets
   // =============================
   const loadAssets = async () => {
     try {
-      const res = await AxiosInstance.get("assets/",{
-        params:{business_category:selectedCategory?.id || null}
+      const res = await AxiosInstance.get("assets/", {
+        params: { business_category: selectedCategory?.id || null }
       });
       setAssets(res.data);
     } catch (e) {
@@ -72,6 +65,7 @@ export default function AssetsPage() {
   useEffect(() => {
     loadAssets();
   }, []);
+ 
 
   // =============================
   // Handle basic inputs
@@ -94,9 +88,7 @@ export default function AssetsPage() {
   const resetForm = () => {
     setForm(getEmptyForm(selectedCategory?.id || null));
     setEditingId(null);
-    setAutoCode(true);
     setNameQuery("");
-    setCodeQuery("");
   };
 
   // =============================
@@ -105,8 +97,8 @@ export default function AssetsPage() {
   const onSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.name || !form.code) {
-      alert("Name and Code are required.");
+    if (!form.name) {
+      alert("Name is required.");
       return;
     }
 
@@ -155,9 +147,11 @@ export default function AssetsPage() {
   // =============================
   const onEdit = (asset) => {
     setForm({
-      business_category:selectedCategory?.id || null,
+      business_category: selectedCategory?.id || null,
       name: asset.name,
       code: asset.code,
+      model: asset.model || "",
+      brand: asset.brand || "",
       purchase_date: asset.purchase_date || todayStr,
       unit_price: asset.unit_price || "",
       total_price: asset.total_price || "",
@@ -165,9 +159,7 @@ export default function AssetsPage() {
       damaged_qty: String(asset.damaged_qty),
     });
     setEditingId(asset.id);
-    setAutoCode(false); // don't overwrite code while editing
     setNameQuery(asset.name);
-    setCodeQuery(asset.code);
   };
 
   // =============================
@@ -184,11 +176,6 @@ export default function AssetsPage() {
     }
   };
 
-  // hint: if code exists & not editing, show info
-  const existingByCode =
-    !editingId && form.code
-      ? assets.find((a) => a.code === form.code)
-      : null;
 
   return (
     <div className="space-y-6">
@@ -244,15 +231,12 @@ export default function AssetsPage() {
                   setForm((p) => ({
                     ...p,
                     name: match.name,
-                    code: match.code,
                   }));
-                  setAutoCode(false);
-                  setCodeQuery(match.code);
+                  
                 } else {
                   setForm((p) => ({
                     ...p,
                     name: value,
-                    code: autoCode ? autoGenerateCode(value) : p.code,
                   }));
                 }
                 setNameQuery("");
@@ -270,7 +254,6 @@ export default function AssetsPage() {
                       setForm((p) => ({
                         ...p,
                         name: value,
-                        code: autoCode ? autoGenerateCode(value) : p.code,
                       }));
                     }}
                     required
@@ -287,7 +270,7 @@ export default function AssetsPage() {
                   leave="transition ease-in duration-100"
                   leaveFrom="opacity-100"
                   leaveTo="opacity-0"
-                  afterLeave={() => {}}
+                  afterLeave={() => { }}
                 >
                   <Combobox.Options className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 focus:outline-none">
                     {filteredByName.length === 0 && nameQuery !== "" ? (
@@ -300,110 +283,22 @@ export default function AssetsPage() {
                           key={item.id}
                           value={item.name}
                           className={({ active }) =>
-                            `relative cursor-pointer select-none py-2 pl-8 pr-3 ${
-                              active ? "bg-blue-600 text-white" : "text-gray-900"
+                            `relative cursor-pointer select-none py-2 pl-8 pr-3 ${active ? "bg-blue-600 text-white" : "text-gray-900"
                             }`
                           }
                         >
                           {({ active, selected }) => (
                             <>
                               <span
-                                className={`block truncate ${
-                                  selected ? "font-semibold" : "font-normal"
-                                }`}
+                                className={`block truncate ${selected ? "font-semibold" : "font-normal"
+                                  }`}
                               >
-                                {item.name} ({item.code})
+                                {item.name}
                               </span>
                               {selected && (
                                 <span
-                                  className={`absolute inset-y-0 left-0 flex items-center pl-2 ${
-                                    active ? "text-white" : "text-blue-600"
-                                  }`}
-                                >
-                                  <CheckIcon className="h-4 w-4" />
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </Combobox.Option>
-                      ))
-                    )}
-                  </Combobox.Options>
-                </Transition>
-            </div>
-            </Combobox>
-          </div>
-
-          {/* Code with autocomplete (HeadlessUI Combobox) */}
-          <div className="col-span-1">
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Code <span className="text-red-600">*</span>
-            </label>
-            <Combobox
-              value={form.code}
-              onChange={(value) => {
-                setForm((p) => ({ ...p, code: value }));
-                setCodeQuery("");
-                setAutoCode(false);
-              }}
-            >
-              <div className="relative">
-                <div className="relative w-full cursor-default overflow-hidden rounded border border-gray-300 bg-white text-left focus-within:ring-1 focus-within:ring-blue-500">
-                  <Combobox.Input
-                    className="w-full border-none py-1 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:outline-none"
-                    placeholder="AUTO-GENERATED"
-                    displayValue={(value) => value}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setCodeQuery(value);
-                      setForm((p) => ({ ...p, code: value }));
-                      setAutoCode(false);
-                    }}
-                    required
-                  />
-                  <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
-                    <ChevronUpDownIcon
-                      className="h-4 w-4 text-gray-400"
-                      aria-hidden="true"
-                    />
-                  </Combobox.Button>
-                </div>
-                <Transition
-                  as={Fragment}
-                  leave="transition ease-in duration-100"
-                  leaveFrom="opacity-100"
-                  leaveTo="opacity-0"
-                >
-                  <Combobox.Options className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 focus:outline-none">
-                    {filteredByCode.length === 0 && codeQuery !== "" ? (
-                      <div className="relative cursor-default select-none px-3 py-2 text-gray-500">
-                        Use "{codeQuery}"
-                      </div>
-                    ) : (
-                      filteredByCode.map((item) => (
-                        <Combobox.Option
-                          key={item.id}
-                          value={item.code}
-                          className={({ active }) =>
-                            `relative cursor-pointer select-none py-2 pl-8 pr-3 ${
-                              active ? "bg-blue-600 text-white" : "text-gray-900"
-                            }`
-                          }
-                        >
-                          {({ active, selected }) => (
-                            <>
-                              <span
-                                className={`block truncate ${
-                                  selected ? "font-semibold" : "font-normal"
-                                }`}
-                              >
-                                {item.code} – {item.name}
-                              </span>
-                              {selected && (
-                                <span
-                                  className={`absolute inset-y-0 left-0 flex items-center pl-2 ${
-                                    active ? "text-white" : "text-blue-600"
-                                  }`}
+                                  className={`absolute inset-y-0 left-0 flex items-center pl-2 ${active ? "text-white" : "text-blue-600"
+                                    }`}
                                 >
                                   <CheckIcon className="h-4 w-4" />
                                 </span>
@@ -417,19 +312,54 @@ export default function AssetsPage() {
                 </Transition>
               </div>
             </Combobox>
-            {existingByCode && (
-              <p className="text-[11px] text-amber-600 mt-1">
-                An asset with this code already exists. Saving will add to it:
-                total {existingByCode.total_qty}, damaged{" "}
-                {existingByCode.damaged_qty}.
-              </p>
-            )}
+          </div>
+ 
+          <div className="relative">
+              <label className="block px-3 text-sm font-semibold text-gray-500">
+                Asset Code
+              </label>
+
+              <input
+                type="text"
+                value={editingId ? form.code : ""}
+                readOnly
+                className="w-full border px-3 pb-2 pt-1 text-sm text-gray-800 bg-gray-100 focus:outline-none"
+                placeholder="Auto generated"
+              />
+          </div>
+
+          {/* model */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Model
+            </label>
+            <input
+              name="model"
+              value={form.model}
+              onChange={onChange}
+              type="text"
+              className="border border-gray-300 rounded px-3 py-1 w-full"
+            />
+          </div>
+
+          {/* brand */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Brand
+            </label>
+            <input
+              name="brand"
+              value={form.brand}
+              onChange={onChange}
+              type="text"
+              className="border border-gray-300 rounded px-3 py-1 w-full"
+            />
           </div>
 
           {/* Unit price */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
-             Unit Price
+              Unit Price
             </label>
             <input
               name="unit_price"
@@ -517,6 +447,8 @@ export default function AssetsPage() {
               <th className="py-2 px-2">SL</th>
               <th className="py-2 px-2">Name</th>
               <th className="py-2 px-2">Code</th>
+              <th className="py-2 px-2">Model</th>
+              <th className="py-2 px-2">Brand</th>
               <th className="py-2 px-2 ">Purchase Date</th>
               <th className="py-2 px-2 text-right">Unit Price</th>
               <th className="py-2 px-2 text-right">Total Qty</th>
@@ -530,18 +462,20 @@ export default function AssetsPage() {
           <tbody>
             {assets.map((a, idx) => (
               <tr key={a.id} className="border-b last:border-0">
-                <td className="py-2 px-2">{idx + 1}</td>
-                <td className="py-2 px-2">{a.name}</td>
-                <td className="py-2 px-2 text-xs font-mono">{a.code}</td>
-                <td className="py-2 px-2">{a.purchase_date}</td>
-                <td className="py-2 px-2 text-right">{a.unit_price}</td>
-                <td className="py-2 px-2 text-right">{a.total_qty}</td>
-                <td className="py-2 px-2 text-right">{a.total_price}</td>
-                <td className="py-2 px-2 text-right text-red-600">
+                <td className="py-1 px-2">{idx + 1}</td>
+                <td className="py-1 px-2">{a.name}</td>
+                <td className="py-1 px-2 text-xs font-mono">{a.code}</td>
+                <td className="py-1 px-2">{a.model}</td>
+                <td className="py-1 px-2">{a.brand}</td>
+                <td className="py-1 px-2">{a.purchase_date}</td>
+                <td className="py-1 px-2 text-right">{a.unit_price}</td>
+                <td className="py-1 px-2 text-right">{a.total_qty}</td>
+                <td className="py-1 px-2 text-right">{a.total_price}</td>
+                <td className="py-1 px-2 text-right text-red-600">
                   {a.damaged_qty}
                 </td>
-                <td className="py-2 px-2 text-right">{a.usable_qty}</td>
-                <td className="py-2 px-2 text-right space-x-2">
+                <td className="py-1 px-2 text-right">{a.usable_qty}</td>
+                <td className="py-1 px-2 text-right space-x-2">
                   <button
                     onClick={() => onEdit(a)}
                     className="px-2 py-1 rounded border border-slate-200 hover:border-blue-500"

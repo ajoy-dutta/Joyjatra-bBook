@@ -209,6 +209,8 @@ class AssetSerializer(serializers.ModelSerializer):
             "business_category",
             "name",
             "code",
+            "model",
+            "brand",
             "purchase_date",
             "total_qty",
             "unit_price",

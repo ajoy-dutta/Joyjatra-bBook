@@ -119,7 +119,8 @@ export default function AssetsReportPDF({
   banner,
   fromDate,
   toDate,
-}) {
+  productName
+  }) {
   const totalValue = assets.reduce(
     (sum, a) => sum + Number(a.total_price || a.amount || 0),
     0
@@ -175,48 +176,49 @@ export default function AssetsReportPDF({
 
           {/* HEADER ROW */}
           <View style={styles.row}>
-            <Text style={[styles.th, { width: "18%" }]}>Asset</Text>
+            <Text style={[styles.th, { width: "20%" }]}>Asset</Text>
+            <Text style={[styles.th, { width: "12%" }]}>Model</Text>
+            <Text style={[styles.th, { width: "12%" }]}>Brand</Text>
             <Text style={[styles.th, { width: "8%" }]}>Qty</Text>
-            <Text style={[styles.th, { width: "10%" }]}>Damage</Text>
-            <Text style={[styles.th, { width: "10%" }]}>Usable</Text>
-            <Text style={[styles.th, { width: "14%" }, styles.right]}>
-              Unit Price
-            </Text>
-            <Text style={[styles.th, { width: "15%" }, styles.right]}>
-              Total Value
-            </Text>
-            <Text style={[styles.th, { width: "25%" }]}>Remarks</Text>
+            <Text style={[styles.th, { width: "8%" }]}>Damage</Text>
+            <Text style={[styles.th, { width: "8%" }]}>Usable</Text>
+            <Text style={[styles.th, { width: "16%" }, styles.right]}>Unit Price</Text>
+            <Text style={[styles.th, { width: "16%" }, styles.right]}>Total Value</Text>
           </View>
 
           {/* DATA ROWS */}
           {assets.map((a, i) => (
             <View key={i} style={styles.row}>
-              <Text style={[styles.td, { width: "18%" }]}>
+              <Text style={[styles.td, { width: "20%" }]}>
                 {a.asset_name || a.name || "-"}
+              </Text>
+
+              <Text style={[styles.td, { width: "12%" }]}> 
+                {a.model || "-"}
+              </Text>
+
+              <Text style={[styles.td, { width: "12%" }]}> 
+                {a.brand || "-"}
               </Text>
 
               <Text style={[styles.td, { width: "8%" }, styles.right]}>
                 {a.total_qty ?? "-"}
               </Text>
 
-              <Text style={[styles.td, { width: "10%" }, styles.right]}>
+              <Text style={[styles.td, { width: "8%" }, styles.right]}>
                 {a.damaged_qty ?? 0}
               </Text>
 
-              <Text style={[styles.td, { width: "10%" }, styles.right]}>
+              <Text style={[styles.td, { width: "8%" }, styles.right]}>
                 {a.usable_qty ?? "-"}
               </Text>
 
-              <Text style={[styles.td, { width: "14%" }, styles.right]}>
+              <Text style={[styles.td, { width: "16%" }, styles.right]}>
                 {a.unit_price ? Number(a.unit_price).toFixed(2) : "-"}
               </Text>
 
-              <Text style={[styles.td, { width: "15%" }, styles.right]}>
+              <Text style={[styles.td, { width: "16%" }, styles.right]}>
                 {Number(a.total_price || 0).toFixed(2)}
-              </Text>
-
-              <Text style={[styles.td, { width: "25%" }]}>
-                {a.remarks || "-"}
               </Text>
             </View>
           ))}

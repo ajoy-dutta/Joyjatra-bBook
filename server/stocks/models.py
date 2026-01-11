@@ -81,37 +81,99 @@ class StockBatch(models.Model):
 
 
 
+from decimal import Decimal
+from django.core.exceptions import ValidationError
+from django.db import models
+from django.utils.text import slugify
+
 class Asset(models.Model):
-    business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE)
+    business_category = models.ForeignKey(
+        BusinessCategory, 
+        on_delete=models.CASCADE
+    )
+
     name = models.CharField(max_length=255)
-    code = models.CharField(max_length=100, blank=True, null=True)
+    model = models.CharField(max_length=100, blank=True, null=True)
+    brand = models.CharField(max_length=100, blank=True, null=True)
+
+    code = models.CharField(max_length=100, blank=True, null=True, unique=True)
+
     purchase_date = models.DateField()
     total_qty = models.PositiveIntegerField(default=0)
-    unit_price = models.DecimalField(max_digits=12, decimal_places=2,blank=True, null=True)
-    total_price = models.DecimalField(max_digits=14, decimal_places=2, blank=True, null=True)
+
+    unit_price = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        blank=True, 
+        null=True
+    )
+
+    total_price = models.DecimalField(
+        max_digits=14, 
+        decimal_places=2, 
+        blank=True, 
+        null=True
+    )
+
     damaged_qty = models.PositiveIntegerField(default=0)
     usable_qty = models.PositiveIntegerField(default=0, blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # ==========================
+    # AUTO CODE GENERATOR
+    # ==========================
+    def generate_asset_code(self):
+        month = self.purchase_date.strftime("%m")
+        year = self.purchase_date.strftime("%y")
+        base_code = f"{self.name}{month}{year}"
 
+        last_asset = (
+            Asset.objects
+            .filter(
+                name=self.name,
+                purchase_date__year=self.purchase_date.year,
+                purchase_date__month=self.purchase_date.month,
+                code__startswith=base_code
+            )
+            .order_by("-code")
+            .first()
+        )
+
+        if last_asset and last_asset.code:
+            last_seq = int(last_asset.code[-1])
+            next_seq = last_seq + 1
+        else:
+            next_seq = 1
+
+        return f"{base_code}{next_seq}"
+
+    # ==========================
+    # SAVE METHOD
+    # ==========================
     def save(self, *args, **kwargs):
+
         if self.damaged_qty > self.total_qty:
             raise ValidationError(
                 "Damaged quantity cannot be greater than total quantity."
             )
-
-        # ✅ Auto-calculate usable quantity
         self.usable_qty = self.total_qty - self.damaged_qty
 
+        # ✅ Total price
         if self.unit_price is not None:
             self.total_price = Decimal(self.total_qty) * self.unit_price
         else:
             self.total_price = Decimal(0)
 
+        # ✅ Auto-generate code only if not exists
+        if not self.code:
+            self.code = self.generate_asset_code()
+
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} ({self.code})"
+
     
     
     

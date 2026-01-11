@@ -6,6 +6,7 @@ from .serializers import *
 from rest_framework.decorators import action
 from django.db import IntegrityError, transaction
 from decimal import Decimal
+from django.utils.dateparse import parse_date
 
 
 # ----------------------------
@@ -204,61 +205,82 @@ class AssetViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        business_category = self.request.query_params.get("business_category")
+        params = self.request.query_params
 
+        # business_category (existing behavior)
+        business_category = params.get("business_category")
         if business_category:
             try:
                 qs = qs.filter(business_category_id=int(business_category))
             except ValueError:
-                qs = qs.none()
+                return qs.none()
+
+        # product name search (frontend uses `productname` param)
+        productname = params.get("productname") or params.get("product_name")
+        if productname:
+            qs = qs.filter(name__icontains=productname)
+
+        # date range filters (assume purchase_date)
+        from_date = params.get("from_date")
+        to_date = params.get("to_date")
+
+        if from_date:
+            parsed = parse_date(from_date)
+            if parsed:
+                qs = qs.filter(purchase_date__gte=parsed)
+
+        if to_date:
+            parsed = parse_date(to_date)
+            if parsed:
+                qs = qs.filter(purchase_date__lte=parsed)
 
         return qs
 
-    @transaction.atomic
-    def create(self, request, *args, **kwargs):
+    # @transaction.atomic
+    # def create(self, request, *args, **kwargs):
        
-        name = request.data.get("name")
-        business_category = request.data.get("business_category")
-        qty = int(request.data.get("total_qty", 0))
-        unit_price = request.data.get("unit_price")
-        unit_price = Decimal(unit_price) if unit_price not in ("", None) else None
+    #     name = request.data.get("name")
+    #     business_category = request.data.get("business_category")
+    #     qty = int(request.data.get("total_qty", 0))
+    #     unit_price = request.data.get("unit_price")
+    #     unit_price = Decimal(unit_price) if unit_price not in ("", None) else None
 
-        if not name or not business_category:
-            return Response(
-                {"detail": "name and business_category are required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+    #     if not name or not business_category:
+    #         return Response(
+    #             {"detail": "name and business_category are required"},
+    #             status=status.HTTP_400_BAD_REQUEST,
+    #         )
 
-        try:
-            asset = Asset.objects.select_for_update().get(
-                name=name,
-                business_category_id=business_category,
-            )
+    #     try:
+    #         asset = Asset.objects.select_for_update().get(
+    #             name=name,
+    #             business_category_id=business_category,
+    #         )
 
 
-            # ✅ Update existing asset
-            if qty:
-               asset.total_qty += qty
+    #         # ✅ Update existing asset
+    #         if qty:
+    #            asset.total_qty += qty
               
-            if unit_price is not None:
-                asset.unit_price = unit_price
+    #         if unit_price is not None:
+    #             asset.unit_price = unit_price
              
-            asset.save()
+    #         asset.save()
 
-            serializer = self.get_serializer(asset)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+    #         serializer = self.get_serializer(asset)
+    #         return Response(serializer.data, status=status.HTTP_200_OK)
 
-        except Asset.DoesNotExist:
-            # ✅ Create new asset
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
+    #     except Asset.DoesNotExist:
+    #         # ✅ Create new asset
+    #         serializer = self.get_serializer(data=request.data)
+    #         serializer.is_valid(raise_exception=True)
 
-            asset = serializer.save()
+    #         asset = serializer.save()
 
-            return Response(
-                AssetSerializer(asset).data,
-                status=status.HTTP_201_CREATED,
-            )
+    #         return Response(
+    #             AssetSerializer(asset).data,
+    #             status=status.HTTP_201_CREATED,
+    #         )
 
 
     
