@@ -16,12 +16,12 @@ export default function ChartOfAccounts() {
     fetchAccounts();
   }, []);
 
-  const toggleStatus = async (account) => {
-    await AxiosInstance.patch(`accounts/${account.id}/`, {
-      is_active: !account.is_active,
-    });
-    fetchAccounts();
-  };
+  // const toggleStatus = async (account) => {
+  //   await AxiosInstance.patch(`accounts/${account.id}/`, {
+  //     is_active: !account.is_active,
+  //   });
+  //   fetchAccounts();
+  // };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -60,7 +60,7 @@ export default function ChartOfAccounts() {
                 <th className="px-4 py-3">Code</th>
                 <th className="px-4 py-3">Account Name</th>
                 <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Status</th>
+                {/* <th className="px-4 py-3">Status</th> */}
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -86,7 +86,7 @@ export default function ChartOfAccounts() {
                     </span>
                   </td>
 
-                  <td className="px-4 py-3">
+                  {/* <td className="px-4 py-3">
                     {acc.is_active ? (
                       <span className="px-2 py-1 text-xs font-semibold
                                        bg-green-100 text-green-700 rounded-full">
@@ -98,7 +98,7 @@ export default function ChartOfAccounts() {
                         Inactive
                       </span>
                     )}
-                  </td>
+                  </td> */}
 
                   <td className="px-4 py-3 text-right space-x-3">
                     <button
@@ -112,7 +112,7 @@ export default function ChartOfAccounts() {
                       Edit
                     </button>
 
-                    <button
+                    {/* <button
                       onClick={() => toggleStatus(acc)}
                       className={`font-medium text-sm ${
                         acc.is_active
@@ -121,7 +121,7 @@ export default function ChartOfAccounts() {
                       }`}
                     >
                       {acc.is_active ? "Disable" : "Enable"}
-                    </button>
+                    </button> */}
                   </td>
                 </tr>
               ))}

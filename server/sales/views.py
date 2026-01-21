@@ -2,13 +2,18 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from django.db import transaction
 
 from .models import Sale, SaleReturn, SaleProduct, SalePayment
 from .serializers import SaleSerializer, SaleReturnSerializer, SalePaymentSerializer
+from accounts.utils import get_account
+from accounts.models import JournalEntry, JournalEntryLine
+from accounts.service import update_balance
 
 # ✅ correct app name
 from stocks.models import StockProduct
 from django.db.models import Sum
+
 
 
 class SaleViewSet(viewsets.ModelViewSet):
@@ -50,8 +55,61 @@ class SalePaymentViewSet(viewsets.ModelViewSet):
             qs = qs.filter(sale_id=sale_id)
         return qs
 
+    @transaction.atomic
     def perform_create(self, serializer):
-        serializer.save()
+        # Save the payment
+        payment = serializer.save()
+
+        # Fetch the sale
+        sale = payment.sale
+        bc = sale.business_category
+
+        # Calculate remaining receivable
+        total_paid = sum(p.paid_amount for p in sale.payments.all())
+        total_due = sale.total_payable_amount
+        remaining_due = total_due - total_paid
+
+        # Determine debit account (Cash or Bank)
+        if payment.payment_mode.name.upper() == "CASH":
+            debit_acc = get_account(bc, "1000")  # Cash account
+        else:
+            debit_acc = get_account(bc, "1010")  # Bank account
+
+        # Credit account: if this is partial payment, credit AR, else credit Sale revenue?
+        # Normally: when receiving payment after sale, credit AR
+        credit_acc = get_account(bc, "1200")  # Accounts Receivable
+
+        # Create Journal Entry
+        journal = JournalEntry.objects.create(
+            business_category=bc,
+            date=payment.payment_date,
+            reference=sale.invoice_no,
+            narration=f"Payment received for Sale {sale.invoice_no}"
+        )
+
+        # Debit Cash/Bank
+        JournalEntryLine.objects.create(
+            journal_entry=journal,
+            account=debit_acc,
+            debit=payment.paid_amount
+        )
+
+        # Credit Accounts Receivable
+        JournalEntryLine.objects.create(
+            journal_entry=journal,
+            account=credit_acc,
+            credit=payment.paid_amount
+        )
+
+        update_balance(
+            business_category=sale.business_category,
+            payment_mode=payment.payment_mode.name.upper(),  # "CASH" or "BANK"
+            amount=payment.paid_amount,
+            is_credit=True,   # Sale → money coming in
+            bank=payment.bank
+            )
+
+
 
 
 class SaleReturnViewSet(viewsets.ModelViewSet):

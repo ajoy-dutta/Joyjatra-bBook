@@ -588,13 +588,12 @@ export default function Customers() {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
-                        Phone 1 *
+                        Phone 1
                       </label>
                       <input
                         name="phone1"
                         value={form.phone1}
                         onChange={handleFormChange}
-                        required
                         className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:ring focus:ring-blue-500/30 bg-slate-50"
                       />
                     </div>
@@ -683,14 +682,13 @@ export default function Customers() {
                   {/* Address */}
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
-                      Address *
+                      Address
                     </label>
                     <textarea
                       name="address"
                       value={form.address}
                       onChange={handleFormChange}
                       rows={2}
-                      required
                       className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:ring focus:ring-blue-500/30"
                     />
                   </div>

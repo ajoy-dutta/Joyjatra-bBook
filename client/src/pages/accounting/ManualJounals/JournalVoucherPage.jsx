@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PDFViewer } from "@react-pdf/renderer";
-import AxiosInstance from "../../components/AxiosInstance";
-import JournalVoucherPDF from "../../components/vouchers/JournalVoucherPDF";
+import AxiosInstance from "../../../components/AxiosInstance";
+import JournalVoucherPDF from "../../../components/vouchers/JournalVoucherPDF";
+
 
 
 export default function JournalVoucherPage() {
@@ -14,7 +15,7 @@ export default function JournalVoucherPage() {
   useEffect(() => {
     const fetchJournal = async () => {
       try {
-        const res = await AxiosInstance.get(`opening-balances/`);
+        const res = await AxiosInstance.get(`manual-journals/${id}/`);
         console.log("Journals", res.data)
         setJournal(res.data);
       } catch (err) {
@@ -49,7 +50,7 @@ export default function JournalVoucherPage() {
         {/* PDF */}
         <div style={{ height: "calc(100vh - 56px)" }}>
         <PDFViewer style={{ width: "100%", height: "100%" }}>
-            <JournalVoucherPDF openingBalances={journal} />
+            <JournalVoucherPDF journal={journal} />
         </PDFViewer>
         </div>
 

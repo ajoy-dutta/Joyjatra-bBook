@@ -6,11 +6,26 @@ from django.utils.timezone import now
 from django.utils.text import slugify
 from authentication.models import Staffs
 from decimal import Decimal
+from accounts.models import Account, JournalEntry
+
 
 
 class Expense(models.Model):
     business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE, null=True, blank=True)
-    cost_category = models.ForeignKey(CostCategory, on_delete=models.CASCADE)
+    account = models.ForeignKey(
+        Account,
+        on_delete=models.PROTECT,
+        limit_choices_to={'account_type': 'EXPENSE'},
+        related_name='expenses',
+        null=True, blank=True
+    )
+    journal_entry = models.ForeignKey(
+        JournalEntry,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="expenses"
+    )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     note = models.TextField(blank=True, null=True)
     expense_date = models.DateField()
@@ -33,12 +48,26 @@ class Expense(models.Model):
     )
 
     def __str__(self):
-        return f"{self.cost_category} - {self.amount}"
+        return f"{self.account.name} - {self.amount}"
     
 
 
 class SalaryExpense(models.Model):
     business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE, null=True, blank=True)
+    account = models.ForeignKey(
+        Account,
+        on_delete=models.PROTECT,
+        limit_choices_to={'account_type': 'EXPENSE'},
+        related_name='salary_expenses',
+        null=True, blank=True
+    )
+    journal_entry = models.ForeignKey(
+        JournalEntry,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="salary_expenses"
+    )
     staff = models.ForeignKey(
         Staffs,                         # ✅ use Staffs from authentication
         on_delete=models.PROTECT,
@@ -75,6 +104,16 @@ class SalaryExpense(models.Model):
         allowance = self.allowance if self.allowance is not None else Decimal('0')
         bonus = self.bonus if self.bonus is not None else Decimal('0')
         return base + allowance + bonus
+    
+    
+    def save(self, *args, **kwargs):
+        if not self.account:
+            self.account = Account.objects.get(
+                business_category=self.business_category,
+                name__iexact="Salary",
+                account_type="EXPENSE"
+            )
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.staff} - {self.salary_month}"

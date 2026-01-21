@@ -9,7 +9,7 @@ import joyjatraLogo from "../../assets/joyjatra_logo.jpeg";
 
 
 const EMPTY_FORM = {
-  cost_category: "",
+  account: "",
   amount: "",
   expense_date: "",
   payment_mode: null,
@@ -122,7 +122,6 @@ export default function ExpensePage() {
 
   const [categories, setCategories] = useState([]);
   const [paymentModes, setPaymentModes] = useState([]);
-  const [bankAccounts, setBankAccounts] = useState([]);
   const [banks, setBanks] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -158,8 +157,14 @@ export default function ExpensePage() {
   // ---------------- LOAD MASTER DATA ----------------
   const loadCategories = async () => {
     try {
-      const res = await AxiosInstance.get("cost-categories/");
-      setCategories(res.data || []);
+      const res = await AxiosInstance.get("accounts/");
+
+      // Filter only expense accounts
+      const expenseAccounts = (res.data || []).filter(
+        (acc) => acc.account_type === "EXPENSE"
+      );
+
+      setCategories(expenseAccounts);
     } catch (e) {
       console.error("Failed to load categories", e);
     }
@@ -202,15 +207,6 @@ export default function ExpensePage() {
   const isCheque = selectedPaymentModeLabel === "Cheque";
   const isBank = selectedPaymentModeLabel === "Bank";
 
-  // const loadBankAccounts = async () => {
-  //   try {
-  //     const res = await AxiosInstance.get("bank-accounts/");
-  //     setBankAccounts(res.data || []);
-  //   } catch (e) {
-  //     console.error("Failed to load bank accounts", e);
-  //   }
-  // };
-
   const fetchBanner = async (categoryId) => {
     if (!categoryId) {
       setBanner(null);
@@ -251,7 +247,6 @@ export default function ExpensePage() {
   // initial master load once
   useEffect(() => {
     loadCategories();
-    // loadBankAccounts();
   }, []);
 
   // ✅ refetch banner + expenses when business changes
@@ -320,14 +315,11 @@ export default function ExpensePage() {
       alert("Category, Amount and Date are required.");
       return;
     }
-    if (!form.recorded_by) {
-      alert("Recorded By is required.");
-      return;
-    }
+   
 
     const payload = {
       business_category: selectedCategory.id,
-      cost_category: form.cost_category,
+      account: form.account,
       amount: form.amount,
       expense_date: form.expense_date,
       note: form.note,
@@ -335,6 +327,8 @@ export default function ExpensePage() {
       payment_mode: form.payment_mode || null,
       bank: form.bank || null,
     };
+
+    console.log("Payload", payload);
 
     setSaving(true);
     try {
@@ -400,7 +394,7 @@ export default function ExpensePage() {
       ["Date", "Category", "Amount", "Payment Method", "Bank", "Note", "Recorded By"],
       ...filteredExpenses.map((e) => [
         e.expense_date,
-        e.cost_category_name,
+        e.account_name,
         e.amount,
         e.payment_mode_name || "",
         e.bank_name || "",
@@ -607,8 +601,8 @@ export default function ExpensePage() {
               Category <span className="text-red-500">*</span>
             </label>
             <select
-              name="cost_category"
-              value={form.cost_category}
+              name="account"
+              value={form.account}
               onChange={onChange}
               onKeyDown={handleKeyDown}
               className="w-full h-[34px] border rounded px-3 text-sm focus:ring-1 focus:ring-black"
@@ -616,7 +610,7 @@ export default function ExpensePage() {
               <option value="">-- Select --</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.category_name}
+                  {c.name}
                 </option>
               ))}
             </select>

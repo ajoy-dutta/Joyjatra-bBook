@@ -48,14 +48,6 @@ class SaleProduct(models.Model):
         return f"{self.product.product_name} ({self.sale.invoice_no})"
 
 
-class SaleReturn(models.Model):
-    sale_product = models.ForeignKey(SaleProduct, related_name='returns', on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField()
-    return_date = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Return {self.quantity} of {self.sale_product} on {self.return_date}"
-
 
 
 class SalePayment(models.Model):
@@ -76,3 +68,14 @@ class SalePayment(models.Model):
 
     def __str__(self):
         return f"Payment for {self.sale.invoice_no} - {self.payment_mode.name}"
+    
+    
+
+
+class SaleReturn(models.Model):
+    sale_product = models.ForeignKey(SaleProduct, related_name='returns', on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField()
+    return_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Return {self.quantity} of {self.sale_product} on {self.return_date}"

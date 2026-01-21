@@ -13,9 +13,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
         queryset=BusinessCategory.objects.all(),
         required=True
     )
-    cost_category_name = serializers.CharField(
-        source="cost_category.category_name", read_only=True
-    )
+    account_name = serializers.CharField(source='account.name', read_only=True)
     payment_mode_name = serializers.CharField(
         source="payment_mode.name", read_only=True
     )
@@ -28,8 +26,9 @@ class ExpenseSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "business_category",
-            "cost_category",
-            "cost_category_name",
+            "account",
+            "account_name",
+            "journal_entry",
             "amount",
             "note",
             "expense_date",
@@ -65,12 +64,14 @@ class SalaryExpenseSerializer(serializers.ModelSerializer):
     bank_name = serializers.CharField(
         source="bank.name", read_only=True
     )
+    
 
     class Meta:
         model = SalaryExpense
         fields = [
             "id",
             "business_category",
+            "journal_entry",
             "staff",
             "staff_name",
             "salary_month",

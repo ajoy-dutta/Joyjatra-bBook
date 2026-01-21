@@ -14,7 +14,7 @@ import Login from "../pages/Auth/Login";
 import Dashboard from "../pages/Dashboard";
 
 // Sales
-import Estimates from "../pages/sales/Estimates";
+// import Estimates from "../pages/sales/Estimates";
 import SalesList from "../pages/sales/Invoices";
 import RecurringInvoices from "../pages/sales/RecurringInvoices";
 import Checkouts from "../pages/sales/Checkouts";
@@ -22,6 +22,7 @@ import Payments from "../pages/sales/Payments";
 import CustomerStatements from "../pages/sales/CustomerStatements";
 import Customers from "../pages/sales/Customers";
 import CustomerProductSale from "../pages/sales/ProductSales";
+import SaleInvoicePage from "../pages/sales/SaleInvoicePage";
 
 
 // Purchases
@@ -36,9 +37,9 @@ import OrderList from "../pages/purchases/Product Order/OrderList";
 
 
 // Accounting
-import ManualJournal from "../pages/accounting/ManualJournal";
-import JournalList from "../pages/accounting/JournalList";
-import JournalVoucherPage from "../pages/accounting/JournalVoucherPage";
+import ManualJournal from "../pages/accounting/ManualJounals/ManualJournal";
+import JournalList from "../pages/accounting/ManualJounals/JournalList";
+import JournalVoucherPage from "../pages/accounting/ManualJounals/JournalVoucherPage";
 import ChartOfAccounts from "../pages/accounting/ChartOfAccount/ChartOfAccounts";
 import AccountForm from "../pages/accounting/ChartOfAccount/AccountForm";
 import BankReconciliation from "../pages/accounting/BankReconciliation";
@@ -151,7 +152,7 @@ export default function AppRouter() {
 
       
         {/* Sales */}
-        <Route path="/sales/estimates" element={<Estimates />} />
+        {/* <Route path="/sales/estimates" element={<Estimates />} /> */}
         <Route path="/sales/invoices" element={<SalesList />} />
         <Route path="/sales/recurring-invoices" element={<RecurringInvoices />} />
         <Route path="/sales/checkouts" element={<Checkouts />} />
@@ -159,6 +160,8 @@ export default function AppRouter() {
         <Route path="/sales/customer-statements" element={<CustomerStatements />} />
         <Route path="/sales/customers" element={<Customers />} />
         <Route path="/sales/products-services" element={<CustomerProductSale />} />
+        <Route path="/sales/invoice/:id" element={<SaleInvoicePage />} />
+
 
         {/* Purchases - Only if not Handy Craft */}
         {!isHandiCraft && (
@@ -180,9 +183,9 @@ export default function AppRouter() {
         <Route path="/accounting/chart-of-accounts/new" element={<AccountForm />} />
         <Route path="/accounting/manual-journals" element={<ManualJournal />} />
         <Route path="/accounting/journal-list" element={<JournalList />} />
+        <Route path="/accounting/journal-voucher/:id" element={<JournalVoucherPage />} />
         <Route path="/accounting/cash-account" element={<CashAccount />} />
         <Route path="/accounting/bank-accounts" element={<BankAccount />} />
-        <Route path="/accounting/journal-voucher/pdf" element={<JournalVoucherPage />}/>
         <Route path="/accounting/bank-reconciliation" element={<BankReconciliation/>} />
         <Route path="/accounting/bank-transactions"element={<BankTransactions />}/>
         <Route path="/accounting/bank-statement" element={<BankStatement />} />
@@ -233,9 +236,6 @@ export default function AppRouter() {
 
         
        
-
-        
-        
 
         {/* Master / Settings */}
         <Route path="/master/business-category" element={<BusinessCategory />} />

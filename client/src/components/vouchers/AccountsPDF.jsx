@@ -93,6 +93,7 @@ export const AccountsPDFDocument = ({
   from_date,
   to_date,
 }) => {
+  
   const [banner, setBanner] = useState(null);
 
   const selectedCategory =

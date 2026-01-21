@@ -4,10 +4,11 @@ from people.models import  Customer
 from people.serializers import CustomerSerializer
 from stocks.models import Product, StockProduct
 from stocks.serializers import ProductSerializer
-from master.models import PaymentMode, BankMaster, BusinessCategory
-from master.serializers import PaymentModeSerializer, BankMasterSerializer
+from master.models import BusinessCategory
+from master.serializers import  BankMasterSerializer
 from django.db import transaction
 from accounts.service import update_balance
+from .accounting import create_sale_journal
 
 
 
@@ -131,8 +132,10 @@ class SaleSerializer(serializers.ModelSerializer):
             SaleProduct.objects.create(sale=sale, **product_data)
     
         # Create SalePayment records
+        payment_objects = []
         for payment_data in payments_data:
             payment_obj = SalePayment.objects.create(sale=sale, **payment_data)
+            payment_objects.append(payment_obj)
             try:
                 update_balance(
                     business_category=sale.business_category,
@@ -144,6 +147,8 @@ class SaleSerializer(serializers.ModelSerializer):
                 print(f"Balance updated for payment {payment_obj.id}")
             except Exception as e:
                 print(f"Failed to update balance for payment {payment_obj.id}: {e}")
+        
+        create_sale_journal(sale, payment_objects)
 
         return sale
 

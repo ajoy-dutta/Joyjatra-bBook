@@ -3,12 +3,16 @@ import AxiosInstance from "../../../components/AxiosInstance";
 
 export default function AccountForm({ selected, onClose, onSaved }) {
   const [accounts, setAccounts] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(
+    JSON.parse(localStorage.getItem("business_category")) || null
+  );
+
 
   const [form, setForm] = useState({
+    business_category: selectedCategory ? selectedCategory.id : null,
     code: "",
     name: "",
     account_type: "ASSET",
-    is_active: true,
   });
 
   useEffect(() => {
@@ -101,30 +105,6 @@ export default function AccountForm({ selected, onClose, onSaved }) {
               <option value="INCOME">Income</option>
               <option value="EXPENSE">Expense</option>
             </select>
-          </div>
-
-          {/* Parent Account */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Parent Account
-            </label>
-            <select
-              name="parent"
-              value={form.parent || ""}
-              onChange={handleChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">No Parent (Top Level)</option>
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.code} – {a.name}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              Leave empty for main category accounts
-            </p>
           </div>
         </div>
 

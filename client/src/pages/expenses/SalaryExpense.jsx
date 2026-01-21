@@ -157,12 +157,6 @@ export default function SalaryExpense() {
     JSON.parse(localStorage.getItem("business_category")) || null
   );
 
-  // ✅ banner info (category-wise)
-  const [banner, setBanner] = useState(null);
-  const [bannerLoading, setBannerLoading] = useState(false);
-
-  // ✅ Print header tag (like your invoice top pill)
-  const DOC_TOP_TAG = ""; // adjust if needed
 
   // live total on the form
   const formTotalSalary = useMemo(

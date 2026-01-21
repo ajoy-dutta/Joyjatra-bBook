@@ -12,13 +12,14 @@ from rest_framework.response import Response
 from decimal import Decimal, InvalidOperation
 from rest_framework import status
 from accounts.service import update_balance
+from .accounting import create_journal_entry
 from django.db import transaction as db_transaction
 
 
 
 class ExpenseViewSet(viewsets.ModelViewSet):
     queryset = Expense.objects.select_related(
-        "cost_category",
+        "account",
         "payment_mode",
         "bank",
     ).order_by("-expense_date")
@@ -38,11 +39,6 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         expense = serializer.save()
         mode_name = expense.payment_mode.name.upper()
 
-        print("Business Category", expense.business_category)
-        print("Payment mode", mode_name)
-        print("Amount", expense.amount)
-        print("bank", expense.bank)
-
         update_balance(
             business_category=expense.business_category,
             payment_mode=mode_name,
@@ -50,13 +46,16 @@ class ExpenseViewSet(viewsets.ModelViewSet):
             is_credit=False,      # ❌ expense → money out
             bank=expense.bank,
         )
-
+        
+        create_journal_entry(expense)
+        
+        
     @db_transaction.atomic
     def perform_update(self, serializer):
         old = self.get_object()
         new = serializer.save()
 
-        # 🔁 reverse old expense
+        # 1️⃣ Reverse old balance
         update_balance(
             business_category=old.business_category,
             payment_mode=old.payment_mode.name.upper(),
@@ -64,8 +63,12 @@ class ExpenseViewSet(viewsets.ModelViewSet):
             is_credit=True,
             bank=old.bank,
         )
+        
+        # 2️⃣ Delete old journal entry
+        if old.journal_entry:
+            old.journal_entry.delete()
 
-        # ✅ apply new expense
+        # 3️⃣ Apply new balance
         update_balance(
             business_category=new.business_category,
             payment_mode=new.payment_mode.name.upper(),
@@ -73,6 +76,9 @@ class ExpenseViewSet(viewsets.ModelViewSet):
             is_credit=False,
             bank=new.bank,
         )
+        
+        # 4️⃣ Create new journal entry
+        create_journal_entry(new)
 
     @db_transaction.atomic
     def perform_destroy(self, instance):
@@ -83,9 +89,12 @@ class ExpenseViewSet(viewsets.ModelViewSet):
             is_credit=True,   
             bank=instance.bank,
         )
+        
+        # Delete linked journal entry
+        if instance.journal_entry:
+            instance.journal_entry.delete()
 
         super().perform_destroy(instance)
-
 
 
 
@@ -127,6 +136,8 @@ class SalaryExpenseViewSet(viewsets.ModelViewSet):
             is_credit=False,   # salary → money out
             bank=salary.bank,
         )
+        
+        create_journal_entry(salary)
 
     @db_transaction.atomic
     def perform_update(self, serializer):
@@ -144,10 +155,14 @@ class SalaryExpenseViewSet(viewsets.ModelViewSet):
                 is_credit=True,   # refund old amount
                 bank=old_bank,
             )
+            
+        # Delete old journal entry 
+        if old_instance.journal_entry:
+            old_instance.journal_entry.delete()
 
         # Save new data
         salary = serializer.save()
-
+        
         # Apply new balance
         if salary.payment_mode:
             update_balance(
@@ -157,6 +172,9 @@ class SalaryExpenseViewSet(viewsets.ModelViewSet):
                 is_credit=False,  # new salary → money out
                 bank=salary.bank,
             )
+            
+        # 4️⃣ Create new journal entry
+        create_journal_entry(salary)
 
     @db_transaction.atomic
     def perform_destroy(self, instance):
@@ -168,6 +186,11 @@ class SalaryExpenseViewSet(viewsets.ModelViewSet):
                 is_credit=True,    # refund
                 bank=instance.bank,
             )
+            
+        # Delete linked journal entry
+        if instance.journal_entry:
+            instance.journal_entry.delete()
+
         super().perform_destroy(instance)
 
 
