@@ -4,6 +4,7 @@ from rest_framework.viewsets import ModelViewSet
 from .models import *
 from .serializers import *
 from accounts.service import update_balance  
+from .accounting import create_income_journal_entry
 
 
 
@@ -28,7 +29,7 @@ class IncomeCategoryViewSet(ModelViewSet):
 
 class IncomeViewSet(ModelViewSet):
     queryset = Income.objects.select_related(
-        "category",           
+        "account",           
         "payment_mode",       
         "bank",                 
     ).order_by("-date")
@@ -36,20 +37,20 @@ class IncomeViewSet(ModelViewSet):
 
     def get_queryset(self):
         qs = Income.objects.select_related(
-            "category",           
+            "account",           
             "payment_mode",       
             "bank",                 
         ).order_by("-date")
 
         business_category = self.request.query_params.get("business_category")
-        category = self.request.query_params.get("category")
+        account = self.request.query_params.get("account")
         from_date = self.request.query_params.get("from_date")
         to_date = self.request.query_params.get("to_date")
 
         if business_category:
             qs = qs.filter(business_category_id=business_category)
-        if category:
-            qs = qs.filter(category_id=category)
+        if account:
+            qs = qs.filter(account_id=account)
         if from_date:
             qs = qs.filter(date__gte=from_date)
         if to_date:
@@ -69,6 +70,8 @@ class IncomeViewSet(ModelViewSet):
             is_credit=True,  # income → increase balance
             bank=income.bank,
         )
+        
+        create_income_journal_entry(income)
 
     @db_transaction.atomic
     def perform_update(self, serializer):
@@ -83,6 +86,10 @@ class IncomeViewSet(ModelViewSet):
             is_credit=False,  # remove old income
             bank=old_income.bank,
         )
+        
+        # 2️⃣ Delete old journal entry
+        if old_income.journal_entry:
+            old_income.journal_entry.delete()
 
         # Save new data
         income = serializer.save()
@@ -95,6 +102,8 @@ class IncomeViewSet(ModelViewSet):
             is_credit=True,  # new income → increase
             bank=income.bank,
         )
+        
+        create_income_journal_entry(income)
 
     @db_transaction.atomic
     def perform_destroy(self, instance):
@@ -106,4 +115,9 @@ class IncomeViewSet(ModelViewSet):
             is_credit=False,  # deletion → remove money
             bank=instance.bank,
         )
-        instance.delete()
+        
+        # Delete linked journal entry
+        if instance.journal_entry:
+            instance.journal_entry.delete()
+
+        super().perform_destroy(instance)

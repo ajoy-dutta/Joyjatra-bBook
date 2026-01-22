@@ -59,7 +59,7 @@ export default function IncomeVoucherPDF({ income, business }) {
         <View style={styles.table}>
           {/* Table Header */}
           <View style={styles.row}>
-            <Text style={[styles.th, { width: "30%" }]}>Category</Text>
+            <Text style={[styles.th, { width: "30%" }]}>Source</Text>
             <Text style={[styles.th, { width: "20%" }]}>Date</Text>
             <Text style={[styles.th, { width: "20%" }]}>Received By</Text>
             <Text style={[styles.th, { width: "15%" }, styles.right]}>Amount</Text>
@@ -68,7 +68,7 @@ export default function IncomeVoucherPDF({ income, business }) {
 
           {/* Table Data */}
           <View style={styles.row}>
-            <Text style={[styles.td, { width: "30%" }]}>{income.category_name}</Text>
+            <Text style={[styles.td, { width: "30%" }]}>{income.account_name}</Text>
             <Text style={[styles.td, { width: "20%" }]}>{income.date}</Text>
             <Text style={[styles.td, { width: "20%" }]}>{income.received_by}</Text>
             <Text style={[styles.td, { width: "15%" }, styles.right]}>{income.amount}</Text>

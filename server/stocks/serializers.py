@@ -201,12 +201,18 @@ class AssetSerializer(serializers.ModelSerializer):
     business_category = serializers.PrimaryKeyRelatedField(
         queryset=BusinessCategory.objects.all()
     )
+    account_name = serializers.CharField(
+        source="account.name", read_only=True
+    )
     
     class Meta:
         model = Asset
         fields = [
             "id",
             "business_category",
+            "account",
+            "account_name",
+            "journal_entry",
             "name",
             "code",
             "model",
@@ -221,11 +227,3 @@ class AssetSerializer(serializers.ModelSerializer):
         ]
         
         
-    
-        
-class RequisitionSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source="product.product_name", read_only=True)
-
-    class Meta:
-        model = Requisition
-        fields = "__all__"

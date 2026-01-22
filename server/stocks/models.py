@@ -5,6 +5,7 @@ from django.utils.text import slugify
 from master.models import BusinessCategory, InventoryCategory
 from decimal import Decimal
 from django.core.exceptions import ValidationError
+from accounts.models import Account, JournalEntry
 
 
 
@@ -81,15 +82,25 @@ class StockBatch(models.Model):
 
 
 
-from decimal import Decimal
-from django.core.exceptions import ValidationError
-from django.db import models
-from django.utils.text import slugify
 
 class Asset(models.Model):
     business_category = models.ForeignKey(
         BusinessCategory, 
         on_delete=models.CASCADE
+    )
+    account = models.ForeignKey(
+        Account,
+        on_delete=models.PROTECT,
+        limit_choices_to={'account_type': 'ASSET'},
+        related_name='assets'
+    )
+
+    journal_entry = models.ForeignKey(
+        JournalEntry,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assets'
     )
 
     name = models.CharField(max_length=255)
@@ -176,33 +187,3 @@ class Asset(models.Model):
 
     
     
-    
-    
-    
-
-
-class Requisition(models.Model):
-    business_category = models.ForeignKey(
-        BusinessCategory, on_delete=models.CASCADE, related_name="requisitions"
-    )
-
-    requisition_no = models.CharField(max_length=50, unique=True, blank=True)
-
-    requisite_name = models.CharField(max_length=255)
-
-    # ✅ connect requisition with inventory product
-    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="requisitions", blank =True, null=True)
-
-    item_number = models.PositiveIntegerField(default=1)
-    requisition_date = models.DateField()
-    remarks = models.TextField(blank=True, null=True)
-
-    status = models.BooleanField(default=False)  # approved?
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def save(self, *args, **kwargs):
-        if not self.requisition_no:
-            last = Requisition.objects.order_by("-id").first()
-            next_id = (last.id + 1) if last else 1
-            self.requisition_no = f"REQ-{next_id:06d}"
-        super().save(*args, **kwargs)

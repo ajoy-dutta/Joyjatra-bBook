@@ -1,6 +1,7 @@
 from django.db import models
 from master.models import BusinessCategory, PaymentMode, BankMaster
 from accounts.service import update_balance
+from accounts.models import Account, JournalEntry
 
 
 class IncomeCategory(models.Model):
@@ -14,9 +15,19 @@ class IncomeCategory(models.Model):
 
 class Income(models.Model):
     business_category = models.ForeignKey(BusinessCategory,on_delete=models.CASCADE, related_name='incomes', blank=True, null=True)
-    category = models.ForeignKey(
-        IncomeCategory,
+    account = models.ForeignKey(
+        Account,
         on_delete=models.PROTECT,
+        limit_choices_to={'account_type': 'INCOME'},
+        related_name='incomes',
+        null=True,           
+        blank=True
+    )
+    journal_entry = models.ForeignKey(
+        JournalEntry,
+        on_delete=models.SET_NULL,
+        null=True,           
+        blank=True, 
         related_name="incomes"
     )
     date = models.DateField()
@@ -40,4 +51,4 @@ class Income(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.category.name} - {self.amount}"
+        return f"{self.account.name} - {self.amount}"

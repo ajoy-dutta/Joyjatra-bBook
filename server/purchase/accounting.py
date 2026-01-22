@@ -2,10 +2,7 @@ from accounts.models import JournalEntry, JournalEntryLine
 from accounts.utils import get_account
 
 def create_journal_entry(expense):
-    """
-    Create a journal entry for Expense or SalaryExpense.
-    Uses `amount` for Expense and `total_salary` for SalaryExpense.
-    """
+   
     # Determine the value to debit/credit
     amount = getattr(expense, "total_salary", None) or getattr(expense, "amount", 0)
 

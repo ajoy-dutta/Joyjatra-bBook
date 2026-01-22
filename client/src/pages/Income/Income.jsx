@@ -18,7 +18,7 @@ export default function Income() {
   );
 
   const [filters, setFilters] = useState({
-    category: "",
+    account: "",
     fromDate: "",
     toDate: "",
   });
@@ -30,18 +30,28 @@ export default function Income() {
     setBusiness(res.data);
   };
 
-  const fetchCategories = async () => {
-    const res = await AxiosInstance.get("income-categories/", {
-      params: { business_category: selectedCategory?.id || undefined },
-    });
-    setCategories(res.data);
+  // ---------------- LOAD MASTER DATA ----------------
+  const loadCategories = async () => {
+    try {
+      const res = await AxiosInstance.get("accounts/");
+
+      // Filter only expense accounts
+      const incomeAccounts = (res.data || []).filter(
+        (acc) => acc.account_type === "INCOME"
+      );
+
+      setCategories(incomeAccounts);
+    } catch (e) {
+      console.error("Failed to load categories", e);
+    }
   };
+
 
   const fetchIncomes = async (filterValues = filters) => {
     const res = await AxiosInstance.get("incomes/", {
         params: {
         business_category: selectedCategory?.id || undefined,
-        category: filterValues.category || undefined,
+        account: filterValues.account || undefined,
         from_date: filterValues.fromDate || undefined,
         to_date: filterValues.toDate || undefined,
         },
@@ -81,7 +91,7 @@ export default function Income() {
   };
 
   useEffect(() => {
-    fetchCategories();
+    loadCategories();
     fetchIncomes();
     fetchBusinessInfo();
   }, []);
@@ -177,7 +187,7 @@ export default function Income() {
             <thead>
               <tr className="bg-gray-50 text-gray-600">
                 <th className="px-2 py-1 text-left">Date</th>
-                <th className="px-2 py-1 text-left">Category</th>
+                <th className="px-2 py-1 text-left">Source</th>
                 <th className="px-2 py-1 text-center">Amount</th>
                 <th className="px-2 py-1 text-left">Received By</th>
                 <th className="px-2 py-1 text-left">Payment</th>
@@ -197,7 +207,7 @@ export default function Income() {
                 incomes.map((inc) => (
                   <tr key={inc.id} className="border-t hover:bg-gray-50 transition">
                     <td className="px-2 py-1">{inc.date}</td>
-                    <td className="px-2 py-1 font-medium">{inc.category_name}</td>
+                    <td className="px-2 py-1 font-medium">{inc.account_name}</td>
                     <td className="px-2 py-1 text-center font-semibold">৳ {inc.amount}</td>
                     <td className="px-2 py-1">{inc.received_by}</td>
                     <td className="px-2 py-1">{inc.payment_mode_name}</td>

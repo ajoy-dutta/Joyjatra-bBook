@@ -11,7 +11,7 @@ export default function IncomeModal({
 }) {
   const [formData, setFormData] = useState({
     business_category: selectedCategory.id,
-    category: "",
+    account: "",
     date: "",
     amount: "",
     received_by: "",
@@ -47,7 +47,7 @@ export default function IncomeModal({
     if (initialData) {
       setFormData({
         business_category: initialData.business_category || selectedCategory?.id || "",
-        category: initialData.category,
+        account: initialData.account,
         date: initialData.date,
         amount: initialData.amount,
         received_by: initialData.received_by,
@@ -58,7 +58,7 @@ export default function IncomeModal({
     } else {
       setFormData({
         business_category: selectedCategory?.id || "",
-        category: "",
+        account: "",
         date: "",
         amount: "",
         received_by: "",
@@ -96,13 +96,13 @@ export default function IncomeModal({
         <form onSubmit={handleSubmit} className="p-4 space-y-3">
 
           <select
-            name="category"
-            value={formData.category}
+            name="account"
+            value={formData.account}
             onChange={handleChange}
             className="w-full border p-2 rounded"
             required
           >
-            <option value="">Select Category</option>
+            <option value="">Income Source</option>
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id}>
                 {cat.name}

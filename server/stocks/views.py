@@ -6,8 +6,10 @@ from .serializers import *
 from rest_framework.decorators import action
 from django.db import IntegrityError, transaction
 from decimal import Decimal
+from django.db import transaction as db_transaction
 from django.utils.dateparse import parse_date
-
+from .accounting import create_asset_journal
+from accounts.service import update_balance
 
 # ----------------------------
 # Product ViewSet
@@ -197,8 +199,6 @@ class StockViewSet(viewsets.ModelViewSet):
 
 
 
-
-
 class AssetViewSet(viewsets.ModelViewSet):
     queryset = Asset.objects.all().order_by("-id")
     serializer_class = AssetSerializer
@@ -207,7 +207,7 @@ class AssetViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         params = self.request.query_params
 
-        # business_category (existing behavior)
+        # Filter by business_category
         business_category = params.get("business_category")
         if business_category:
             try:
@@ -215,20 +215,18 @@ class AssetViewSet(viewsets.ModelViewSet):
             except ValueError:
                 return qs.none()
 
-        # product name search (frontend uses `productname` param)
+        # Filter by product name
         productname = params.get("productname") or params.get("product_name")
         if productname:
             qs = qs.filter(name__icontains=productname)
 
-        # date range filters (assume purchase_date)
+        # Filter by date range
         from_date = params.get("from_date")
         to_date = params.get("to_date")
-
         if from_date:
             parsed = parse_date(from_date)
             if parsed:
                 qs = qs.filter(purchase_date__gte=parsed)
-
         if to_date:
             parsed = parse_date(to_date)
             if parsed:
@@ -236,127 +234,67 @@ class AssetViewSet(viewsets.ModelViewSet):
 
         return qs
 
-    # @transaction.atomic
-    # def create(self, request, *args, **kwargs):
-       
-    #     name = request.data.get("name")
-    #     business_category = request.data.get("business_category")
-    #     qty = int(request.data.get("total_qty", 0))
-    #     unit_price = request.data.get("unit_price")
-    #     unit_price = Decimal(unit_price) if unit_price not in ("", None) else None
+    @db_transaction.atomic
+    def perform_create(self, serializer):
+        asset = serializer.save()
+        create_asset_journal(asset)
 
-    #     if not name or not business_category:
-    #         return Response(
-    #             {"detail": "name and business_category are required"},
-    #             status=status.HTTP_400_BAD_REQUEST,
-    #         )
-
-    #     try:
-    #         asset = Asset.objects.select_for_update().get(
-    #             name=name,
-    #             business_category_id=business_category,
-    #         )
-
-
-    #         # ✅ Update existing asset
-    #         if qty:
-    #            asset.total_qty += qty
-              
-    #         if unit_price is not None:
-    #             asset.unit_price = unit_price
-             
-    #         asset.save()
-
-    #         serializer = self.get_serializer(asset)
-    #         return Response(serializer.data, status=status.HTTP_200_OK)
-
-    #     except Asset.DoesNotExist:
-    #         # ✅ Create new asset
-    #         serializer = self.get_serializer(data=request.data)
-    #         serializer.is_valid(raise_exception=True)
-
-    #         asset = serializer.save()
-
-    #         return Response(
-    #             AssetSerializer(asset).data,
-    #             status=status.HTTP_201_CREATED,
-    #         )
-
-
-    
-
-
-
-class RequisitionViewSet(viewsets.ModelViewSet):
-    queryset = Requisition.objects.all().order_by("-id")
-    serializer_class = RequisitionSerializer
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["requisition_no", "requisite_name"]
-    ordering_fields = ["id", "created_at", "requisition_date"]
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        bc = self.request.query_params.get("business_category")
-        status_q = self.request.query_params.get("status")
-        if bc:
-            qs = qs.filter(business_category_id=bc)
-        if status_q in ("true", "false"):
-            qs = qs.filter(status=(status_q == "true"))
-        return qs
-
-    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
-    def approve(self, request, pk=None):
-        """
-        POST /requisitions/{id}/approve/
-        Deduct stock and mark requisition approved.
-        """
-        try:
-            with transaction.atomic():
-                req = Requisition.objects.select_for_update().get(pk=pk)
-
-                if req.status:
-                    return Response(
-                        {"detail": "Already approved."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-                # ✅ IMPORTANT: requisition must have a product FK
-                if not getattr(req, "product_id", None):
-                    return Response(
-                        {"detail": "This requisition has no product selected. Please edit and select a product first."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-                stock_row = Stock.objects.select_for_update().filter(
-                    business_category=req.business_category,
-                    product_id=req.product_id,
-                ).first()
-
-                if not stock_row:
-                    return Response(
-                        {"detail": "Stock entry not found for this product in this business category."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-                # ✅ If your stock field is not `quantity`, change it here
-                if stock_row.quantity < req.item_number:
-                    return Response(
-                        {"detail": f"Insufficient stock. Available: {stock_row.quantity}, Required: {req.item_number}"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-                Stock.objects.filter(id=stock_row.id).update(
-                    quantity=F("quantity") - req.item_number
-                )
-
-                req.status = True
-                req.save(update_fields=["status"])
-
-                return Response(RequisitionSerializer(req).data, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            # return real error message instead of silent 500
-            return Response(
-                {"detail": f"Approve failed: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        # Update balance
+        if asset.total_price:
+            update_balance(
+                business_category=asset.business_category,
+                payment_mode=asset.payment_mode.name.upper() if asset.payment_mode else "CASH",
+                amount=asset.total_price,
+                is_credit=False,  # asset purchase → money out
+                bank=asset.bank,
             )
+
+    @db_transaction.atomic
+    def perform_update(self, serializer):
+        old_asset = self.get_object()
+        old_total = old_asset.total_price or Decimal(0)
+
+        # Reverse old balance
+        update_balance(
+            business_category=old_asset.business_category,
+            payment_mode=old_asset.payment_mode.name.upper() if old_asset.payment_mode else "CASH",
+            amount=old_total,
+            is_credit=True,  # reverse previous money out
+            bank=old_asset.bank,
+        )
+
+        # Delete old journal entry
+        if old_asset.journal_entry:
+            old_asset.journal_entry.delete()
+
+        # Save new asset values
+        asset = serializer.save()
+        create_asset_journal(asset)
+
+        # Apply new balance
+        if asset.total_price:
+            update_balance(
+                business_category=asset.business_category,
+                payment_mode=asset.payment_mode.name.upper() if asset.payment_mode else "CASH",
+                amount=asset.total_price,
+                is_credit=False,
+                bank=asset.bank,
+            )
+
+    @db_transaction.atomic
+    def perform_destroy(self, instance):
+        # Reverse balance
+        if instance.total_price:
+            update_balance(
+                business_category=instance.business_category,
+                payment_mode=instance.payment_mode.name.upper() if instance.payment_mode else "CASH",
+                amount=instance.total_price,
+                is_credit=True,
+                bank=instance.bank,
+            )
+
+        # Delete journal entry
+        if instance.journal_entry:
+            instance.journal_entry.delete()
+
+        super().perform_destroy(instance)

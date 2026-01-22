@@ -8,7 +8,7 @@ def create_sale_journal(sale, payments):
 
     cash_acc = get_account(bc, "1000")
     bank_acc = get_account(bc, "1010")
-    ar_acc = get_account(bc, "1200")
+    ar_acc = get_account(bc, "1100")
     sales_acc = get_account(bc, "4000")
 
     journal = JournalEntry.objects.create(

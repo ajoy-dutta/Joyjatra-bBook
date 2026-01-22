@@ -20,8 +20,8 @@ class IncomeSerializer(serializers.ModelSerializer):
         queryset=BusinessCategory.objects.all(),
         required=True
     )
-    category_name = serializers.CharField(
-        source="category.name", read_only=True
+    account_name = serializers.CharField(
+        source="account.name", read_only=True
     )
     payment_mode_name = serializers.CharField(
         source="payment_mode.name", read_only=True
@@ -35,8 +35,9 @@ class IncomeSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "business_category",
-            "category",
-            "category_name",
+            "account",
+            "account_name",
+            "journal_entry",
             "date",
             "amount",
             "received_by",
