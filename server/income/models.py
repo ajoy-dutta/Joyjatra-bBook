@@ -4,14 +4,6 @@ from accounts.service import update_balance
 from accounts.models import Account, JournalEntry
 
 
-class IncomeCategory(models.Model):
-    business_category = models.ForeignKey(BusinessCategory,on_delete=models.CASCADE, related_name='income_categories', blank=True, null=True)
-    name = models.CharField(max_length=100, unique=True)
-
-    def __str__(self):
-        return self.name
-
-
 
 class Income(models.Model):
     business_category = models.ForeignKey(BusinessCategory,on_delete=models.CASCADE, related_name='incomes', blank=True, null=True)
@@ -32,7 +24,7 @@ class Income(models.Model):
     )
     date = models.DateField()
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    received_by = models.CharField(max_length=100)
+    received_by = models.CharField(max_length=100,blank=True, null=True)
     payment_mode = models.ForeignKey(
         PaymentMode,
         on_delete=models.SET_NULL,

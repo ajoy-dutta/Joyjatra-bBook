@@ -2,6 +2,7 @@ from .models import *
 from rest_framework import serializers
 from master.serializers import BusinessCategorySerializer, InventoryCategorySerializer
 from master.models import BusinessCategory
+from .accounting import create_or_update_stock_journal
 
 # ----------------------------
 # Product Serializer
@@ -92,6 +93,7 @@ class StockSerializer(serializers.ModelSerializer):
             "id",
             "business_category",
             'inventory_category',
+            'journal_entry',
             'category_details',
             "product",
             "product_id",
@@ -143,11 +145,17 @@ class StockSerializer(serializers.ModelSerializer):
         purchase_price = validated_data.get("purchase_price") or 0
         validated_data["current_stock_value"] = current_stock * purchase_price
 
-        return super().create(validated_data)
+        instance = super().create(validated_data)
+
+        create_or_update_stock_journal(instance, old_stock_value=0)
+
+        return instance
 
 
 
     def update(self, instance, validated_data):
+        old_stock_value = instance.current_stock_value or 0
+        
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
@@ -163,8 +171,11 @@ class StockSerializer(serializers.ModelSerializer):
         instance.current_stock_value = (
             instance.current_stock_quantity * purchase_price
         )
-
+        
         instance.save()
+        
+        create_or_update_stock_journal(instance, old_stock_value)
+        
         return instance
 
 
@@ -204,6 +215,12 @@ class AssetSerializer(serializers.ModelSerializer):
     account_name = serializers.CharField(
         source="account.name", read_only=True
     )
+    payment_mode_name = serializers.CharField(
+        source="payment_mode.name", read_only=True
+    )
+    bank_name = serializers.CharField(
+        source="bank.name", read_only=True
+    )
     
     class Meta:
         model = Asset
@@ -213,6 +230,10 @@ class AssetSerializer(serializers.ModelSerializer):
             "account",
             "account_name",
             "journal_entry",
+            "payment_mode",
+            "payment_mode_name",
+            "bank",
+            "bank_name",
             "name",
             "code",
             "model",

@@ -1,13 +1,12 @@
 from accounts.models import Account
 
 
-def get_account(business_category, code):
+def get_account(code):
     """
     Safe account fetcher
     """
     try:
         return Account.objects.get(
-            business_category=business_category,
             code=code
         )
     except Account.DoesNotExist:

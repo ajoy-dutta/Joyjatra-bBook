@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import AxiosInstance from "../../../components/AxiosInstance";
 
-
 export default function BalanceSheetReport() {
   const [report, setReport] = useState(null);
   const [asOn, setAsOn] = useState(
@@ -33,8 +32,12 @@ export default function BalanceSheetReport() {
     assets,
     liabilities,
     equity,
-    balanced,
+    summary,
   } = report;
+
+  const balanced =
+    Number(summary.total_assets.toFixed(2)) ===
+    Number(summary.liabilities_plus_equity.toFixed(2));
 
   return (
     <div className="p-6 space-y-4">
@@ -48,26 +51,12 @@ export default function BalanceSheetReport() {
           </p>
         </div>
 
-        <div className="flex gap-3 items-center">
-          <input
-            type="date"
-            value={asOn}
-            onChange={(e) => setAsOn(e.target.value)}
-            className="border rounded-lg px-3 py-1.5 text-sm"
-          />
-
-          <button
-            onClick={() =>
-              window.open(
-                `/reports/balance-sheet/pdf?as_on=${asOn}`,
-                "_blank"
-              )
-            }
-            className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm"
-          >
-            View PDF
-          </button>
-        </div>
+        <input
+          type="date"
+          value={asOn}
+          onChange={(e) => setAsOn(e.target.value)}
+          className="border rounded-lg px-3 py-1.5 text-sm"
+        />
       </div>
 
       {/* TABLE */}
@@ -83,49 +72,45 @@ export default function BalanceSheetReport() {
           <tbody>
 
             {/* ASSETS */}
-            <tr className="bg-gray-600 text-white font-semibold">
-              <td colSpan="2" className="px-4 py-2">
-                ASSETS
-              </td>
-            </tr>
-
-            <Row label="Cash" value={assets.cash} />
-            <Row label="Accounts Receivable" value={assets.receivable} />
-            <Row label="Inventory" value={assets.inventory} />
-            <Row label="Fixed Assets" value={assets.fixed_assets} />
-
+            <Section title="ASSETS" />
+            {assets.map((acc) => (
+              <Row
+                key={acc.code}
+                label={`${acc.code} - ${acc.name}`}
+                value={acc.balance}
+              />
+            ))}
             <TotalRow
               label="Total Assets"
-              value={assets.total_assets}
+              value={summary.total_assets}
             />
 
             {/* LIABILITIES */}
-            <tr className="bg-gray-600 text-white font-semibold">
-              <td colSpan="2" className="px-4 py-2">
-                LIABILITIES
-              </td>
-            </tr>
-
-            <Row label="Accounts Payable" value={liabilities.payable} />
-
+            <Section title="LIABILITIES" />
+            {liabilities.map((acc) => (
+              <Row
+                key={acc.code}
+                label={`${acc.code} - ${acc.name}`}
+                value={Math.abs(acc.balance)}
+              />
+            ))}
             <TotalRow
               label="Total Liabilities"
-              value={liabilities.total_liabilities}
+              value={Math.abs(summary.total_liabilities)}
             />
 
             {/* EQUITY */}
-            <tr className="bg-gray-600 text-white font-semibold">
-              <td colSpan="2" className="px-4 py-2">
-                EQUITY
-              </td>
-            </tr>
-
-            <Row label="Opening Capital" value={equity.opening_capital} />
-            <Row label="Retained Earnings" value={equity.retained_earnings} />
-
+            <Section title="EQUITY" />
+            {equity.map((acc) => (
+              <Row
+                key={acc.code}
+                label={`${acc.code} - ${acc.name}`}
+                value={Math.abs(acc.balance)}
+              />
+            ))}
             <TotalRow
               label="Total Equity"
-              value={equity.total_equity}
+              value={Math.abs(summary.total_equity)}
             />
 
             {/* BALANCE CHECK */}
@@ -147,7 +132,17 @@ export default function BalanceSheetReport() {
   );
 }
 
-/* ================= REUSABLE ROWS ================= */
+/* ================= REUSABLE COMPONENTS ================= */
+
+function Section({ title }) {
+  return (
+    <tr className="bg-gray-600 text-white font-semibold">
+      <td colSpan="2" className="px-4 py-2">
+        {title}
+      </td>
+    </tr>
+  );
+}
 
 function Row({ label, value }) {
   return (

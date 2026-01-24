@@ -6,10 +6,10 @@ from accounts.utils import get_account
 def create_sale_journal(sale, payments):
     bc = sale.business_category
 
-    cash_acc = get_account(bc, "1000")
-    bank_acc = get_account(bc, "1010")
-    ar_acc = get_account(bc, "1100")
-    sales_acc = get_account(bc, "4000")
+    cash_acc = get_account("1000")
+    bank_acc = get_account("1010")
+    ar_acc = get_account("1020")
+    sales_acc = get_account("4000")
 
     journal = JournalEntry.objects.create(
         business_category=bc,
@@ -46,7 +46,7 @@ def create_sale_journal(sale, payments):
             debit=due_amount
         )
 
-    # 3️⃣ Credit Sales Revenue (FULL AMOUNT)
+    # 3️⃣ Credit Sales Account (FULL AMOUNT)
     JournalEntryLine.objects.create(
         journal_entry=journal,
         account=sales_acc,

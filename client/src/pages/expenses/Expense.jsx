@@ -311,7 +311,7 @@ export default function ExpensePage() {
   const onSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.cost_category || !form.amount || !form.expense_date) {
+    if (!form.account || !form.amount || !form.expense_date) {
       alert("Category, Amount and Date are required.");
       return;
     }
@@ -649,7 +649,7 @@ export default function ExpensePage() {
           {/* Payment Mode */}
           <div>
             <label className="block text-sm mb-1 font-medium">
-              Payment Mode <span className="text-red-500">*</span>
+              Payment Mode
             </label>
             <Select
               options={paymentModes}
@@ -697,7 +697,7 @@ export default function ExpensePage() {
           {/* Recorded By */}
           <div>
             <label className="block text-sm font-medium mb-1">
-              Recorded By <span className="text-red-500">*</span>
+              Recorded By
             </label>
             <input
               name="recorded_by"
@@ -832,7 +832,7 @@ export default function ExpensePage() {
                 <tr key={e.id} className="border-b">
                   <td className="py-2 px-2">{idx + 1}</td>
                   <td className="py-2 px-2">{e.expense_date}</td>
-                  <td className="py-2 px-2">{e.cost_category_name}</td>
+                  <td className="py-2 px-2">{e.account_name}</td>
                   <td className="py-2 px-2 text-right">৳ {safeNumber(e.amount).toFixed(2)}</td>
                   <td className="py-2 px-2">{e.payment_mode_name || "-"}</td>
                   <td className="py-2 px-2">{e.bank_name || "-"}</td>

@@ -8,24 +8,6 @@ from .accounting import create_income_journal_entry
 
 
 
-class IncomeCategoryViewSet(ModelViewSet):
-    # Required for DRF router
-    queryset = IncomeCategory.objects.all()
-    serializer_class = IncomeCategorySerializer
-
-    def get_queryset(self):
-        qs = IncomeCategory.objects.all()
-
-        # Optional filtering by business_category
-        business_category = self.request.query_params.get("business_category")
-        if business_category:
-            qs = qs.filter(business_category_id=business_category)
-
-        return qs
-
-
-
-
 
 class IncomeViewSet(ModelViewSet):
     queryset = Income.objects.select_related(

@@ -8,17 +8,17 @@ class AccountViewSet(ModelViewSet):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
     
-    def get_queryset(self):
-        qs = super().get_queryset()
+    # def get_queryset(self):
+    #     qs = super().get_queryset()
 
-        business_category = self.request.query_params.get('business_category')
-        if business_category:
-            try:
-                qs = qs.filter(business_category_id=business_category)
-            except ValueError:
-                qs = qs.none()
+    #     business_category = self.request.query_params.get('business_category')
+    #     if business_category:
+    #         try:
+    #             qs = qs.filter(business_category_id=business_category)
+    #         except ValueError:
+    #             qs = qs.none()
 
-        return qs
+    #     return qs
 
 
 

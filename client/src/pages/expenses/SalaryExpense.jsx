@@ -641,7 +641,7 @@ export default function SalaryExpense() {
         {/* Payment Mode */}
         <div>
           <label className="block text-sm mb-1 font-medium">
-            Payment Mode <span className="text-red-500">*</span>
+            Payment Mode
           </label>
           <Select
             options={paymentModes}

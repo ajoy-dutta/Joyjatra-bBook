@@ -207,7 +207,6 @@ export default function AppRouter() {
 
         {/* Incomes */}
         <Route path="/income/incomes" element={<Income />} />
-        <Route path="/income/categories" element={<IncomeCategory />} />
         
 
         {/* Assets */}
@@ -240,8 +239,6 @@ export default function AppRouter() {
         {/* Master / Settings */}
         <Route path="/master/business-category" element={<BusinessCategory />} />
         <Route path="/master/inventory-category" element={<InventoryCategory />} />
-        <Route path="/master/cost-category" element={<CostCategory />} />
-        <Route path="/master/income-sources" element={<SourceCategory />} />
         <Route path="/master/product-category" element={<ProductCategory />} />
         <Route path="/master/payment-mode" element={<PaymentMode />} />
         <Route path="/master/bank-category" element={<BankCategory />} />

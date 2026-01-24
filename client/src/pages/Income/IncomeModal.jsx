@@ -136,7 +136,6 @@ export default function IncomeModal({
             value={formData.received_by}
             onChange={handleChange}
             className="w-full border p-2 rounded"
-            required
           />
 
           {/* ✅ Payment Method */}
@@ -145,7 +144,6 @@ export default function IncomeModal({
             value={formData.payment_mode}
             onChange={handleChange}
             className="w-full border p-2 rounded"
-            required
           >
             <option value="">Select Payment Method</option>
             {paymentMethods.map((pm) => (

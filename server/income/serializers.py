@@ -3,17 +3,6 @@ from .models import *
 from master.models import BusinessCategory
 
 
-class IncomeCategorySerializer(serializers.ModelSerializer):
-    business_category = serializers.PrimaryKeyRelatedField(
-        queryset=BusinessCategory.objects.all(),
-        required=True
-    )
-    
-    class Meta:
-        model = IncomeCategory
-        fields = "__all__"
-
-
 
 class IncomeSerializer(serializers.ModelSerializer):
     business_category = serializers.PrimaryKeyRelatedField(

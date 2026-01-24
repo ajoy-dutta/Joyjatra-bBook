@@ -30,12 +30,11 @@ export default function Sidebar() {
       title: "Accounting",
       icon: "📚",
       items: [
-        { label: "Manual Journals", path: "/accounting/manual-journals" },
         { label: "Chart of Accounts", path: "/accounting/chart-of-accounts" },
+        { label: "Manual Journals", path: "/accounting/manual-journals" },
+        { label: "Journal List", path: "/accounting/journal-list" },
         { label: "Cash Account", path: "/accounting/cash-account" },
         { label: "Bank Accounts", path: "/accounting/bank-accounts" },
-        { label: "Cash Reconciliation", path: "/accounting/cash-reconciliation" },
-        { label: "Bank Reconciliation", path: "/accounting/bank-reconciliation" },
         { label: "Bank Transaction", path: "/accounting/bank-transactions" },
         { label: "Bank Statement", path: "/accounting/bank-statement" },
       ],
@@ -59,7 +58,6 @@ export default function Sidebar() {
       ),
       items: [
         { label: "Income", path: "/income/incomes" },
-        { label: "Income Sources", path: "/income/categories" },
       ],
     },
 
@@ -73,7 +71,6 @@ export default function Sidebar() {
       items: [
         { label: "General Expense", path: "/expenses" },
         { label: "Salary Expense", path: "/expenses/salary" },
-        { label: "Purchase Expense", path: "/expenses/purchase" },
         { label: "Expense Report", path: "/expenses/report" },
       ],
     },
@@ -94,11 +91,8 @@ export default function Sidebar() {
       items: [
         { label: "Business Category", path: "/master/business-category" },
         { label: "Inventory Category", path: "/master/inventory-category" },
-        { label: "Cost Category", path: "/master/cost-category" },
-        { label: "Income Sources", path: "/master/income-sources" },
         { label: "Product Category", path: "/master/product-category" },
         { label: "Payment Mode", path: "/master/payment-mode" },
-        { label: "Bank Account", path: "/master/bank-account" },
         { label: "Account Category", path: "/master/account-category" },
         { label: "Bank Category", path: "/master/bank-category" },
         { label: "Bank", path: "/master/bank" },

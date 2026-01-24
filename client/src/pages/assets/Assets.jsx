@@ -2,6 +2,7 @@ import React, { Fragment, useEffect, useState } from "react";
 import { Combobox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import AxiosInstance from "../../components/AxiosInstance";
+import Select from "react-select";
 const todayStr = new Date().toISOString().slice(0, 10);
 
 function autoGenerateCode(name) {
@@ -14,6 +15,105 @@ function autoGenerateCode(name) {
 }
 
 export default function AssetsPage() {
+  // ---------- Custom Select Styles ----------
+  const customSelectStyles = {
+    control: (base, state) => ({
+      ...base,
+      minHeight: "30px",
+      height: "30px",
+      fontSize: "0.875rem",
+      border: "1px solid #000000",
+      borderRadius: "0.275rem",
+      borderColor: state.isFocused ? "#000000" : "#d1d5db",
+      boxShadow: state.isFocused ? "0 0 0 1px #000000" : "none",
+      paddingTop: "0px",
+      paddingBottom: "0px",
+      display: "flex",
+      alignItems: "center",
+    }),
+    valueContainer: (base) => ({
+      ...base,
+      height: "30px",
+      padding: "0 6px",
+      display: "flex",
+      alignItems: "center",
+      flexWrap: "nowrap",
+    }),
+    placeholder: (base) => ({
+      ...base,
+      fontSize: "0.875rem",
+      color: "#9ca3af",
+      margin: "0",
+      position: "absolute",
+      top: "50%",
+      transform: "translateY(-50%)",
+    }),
+    singleValue: (base) => ({
+      ...base,
+      fontSize: "0.875rem",
+      color: "#000000",
+      margin: "0",
+      position: "absolute",
+      top: "50%",
+      transform: "translateY(-50%)",
+    }),
+    input: (base) => ({
+      ...base,
+      fontSize: "0.875rem",
+      margin: "0",
+      padding: "0",
+      color: "#000000",
+      position: "absolute",
+      top: "50%",
+      transform: "translateY(-50%)",
+    }),
+    indicatorsContainer: (base) => ({
+      ...base,
+      height: "30px",
+      display: "flex",
+      alignItems: "center",
+    }),
+    indicatorSeparator: (base) => ({
+      ...base,
+      backgroundColor: "#d1d5db",
+      height: "16px",
+      marginTop: "auto",
+      marginBottom: "auto",
+    }),
+    dropdownIndicator: (base) => ({
+      ...base,
+      color: "#6b7280",
+      padding: "4px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      "&:hover": { color: "#000000" },
+    }),
+    clearIndicator: (base) => ({
+      ...base,
+      color: "#6b7280",
+      padding: "4px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      "&:hover": { color: "#000000" },
+    }),
+    option: (base, state) => ({
+      ...base,
+      fontSize: "0.875rem",
+      backgroundColor: state.isSelected
+        ? "#000000"
+        : state.isFocused
+          ? "#f3f4f6"
+          : "white",
+      color: state.isSelected ? "white" : "#000000",
+      "&:hover": {
+        backgroundColor: state.isSelected ? "#000000" : "#f3f4f6",
+      },
+    }),
+    menu: (base) => ({ ...base, fontSize: "0.875rem" }),
+    menuList: (base) => ({ ...base, fontSize: "0.875rem" }),
+  };
 
   const [selectedCategory, setSelectedCategory] = useState(
     JSON.parse(localStorage.getItem("business_category")) || null
@@ -24,6 +124,8 @@ export default function AssetsPage() {
     business_category: category,
     name: "",
     code: "",
+    payment_mode: null,
+    bank: null,
     model: "",
     brand: "",
     purchase_date: todayStr,
@@ -32,6 +134,8 @@ export default function AssetsPage() {
     damaged_qty: "0",
   });
 
+  const [paymentModes, setPaymentModes] = useState([]);
+  const [banks, setBanks] = useState([]);
   const [assets, setAssets] = useState([]);
   const [form, setForm] = useState(getEmptyForm(selectedCategory?.id || null));
   const [saving, setSaving] = useState(false);
@@ -45,6 +149,44 @@ export default function AssetsPage() {
       : assets.filter((a) =>
         a.name.toLowerCase().includes(nameQuery.toLowerCase())
       );
+
+
+  // ---------- Fetch payment modes & banks ----------
+    useEffect(() => {
+      const fetchPaymentData = async () => {
+        try {
+          const [pmRes, bankRes] = await Promise.all([
+            AxiosInstance.get("payment-mode/"),
+            AxiosInstance.get("banks/"),
+          ]);
+          setPaymentModes(
+            pmRes.data.map((pm) => ({
+              value: pm.id,
+              label: pm.name,
+            }))
+          );
+          setBanks(
+            bankRes.data.map((bank) => ({
+              value: bank.id,
+              label: bank.name,
+            }))
+          );
+        } catch (err) {
+          console.error(err);
+          toast.error("Failed to load payment data");
+        }
+      };
+      fetchPaymentData();
+    }, []);
+  
+  
+    const selectedPaymentModeObj = paymentModes.find(
+      (pm) => pm.value === form.payment_mode
+    );
+    const selectedPaymentModeLabel = selectedPaymentModeObj?.label;
+  
+    const isCheque = selectedPaymentModeLabel === "Cheque";
+    const isBank = selectedPaymentModeLabel === "Bank";
 
   
 
@@ -84,6 +226,51 @@ export default function AssetsPage() {
 
     setForm((p) => ({ ...p, [name]: value }));
   };
+
+  const handleSelectChange = (field, value) => {
+    setForm((prev) => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+
+   // ---------- Enter key navigation ----------
+  const handleKeyDown = (e) => {
+    if (e.key !== "Enter") return;
+
+    const selectMenuOpen = document.querySelector(".react-select__menu");
+    if (selectMenuOpen) return;
+
+    e.preventDefault();
+
+    const allFocusable = Array.from(
+      document.querySelectorAll(
+        `input:not([type="hidden"]),
+         select,
+         textarea,
+         button,
+         [tabindex]:not([tabindex="-1"])`
+      )
+    ).filter(
+      (el) =>
+        el.offsetParent !== null &&
+        !el.disabled &&
+        !(el.readOnly === true || el.getAttribute("readonly") !== null)
+    );
+
+    const currentIndex = allFocusable.indexOf(e.target);
+    if (currentIndex !== -1) {
+      for (let i = currentIndex + 1; i < allFocusable.length; i++) {
+        const nextEl = allFocusable[i];
+        nextEl.focus();
+        break;
+      }
+    }
+  };
+
+
+
 
   const resetForm = () => {
     setForm(getEmptyForm(selectedCategory?.id || null));
@@ -150,6 +337,8 @@ export default function AssetsPage() {
       business_category: selectedCategory?.id || null,
       name: asset.name,
       code: asset.code,
+      payment_mode: asset.payment_mode,
+      bank: asset.bank,
       model: asset.model || "",
       brand: asset.brand || "",
       purchase_date: asset.purchase_date || todayStr,
@@ -248,6 +437,7 @@ export default function AssetsPage() {
                     className="w-full border-none py-1 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:outline-none"
                     placeholder="Laptop"
                     displayValue={(value) => value}
+                    onKeyDown={handleKeyDown}
                     onChange={(event) => {
                       const value = event.target.value;
                       setNameQuery(value);
@@ -337,6 +527,7 @@ export default function AssetsPage() {
               name="model"
               value={form.model}
               onChange={onChange}
+              onKeyDown={handleKeyDown}
               type="text"
               className="border border-gray-300 rounded px-3 py-1 w-full"
             />
@@ -351,6 +542,7 @@ export default function AssetsPage() {
               name="brand"
               value={form.brand}
               onChange={onChange}
+              onKeyDown={handleKeyDown}
               type="text"
               className="border border-gray-300 rounded px-3 py-1 w-full"
             />
@@ -365,6 +557,7 @@ export default function AssetsPage() {
               name="unit_price"
               value={form.unit_price}
               onChange={onChange}
+              onKeyDown={handleKeyDown}
               type="number"
               className="border border-gray-300 rounded px-3 py-1 w-full"
             />
@@ -379,6 +572,7 @@ export default function AssetsPage() {
               name="purchase_date"
               value={form.purchase_date}
               onChange={onChange}
+              onKeyDown={handleKeyDown}
               type="date"
               className="border border-gray-300 rounded px-3 py-1 w-full"
             />
@@ -393,6 +587,7 @@ export default function AssetsPage() {
               name="total_qty"
               value={form.total_qty}
               onChange={onChange}
+              onKeyDown={handleKeyDown}
               type="text"
               inputMode="numeric"
               placeholder="10"
@@ -410,12 +605,61 @@ export default function AssetsPage() {
               name="damaged_qty"
               value={form.damaged_qty}
               onChange={onChange}
+              onKeyDown={handleKeyDown}
               type="text"
               inputMode="numeric"
               placeholder="2"
               className="border border-gray-300 rounded px-3 py-1 w-full"
             />
           </div>
+
+           {/* Payment Mode */}
+            <div>
+              <label className="block text-sm mb-1 font-medium">
+                Payment Mode
+              </label>
+              <Select
+                options={paymentModes}
+                value={
+                  paymentModes.find(
+                    (pm) => pm.value === Number(form.payment_mode)
+                  ) || null
+                }
+                onChange={(selected) =>
+                  handleSelectChange(
+                    "payment_mode",
+                    selected ? selected.value : null
+                  )
+                }
+                placeholder="Select"
+                styles={customSelectStyles}
+                onKeyDown={handleKeyDown}
+              />
+            </div>
+  
+            {/* Bank Name */}
+            <div>
+              <label className="block text-sm mb-1 font-medium">
+                Bank Name
+              </label>
+              <Select
+                options={banks}
+                value={
+                  banks.find((opt) => opt.value === form.bank) || null
+                }
+                onChange={(selected) =>
+                  handleSelectChange(
+                    "bank",
+                    selected ? selected.value : null
+                  )
+                }
+                placeholder="Select"
+                isClearable
+                isDisabled={!isBank}
+                styles={customSelectStyles}
+                onKeyDown={handleKeyDown}
+              />
+            </div>
         </div>
 
 

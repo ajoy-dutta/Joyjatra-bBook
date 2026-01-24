@@ -10,6 +10,7 @@ from django.db import transaction as db_transaction
 from django.utils.dateparse import parse_date
 from .accounting import create_asset_journal
 from accounts.service import update_balance
+from accounts.utils import get_account
 
 # ----------------------------
 # Product ViewSet
@@ -188,13 +189,7 @@ class StockViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
      
-     
-    def get_queryset(self):
-      qs = super().get_queryset()
-      business_category = self.request.query_params.get("business_category")
-      if business_category:
-          qs = qs.filter(business_category_id=business_category)
-      return qs
+    
 
 
 
@@ -237,10 +232,15 @@ class AssetViewSet(viewsets.ModelViewSet):
     @db_transaction.atomic
     def perform_create(self, serializer):
         asset = serializer.save()
+        fixed_asset_acc = get_account("1200")
+        
+        asset.account = fixed_asset_acc
+        asset.save()
+        
         create_asset_journal(asset)
 
         # Update balance
-        if asset.total_price:
+        if asset.total_price and asset.payment_mode:
             update_balance(
                 business_category=asset.business_category,
                 payment_mode=asset.payment_mode.name.upper() if asset.payment_mode else "CASH",
@@ -255,13 +255,14 @@ class AssetViewSet(viewsets.ModelViewSet):
         old_total = old_asset.total_price or Decimal(0)
 
         # Reverse old balance
-        update_balance(
-            business_category=old_asset.business_category,
-            payment_mode=old_asset.payment_mode.name.upper() if old_asset.payment_mode else "CASH",
-            amount=old_total,
-            is_credit=True,  # reverse previous money out
-            bank=old_asset.bank,
-        )
+        if old_asset.total_price and old_asset.payment_mode:
+            update_balance(
+                business_category=old_asset.business_category,
+                payment_mode=old_asset.payment_mode.name.upper() if old_asset.payment_mode else "CASH",
+                amount=old_total,
+                is_credit=True,  # reverse previous money out
+                bank=old_asset.bank,
+            )
 
         # Delete old journal entry
         if old_asset.journal_entry:
@@ -272,7 +273,7 @@ class AssetViewSet(viewsets.ModelViewSet):
         create_asset_journal(asset)
 
         # Apply new balance
-        if asset.total_price:
+        if asset.total_price and asset.payment_mode:
             update_balance(
                 business_category=asset.business_category,
                 payment_mode=asset.payment_mode.name.upper() if asset.payment_mode else "CASH",
@@ -284,7 +285,7 @@ class AssetViewSet(viewsets.ModelViewSet):
     @db_transaction.atomic
     def perform_destroy(self, instance):
         # Reverse balance
-        if instance.total_price:
+        if instance.total_price and instance.payment_mode:
             update_balance(
                 business_category=instance.business_category,
                 payment_mode=instance.payment_mode.name.upper() if instance.payment_mode else "CASH",

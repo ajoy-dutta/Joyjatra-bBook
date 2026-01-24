@@ -12,8 +12,10 @@ from rest_framework.response import Response
 from decimal import Decimal, InvalidOperation
 from rest_framework import status
 from accounts.service import update_balance
-from .accounting import create_journal_entry
+from .accounting import create_expense_journal_entry
+from accounts.utils import get_account
 from django.db import transaction as db_transaction
+
 
 
 
@@ -37,17 +39,19 @@ class ExpenseViewSet(viewsets.ModelViewSet):
     @db_transaction.atomic
     def perform_create(self, serializer):
         expense = serializer.save()
-        mode_name = expense.payment_mode.name.upper()
-
-        update_balance(
-            business_category=expense.business_category,
-            payment_mode=mode_name,
-            amount=expense.amount,
-            is_credit=False,      # ❌ expense → money out
-            bank=expense.bank,
-        )
         
-        create_journal_entry(expense)
+        
+        if expense.payment_mode:
+            mode_name = expense.payment_mode.name.upper()
+            update_balance(
+                business_category=expense.business_category,
+                payment_mode=mode_name,
+                amount=expense.amount,
+                is_credit=False,     
+                bank=expense.bank,
+            )
+        
+        create_expense_journal_entry(expense)
         
         
     @db_transaction.atomic
@@ -78,7 +82,7 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         )
         
         # 4️⃣ Create new journal entry
-        create_journal_entry(new)
+        create_expense_journal_entry(new)
 
     @db_transaction.atomic
     def perform_destroy(self, instance):
@@ -128,16 +132,18 @@ class SalaryExpenseViewSet(viewsets.ModelViewSet):
     @db_transaction.atomic
     def perform_create(self, serializer):
         salary = serializer.save()
-
-        update_balance(
-            business_category=salary.business_category,
-            payment_mode=salary.payment_mode.name.upper(),
-            amount=salary.total_salary,
-            is_credit=False,   # salary → money out
-            bank=salary.bank,
-        )
         
-        create_journal_entry(salary)
+        
+        if salary.payment_mode:
+            update_balance(
+                business_category=salary.business_category,
+                payment_mode=salary.payment_mode.name.upper(),
+                amount=salary.total_salary,
+                is_credit=False,   # salary → money out
+                bank=salary.bank,
+            )
+        
+        create_expense_journal_entry(salary)
 
     @db_transaction.atomic
     def perform_update(self, serializer):
@@ -174,7 +180,7 @@ class SalaryExpenseViewSet(viewsets.ModelViewSet):
             )
             
         # 4️⃣ Create new journal entry
-        create_journal_entry(salary)
+        create_expense_journal_entry(salary)
 
     @db_transaction.atomic
     def perform_destroy(self, instance):
@@ -215,6 +221,7 @@ class PurchaseViewSet(viewsets.ModelViewSet):
                 qs = qs.none()
 
         return qs
+    
 
 
 

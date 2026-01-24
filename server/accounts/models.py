@@ -14,15 +14,9 @@ class Account(models.Model):
         ("INCOME", "Income"),
         ("EXPENSE", "Expense"),
     )
-   
-    business_category = models.ForeignKey(
-        BusinessCategory,
-        on_delete=models.PROTECT,
-        related_name="account"
-    )
     code = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=150)
-    account_type = models.CharField(max_length=20, choices=ACCOUNT_TYPES)
+    account_type = models.CharField(max_length=50, choices=ACCOUNT_TYPES)
 
 
     def __str__(self):
@@ -39,31 +33,22 @@ class JournalEntry(models.Model):
         related_name="journalentry"
     )
     date = models.DateField()
-    reference = models.CharField(max_length=50, blank=True, null=True)
+    reference = models.CharField(max_length=100, blank=True, null=True)
     narration = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
 
     def total_debit(self):
         return sum(line.debit for line in self.lines.all())
 
-
     def total_credit(self):
         return sum(line.credit for line in self.lines.all())
 
-
-    def clean(self):
+    def validate_balanced(self):
         if self.total_debit() != self.total_credit():
             raise ValidationError("Total Debit must equal Total Credit")
 
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        self.full_clean()  # enforce debit = credit
-
-
     def __str__(self):
-        return f"Journal {self.id} - {self.date}"
+        return f"Journal {self.reference} - {self.date}"
 
 
 
@@ -80,19 +65,15 @@ class JournalEntryLine(models.Model):
     credit = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     description = models.TextField(blank=True, null=True)
 
-
     def clean(self):
         if self.debit > 0 and self.credit > 0:
             raise ValidationError("A line cannot have both debit and credit")
 
-
         if self.debit < 0 or self.credit < 0:
             raise ValidationError("Debit or credit cannot be negative")
 
-
         if self.debit == 0 and self.credit == 0:
             raise ValidationError("Either debit or credit must be greater than zero")
-
 
     def __str__(self):
         return f"{self.account.name}"

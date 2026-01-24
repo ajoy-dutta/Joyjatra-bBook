@@ -2,7 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.timezone import now
 from django.utils.text import slugify
-from master.models import BusinessCategory, InventoryCategory
+from master.models import BusinessCategory, InventoryCategory, PaymentMode, BankMaster
 from decimal import Decimal
 from django.core.exceptions import ValidationError
 from accounts.models import Account, JournalEntry
@@ -32,6 +32,13 @@ class StockProduct(models.Model):
         Product,
         on_delete=models.CASCADE,
         related_name="stock"
+    )
+    journal_entry = models.ForeignKey(
+        JournalEntry,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='stock'
     )
     inventory_category = models.ForeignKey(InventoryCategory,on_delete=models.CASCADE,blank=True,null=True)
     purchase_quantity = models.PositiveIntegerField(default=0,blank=True, null=True)
@@ -92,7 +99,9 @@ class Asset(models.Model):
         Account,
         on_delete=models.PROTECT,
         limit_choices_to={'account_type': 'ASSET'},
-        related_name='assets'
+        related_name='assets',
+        null=True,
+        blank=True
     )
 
     journal_entry = models.ForeignKey(
@@ -102,7 +111,6 @@ class Asset(models.Model):
         blank=True,
         related_name='assets'
     )
-
     name = models.CharField(max_length=255)
     model = models.CharField(max_length=100, blank=True, null=True)
     brand = models.CharField(max_length=100, blank=True, null=True)
@@ -128,6 +136,20 @@ class Asset(models.Model):
 
     damaged_qty = models.PositiveIntegerField(default=0)
     usable_qty = models.PositiveIntegerField(default=0, blank=True, null=True)
+    payment_mode = models.ForeignKey(
+        PaymentMode,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assets",
+    )
+    bank = models.ForeignKey(
+        BankMaster,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="assets",
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 

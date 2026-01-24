@@ -109,7 +109,6 @@ class SalaryExpense(models.Model):
     def save(self, *args, **kwargs):
         if not self.account:
             self.account = Account.objects.get(
-                business_category=self.business_category,
                 name__iexact="Salary",
                 account_type="EXPENSE"
             )
@@ -122,6 +121,13 @@ class SalaryExpense(models.Model):
 
 class Purchase(models.Model):
     business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE, null=True, blank=True)
+    journal_entry = models.ForeignKey(
+        JournalEntry,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="purchase_expenses"
+    )
     vendor = models.ForeignKey(Vendor,on_delete=models.CASCADE,null=True, blank=True)
     purchase_date = models.DateField()
     invoice_no = models.CharField(max_length=100, blank=True, null=True)

@@ -6,6 +6,7 @@ from people.models import Vendor
 from master.serializers import *
 from django.db import transaction
 from accounts.service import update_balance
+from .accounting import create_purchase_journal
 
 
 class ExpenseSerializer(serializers.ModelSerializer):
@@ -13,6 +14,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
         queryset=BusinessCategory.objects.all(),
         required=True
     )
+    
     account_name = serializers.CharField(source='account.name', read_only=True)
     payment_mode_name = serializers.CharField(
         source="payment_mode.name", read_only=True
@@ -51,6 +53,7 @@ class SalaryExpenseSerializer(serializers.ModelSerializer):
         queryset=BusinessCategory.objects.all(),
         required=True
     )
+    account_name = serializers.CharField(source='account.name', read_only=True)
     staff_name = serializers.CharField(source="staff.name", read_only=True)
     total_salary = serializers.DecimalField(
         max_digits=12, 
@@ -71,6 +74,8 @@ class SalaryExpenseSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "business_category",
+            "account",
+            "account_name",
             "journal_entry",
             "staff",
             "staff_name",
@@ -197,6 +202,7 @@ class PurchaseSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             "business_category",
+            "journal_entry",
             'vendor',                  # read-only nested vendor
             'vendor_id',               # write-only FK id
             'purchase_date',
@@ -238,8 +244,8 @@ class PurchaseSerializer(serializers.ModelSerializer):
                 print("Payment mode", payment_obj.payment_mode.name.upper())
                 print("Amount", payment_obj.paid_amount)
                 print("bank", payment_obj.bank)
-
-
+                
+                
                 update_balance(
                     business_category=purchase.business_category,
                     payment_mode=payment_obj.payment_mode.name.upper(),
@@ -247,6 +253,8 @@ class PurchaseSerializer(serializers.ModelSerializer):
                     is_credit=False, 
                     bank=payment_obj.bank,
                 )
+                
+            create_purchase_journal(purchase)
 
         return purchase
 
@@ -265,6 +273,7 @@ class PurchaseSerializer(serializers.ModelSerializer):
             instance.discount_amount = validated_data.get('discount_amount', instance.discount_amount)
             instance.total_payable_amount = validated_data.get('total_payable_amount', instance.total_payable_amount)
             instance.save()
+                
 
             # 2️⃣ Update or create products
             # We'll clear old products and recreate for simplicity
@@ -303,6 +312,11 @@ class PurchaseSerializer(serializers.ModelSerializer):
                         is_credit=False,
                         bank=payment_obj.bank,
                     )
+                    
+            if instance.journal_entry:
+                instance.journal_entry.delete()
+            create_purchase_journal(instance)
+
 
         return instance
     
