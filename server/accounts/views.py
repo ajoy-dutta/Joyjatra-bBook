@@ -1,6 +1,10 @@
 from rest_framework.viewsets import ModelViewSet
 from .models import *
 from .serializers import *
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.db.models import Sum
+from accounts.models import Account, JournalEntryLine
 
 
 
@@ -42,24 +46,30 @@ class JournalEntryViewSet(ModelViewSet):
 
 
 
+class CashBalanceView(APIView):
+    def get(self, request):
+        business_category = request.query_params.get("business_category")
 
-class CashAccountViewSet(ModelViewSet):
-    queryset = CashAccount.objects.all()
-    serializer_class = CashAccountSerializer  
+        try:
+            cash_account = Account.objects.get(code="1000")
+        except Account.DoesNotExist:
+            return Response({"error": "Cash account not found"}, status=404)
 
-    def get_queryset(self):
-        qs = super().get_queryset()
+        lines = JournalEntryLine.objects.filter(account=cash_account)
 
-        business_category = self.request.query_params.get('business_category')
         if business_category:
-            try:
-                qs = qs.filter(business_category_id=business_category)
-            except ValueError:
-                qs = qs.none()
+            lines = lines.filter(journal_entry__business_category_id=business_category)
 
-        return qs
+        total_debit = lines.aggregate(total=Sum("debit"))["total"] or 0
+        total_credit = lines.aggregate(total=Sum("credit"))["total"] or 0
+        balance = total_debit - total_credit
 
-
+        return Response({
+            "account_code": cash_account.code,
+            "account_name": cash_account.name,
+            "business_category": business_category,
+            "balance": balance,
+        })
 
 
 

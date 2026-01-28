@@ -109,7 +109,6 @@ class StockSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = (
-            "current_stock_quantity",
             "current_stock_value",
             "product",
             "created_at",
@@ -134,16 +133,10 @@ class StockSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        purchase_qty = validated_data.get("purchase_quantity") or 0
-        sale_qty = validated_data.get("sale_quantity") or 0
-        damage_qty = validated_data.get("damage_quantity") or 0
-
-        current_stock = purchase_qty - sale_qty - damage_qty
-
-        validated_data["current_stock_quantity"] = current_stock
-
-        purchase_price = validated_data.get("purchase_price") or 0
-        validated_data["current_stock_value"] = current_stock * purchase_price
+        current_stock = validated_data.get("current_stock_quantity") or 0
+        
+        price = validated_data.get("purchase_price") or 0
+        validated_data["current_stock_value"] = current_stock * price
 
         instance = super().create(validated_data)
 
@@ -160,16 +153,16 @@ class StockSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
 
         # Recalculate current stock quantity
-        instance.current_stock_quantity = (
-            (instance.purchase_quantity or 0) -
-            (instance.sale_quantity or 0) -
-            (instance.damage_quantity or 0)
-        )
+        # instance.current_stock_quantity = (
+        #     (instance.purchase_quantity or 0) -
+        #     (instance.sale_quantity or 0) -
+        #     (instance.damage_quantity or 0)
+        # )
 
         # Recalculate current stock value
-        purchase_price = instance.purchase_price or 0
+        price = instance.purchase_price or 0
         instance.current_stock_value = (
-            instance.current_stock_quantity * purchase_price
+            instance.current_stock_quantity * price
         )
         
         instance.save()

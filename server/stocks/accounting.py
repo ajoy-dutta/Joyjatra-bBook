@@ -76,8 +76,8 @@ def create_or_update_stock_journal(stock, old_stock_value: Decimal = 0):
         journal = stock.journal_entry
 
     # Accounts
-    inventory_acc = get_account("1100")  # Inventory
-    expense_acc = get_account("5010")    # Raw Material/Expense
+    inventory_acc = get_account("1100")  # Inventory - Asset
+    raw_materials_acc = get_account("1110")    # Raw Materials - Asset
 
     if diff_value > 0:
         # Stock increased
@@ -90,10 +90,10 @@ def create_or_update_stock_journal(stock, old_stock_value: Decimal = 0):
         )
         JournalEntryLine.objects.create(
             journal_entry=journal,
-            account=expense_acc,
+            account=raw_materials_acc,
             debit=0,
             credit=diff_value,
-            description="Raw material cost"
+            description="Raw material decrease"
         )
     else:
         # Stock decreased
@@ -107,7 +107,7 @@ def create_or_update_stock_journal(stock, old_stock_value: Decimal = 0):
         )
         JournalEntryLine.objects.create(
             journal_entry=journal,
-            account=expense_acc,
+            account=raw_materials_acc,
             debit=diff_value,
             credit=0,
             description="Raw material reversal"
