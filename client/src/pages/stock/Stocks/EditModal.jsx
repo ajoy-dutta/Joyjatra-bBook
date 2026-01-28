@@ -9,6 +9,7 @@ export default function EditModal({ stock, onClose, onUpdated }) {
     purchase_quantity: "",
     sale_quantity: "",
     damage_quantity: "",
+    current_stock_quantity:"",
     purchase_price: "",
     sale_price: "",
     net_weight: "",
@@ -24,6 +25,7 @@ export default function EditModal({ stock, onClose, onUpdated }) {
         purchase_quantity: stock.purchase_quantity || 0,
         sale_quantity: stock.sale_quantity || 0,
         damage_quantity: stock.damage_quantity || 0,
+        current_stock_quantity: stock.current_stock_quantity || 0,
         purchase_price: stock.purchase_price || "",
         sale_price: stock.sale_price || "",
         net_weight: stock.net_weight || "",
@@ -65,11 +67,11 @@ export default function EditModal({ stock, onClose, onUpdated }) {
     try {
       const res = await AxiosInstance.patch(`/stocks/${stock.id}/`, payload);
       console.log("response",res.data);
-      toast.success("Stock updated successfully!");
+      alert("Stock updated successfully!");
       onUpdated(res.data);
       onClose();
     } catch (error) {
-      toast.error("Failed to update stock");
+      alert("Failed to update stock");
       console.error(error);
     }
   };
@@ -101,7 +103,7 @@ export default function EditModal({ stock, onClose, onUpdated }) {
           </div>
 
           {/* Purchase Quantity */}
-          <div className="flex flex-col">
+          {/* <div className="flex flex-col">
             <label className="text-sm font-medium mb-1">Purchase Quantity</label>
             <input
               type="number"
@@ -110,10 +112,10 @@ export default function EditModal({ stock, onClose, onUpdated }) {
               onChange={handleChange}
               className="border px-2 py-1 rounded"
             />
-          </div>
+          </div> */}
 
           {/* Sale Quantity */}
-          <div className="flex flex-col">
+          {/* <div className="flex flex-col">
             <label className="text-sm font-medium mb-1">Sale Quantity</label>
             <input
               type="number"
@@ -122,10 +124,10 @@ export default function EditModal({ stock, onClose, onUpdated }) {
               onChange={handleChange}
               className="border px-2 py-1 rounded"
             />
-          </div>
+          </div> */}
 
           {/* Damage Quantity */}
-          <div className="flex flex-col">
+          {/* <div className="flex flex-col">
             <label className="text-sm font-medium mb-1">Damage Quantity</label>
             <input
               type="number"
@@ -134,7 +136,7 @@ export default function EditModal({ stock, onClose, onUpdated }) {
               onChange={handleChange}
               className="border px-2 py-1 rounded"
             />
-          </div>
+          </div> */}
 
           {/* Current Stock */}
           <div className="flex flex-col">
@@ -142,7 +144,7 @@ export default function EditModal({ stock, onClose, onUpdated }) {
             <input
               type="number"
               name="current_stock_quantity"
-              value={stock.current_stock_quantity}
+              value={formData.current_stock_quantity}
               onChange={handleChange}
               className="border px-2 py-1 rounded"
             />

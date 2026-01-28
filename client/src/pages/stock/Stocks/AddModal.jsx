@@ -13,7 +13,7 @@ export default function AddModal({ onClose, business_category, onAdd }) {
     sale_quantity: "",
     damage_quantity: "",
     current_stock_quantity: "",
-    purchase_price: "",
+    price: "",
     sale_price: "",
     current_stock_value: "",
     net_weight: "",
@@ -79,13 +79,15 @@ export default function AddModal({ onClose, business_category, onAdd }) {
       sale_quantity: normalize(formData.sale_quantity),
       damage_quantity: normalize(formData.damage_quantity),
       current_stock_quantity: normalize(formData.current_stock_quantity),
-      purchase_price: normalize(formData.purchase_price),
+      purchase_price: normalize(formData.price),
       sale_price: normalize(formData.sale_price),
       net_weight: normalize(formData.net_weight),
       manufacture_date: normalize(formData.manufacture_date),
       expiry_date: normalize(formData.expiry_date),
       remarks: normalize(formData.remarks),
     };
+
+    console.log("Payload",payload)
 
     try {
       const res = await AxiosInstance.post("stocks/", payload);
@@ -144,7 +146,7 @@ export default function AddModal({ onClose, business_category, onAdd }) {
           </div>
 
           {/* Purchase Quantity */}
-          <div className="flex flex-col">
+          {/* <div className="flex flex-col">
             <label className="text-sm font-medium">Purchase Quantity</label>
             <input
               type="number"
@@ -153,10 +155,10 @@ export default function AddModal({ onClose, business_category, onAdd }) {
               onChange={handleChange}
               className="border px-2 rounded"
             />
-          </div>
+          </div> */}
 
           {/* Sale Quantity */}
-          <div className="flex flex-col">
+          {/* <div className="flex flex-col">
             <label className="text-sm font-medium">Sale Quantity</label>
             <input
               type="number"
@@ -165,10 +167,10 @@ export default function AddModal({ onClose, business_category, onAdd }) {
               onChange={handleChange}
               className="border px-2 rounded"
             />
-          </div>
+          </div> */}
 
           {/* Damage Quantity */}
-          <div className="flex flex-col">
+          {/* <div className="flex flex-col">
             <label className="text-sm font-medium">Damage Quantity</label>
             <input
               type="number"
@@ -177,7 +179,7 @@ export default function AddModal({ onClose, business_category, onAdd }) {
               onChange={handleChange}
               className="border px-2 rounded"
             />
-          </div>
+          </div> */}
 
           {/* Current Stock Quantity */}
           <div className="flex flex-col">
@@ -193,12 +195,12 @@ export default function AddModal({ onClose, business_category, onAdd }) {
 
           {/* Purchase Price */}
           <div className="flex flex-col">
-            <label className="text-sm font-medium">Purchase Price</label>
+            <label className="text-sm font-medium">Price</label>
             <input
               type="number"
               step="0.01"
-              name="purchase_price"
-              value={formData.purchase_price}
+              name="price"
+              value={formData.price}
               onChange={handleChange}
               className="border px-2 rounded"
             />
