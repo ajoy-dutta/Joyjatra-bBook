@@ -223,8 +223,6 @@ class PurchaseViewSet(viewsets.ModelViewSet):
         return qs
     
 
-
-
 # ✅ NEW
 class PurchasePaymentViewSet(viewsets.ModelViewSet):
     queryset = PurchasePayment.objects.all().order_by('-payment_date')

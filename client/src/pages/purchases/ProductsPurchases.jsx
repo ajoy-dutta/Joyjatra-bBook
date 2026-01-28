@@ -402,11 +402,7 @@ export default function ProductPurchase() {
       toast.error("Add products");
       return;
     }
-    if (!payments.length) {
-      toast.error("Add payments");
-      return;
-    }
-
+    
     const payload = {
       business_category: selectedCategory?.id || null,
       vendor_id: selectedVendor.value,
@@ -434,11 +430,11 @@ export default function ProductPurchase() {
 
     try {
       await AxiosInstance.post("/purchases/", payload);
-      toast.success("Purchase saved successfully!");
+      alert("Purchase saved successfully!");
       resetForm();
     } catch (err) {
       console.error(err.response?.data || err);
-      toast.error("Failed to submit purchase");
+      alert("Failed to submit purchase");
     }
   };
 

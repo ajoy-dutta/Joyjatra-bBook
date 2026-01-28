@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import AccountForm from "./AccountForm";
 import AxiosInstance from "../../../components/AxiosInstance";
 
@@ -8,20 +8,27 @@ export default function ChartOfAccounts() {
   const [openForm, setOpenForm] = useState(false);
 
   const fetchAccounts = async () => {
-    const res = await AxiosInstance.get("accounts/");
-    setAccounts(res.data);
+    try {
+      const res = await AxiosInstance.get("accounts/");
+      setAccounts(res.data);
+    } catch (err) {
+      console.error("Failed to fetch accounts", err);
+    }
   };
 
   useEffect(() => {
     fetchAccounts();
   }, []);
 
-  // const toggleStatus = async (account) => {
-  //   await AxiosInstance.patch(`accounts/${account.id}/`, {
-  //     is_active: !account.is_active,
-  //   });
-  //   fetchAccounts();
-  // };
+  // 🔹 GROUP BY ACCOUNT TYPE
+  const groupedAccounts = accounts.reduce((groups, acc) => {
+    const type = acc.account_type || "Others";
+    if (!groups[type]) {
+      groups[type] = [];
+    }
+    groups[type].push(acc);
+    return groups;
+  }, {});
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -50,9 +57,8 @@ export default function ChartOfAccounts() {
         </button>
       </div>
 
-      {/* Table Card */}
+      {/* Table */}
       <div className="bg-white rounded-xl shadow border overflow-hidden">
-
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-gray-50 border-b">
@@ -60,82 +66,76 @@ export default function ChartOfAccounts() {
                 <th className="px-4 py-3">Code</th>
                 <th className="px-4 py-3">Account Name</th>
                 <th className="px-4 py-3">Type</th>
-                {/* <th className="px-4 py-3">Status</th> */}
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
 
             <tbody className="divide-y">
-              {accounts.map((acc) => (
-                <tr
-                  key={acc.id}
-                  className="hover:bg-gray-50 transition"
-                >
-                  <td className="px-4 py-3 font-medium text-gray-800">
-                    {acc.code}
-                  </td>
 
-                  <td className="px-4 py-3 text-gray-700">
-                    {acc.name}
-                  </td>
+              {Object.keys(groupedAccounts).length > 0 ? (
+                Object.entries(groupedAccounts).map(([type, accList]) => (
+                  <Fragment key={type}>
 
-                  <td className="px-4 py-3">
-                    <span className="px-2 py-1 rounded-full text-xs font-medium
-                                     bg-gray-100 text-gray-700">
-                      {acc.account_type}
-                    </span>
-                  </td>
+                    {/* Group Header */}
+                    <tr className="bg-gray-100">
+                      <td
+                        colSpan={4}
+                        className="px-4 py-2 font-semibold text-gray-700 uppercase"
+                      >
+                        {type}
+                      </td>
+                    </tr>
 
-                  {/* <td className="px-4 py-3">
-                    {acc.is_active ? (
-                      <span className="px-2 py-1 text-xs font-semibold
-                                       bg-green-100 text-green-700 rounded-full">
-                        Active
-                      </span>
-                    ) : (
-                      <span className="px-2 py-1 text-xs font-semibold
-                                       bg-red-100 text-red-700 rounded-full">
-                        Inactive
-                      </span>
-                    )}
-                  </td> */}
+                    {/* Group Rows */}
+                    {accList.map((acc) => (
+                      <tr
+                        key={acc.id}
+                        className="hover:bg-gray-50 transition"
+                      >
+                        <td className="px-4 py-3 font-medium text-gray-800">
+                          {acc.code}
+                        </td>
 
-                  <td className="px-4 py-3 text-right space-x-3">
-                    <button
-                      onClick={() => {
-                        setSelected(acc);
-                        setOpenForm(true);
-                      }}
-                      className="text-blue-600 hover:text-blue-800
-                                 font-medium text-sm"
-                    >
-                      Edit
-                    </button>
+                        <td className="px-4 py-3 text-gray-700">
+                          {acc.name}
+                        </td>
 
-                    {/* <button
-                      onClick={() => toggleStatus(acc)}
-                      className={`font-medium text-sm ${
-                        acc.is_active
-                          ? "text-red-600 hover:text-red-800"
-                          : "text-green-600 hover:text-green-800"
-                      }`}
-                    >
-                      {acc.is_active ? "Disable" : "Enable"}
-                    </button> */}
-                  </td>
-                </tr>
-              ))}
+                        <td className="px-4 py-3">
+                          <span
+                            className="px-2 py-1 rounded-full text-xs font-medium
+                                       bg-gray-100 text-gray-700"
+                          >
+                            {acc.account_type}
+                          </span>
+                        </td>
 
-              {accounts.length === 0 && (
+                        <td className="px-4 py-3 text-right space-x-3">
+                          <button
+                            onClick={() => {
+                              setSelected(acc);
+                              setOpenForm(true);
+                            }}
+                            className="text-blue-600 hover:text-blue-800
+                                       font-medium text-sm"
+                          >
+                            Edit
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </Fragment>
+                ))
+              ) : (
                 <tr>
                   <td
-                    colSpan="6"
+                    colSpan="4"
                     className="px-4 py-10 text-center text-gray-500"
                   >
                     No accounts found
                   </td>
                 </tr>
               )}
+
             </tbody>
           </table>
         </div>

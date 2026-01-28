@@ -71,13 +71,13 @@ class SalePaymentViewSet(viewsets.ModelViewSet):
 
         # Determine debit account (Cash or Bank)
         if payment.payment_mode.name.upper() == "CASH":
-            debit_acc = get_account(bc, "1000")  # Cash account
+            debit_acc = get_account("1000")  # Cash account
         else:
-            debit_acc = get_account(bc, "1010")  # Bank account
+            debit_acc = get_account("1010")  # Bank account
 
         # Credit account: if this is partial payment, credit AR, else credit Sale revenue?
         # Normally: when receiving payment after sale, credit AR
-        credit_acc = get_account(bc, "1200")  # Accounts Receivable
+        credit_acc = get_account("1200")  # Accounts Receivable
 
         # Create Journal Entry
         journal = JournalEntry.objects.create(

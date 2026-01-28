@@ -66,9 +66,9 @@ export default function JournalList() {
 
             {journals.map((j) => (
               <tr key={j.id} className="hover:bg-gray-50 transition">
-                <td className="px-4 py-2">{j.date}</td>
+                <td className="px-4 py-2 whitespace-nowrap">{j.date}</td>
                 <td className="px-4 py-2">{j.reference || "-"}</td>
-                <td className="px-4 py-2">{j.description || "-"}</td>
+                <td className="px-4 py-2">{j.narration || "-"}</td>
                 <td className="px-4 py-2 text-right">
                   {j.total_debit.toFixed(2)}
                 </td>
